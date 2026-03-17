@@ -21,5 +21,9 @@ dependencies {
     // Spring Security for UserContext
     compileOnly("org.springframework.security:spring-security-core")
     compileOnly("org.springframework.security:spring-security-web")
+    compileOnly("org.springframework.security:spring-security-oauth2-jose")
     compileOnly("org.springframework:spring-web")
+
+    // Servlet API for HttpServletRequest
+    compileOnly("jakarta.servlet:jakarta.servlet-api")
 }

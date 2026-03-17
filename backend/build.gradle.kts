@@ -23,6 +23,7 @@ subprojects {
 
     dependencies {
         "implementation"(platform("org.springframework.boot:spring-boot-dependencies:4.0.3"))
+        "annotationProcessor"(platform("org.springframework.boot:spring-boot-dependencies:4.0.3"))
         "implementation"(platform("org.springframework.cloud:spring-cloud-dependencies:2024.0.1"))
 
         "compileOnly"("org.projectlombok:lombok")
