@@ -1,0 +1,76 @@
+{
+  "realm": "unikly",
+  "enabled": true,
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionMaxLifespan": 2592000,
+  "refreshTokenMaxReuse": 0,
+  "sslRequired": "none",
+  "roles": {
+    "realm": [
+      {
+        "name": "ROLE_CLIENT",
+        "description": "Client who posts jobs and hires freelancers"
+      },
+      {
+        "name": "ROLE_FREELANCER",
+        "description": "Freelancer who applies to jobs"
+      },
+      {
+        "name": "ROLE_ADMIN",
+        "description": "Platform administrator"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "unikly-frontend",
+      "name": "Unikly Frontend",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:4200/*"
+      ],
+      "webOrigins": [
+        "http://localhost:4200"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "unikly-backend",
+      "name": "Unikly Backend",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "secret": "unikly-backend-secret",
+      "redirectUris": [],
+      "webOrigins": [],
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true
+    }
+  ],
+  "scopeMappings": [
+    {
+      "client": "unikly-frontend",
+      "roles": [
+        "ROLE_CLIENT",
+        "ROLE_FREELANCER",
+        "ROLE_ADMIN"
+      ]
+    }
+  ]
+}
