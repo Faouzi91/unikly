@@ -10,6 +10,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Money, MatchEntry, PageResponse DTOs
 - OutboxEvent JPA entity with scheduled publisher for guaranteed delivery
 - UserContext security utility
+- Docker Compose with all infrastructure — 7 PostgreSQL instances, Kafka 4.2.0
+  (KRaft, no ZooKeeper), Keycloak 26.5.5, Elasticsearch 9.0, Redis 7.4,
+  Prometheus, Grafana
+- Kafka topics auto-created on startup (job.events, payment.events,
+  matching.events, messaging.events, user.events, notification.dlq, payment.dlq)
 
 ## [0.1.0] - 2026-03-17
 

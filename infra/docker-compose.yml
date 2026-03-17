@@ -1,0 +1,287 @@
+services:
+
+  # ============================================================
+  # KEYCLOAK DATABASE
+  # ============================================================
+  postgres-keycloak:
+    image: postgres:18
+    container_name: unikly-pg-keycloak
+    ports:
+      - "5439:5432"
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+    volumes:
+      - unikly-pg-keycloak-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - unikly-net
+
+  # ============================================================
+  # KEYCLOAK IDENTITY PROVIDER
+  # ============================================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5.5
+    container_name: unikly-keycloak
+    ports:
+      - "8180:8080"
+    command: "start-dev --import-realm"
+    depends_on:
+      postgres-keycloak:
+        condition: service_healthy
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KEYCLOAK_ADMIN: ${KC_ADMIN_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
+      KC_HEALTH_ENABLED: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - unikly-net
+
+  # ============================================================
+  # KAFKA (KRaft — NO ZooKeeper)
+  # ============================================================
+  kafka:
+    image: apache/kafka:4.2.0
+    container_name: unikly-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    volumes:
+      - unikly-kafka-data:/tmp/kraft-combined-logs
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - unikly-net
+
+  # ============================================================
+  # KAFKA TOPIC INITIALIZATION
+  # ============================================================
+  kafka-init:
+    image: apache/kafka:4.2.0
+    container_name: unikly-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: /bin/sh -c
+    command: |
+      "
+      echo 'Creating Kafka topics...'
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic job.events --partitions 6 --replication-factor 1
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic payment.events --partitions 4 --replication-factor 1
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic matching.events --partitions 4 --replication-factor 1
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic messaging.events --partitions 6 --replication-factor 1
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic user.events --partitions 4 --replication-factor 1
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic notification.dlq --partitions 2 --replication-factor 1
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic payment.dlq --partitions 2 --replication-factor 1
+      echo 'All topics created successfully.'
+      "
+    networks:
+      - unikly-net
+
+  # ============================================================
+  # PER-SERVICE DATABASES
+  # ============================================================
+  postgres-jobs:
+    image: postgres:18
+    container_name: unikly-pg-jobs
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: unikly_jobs
+      POSTGRES_USER: unikly
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - unikly-pg-jobs-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unikly"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - unikly-net
+
+  postgres-users:
+    image: postgres:18
+    container_name: unikly-pg-users
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: unikly_users
+      POSTGRES_USER: unikly
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - unikly-pg-users-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unikly"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - unikly-net
+
+  postgres-payments:
+    image: postgres:18
+    container_name: unikly-pg-payments
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: unikly_payments
+      POSTGRES_USER: unikly
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - unikly-pg-payments-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unikly"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - unikly-net
+
+  postgres-matching:
+    image: postgres:18
+    container_name: unikly-pg-matching
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_DB: unikly_matching
+      POSTGRES_USER: unikly
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - unikly-pg-matching-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unikly"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - unikly-net
+
+  postgres-messaging:
+    image: postgres:18
+    container_name: unikly-pg-messaging
+    ports:
+      - "5437:5432"
+    environment:
+      POSTGRES_DB: unikly_messaging
+      POSTGRES_USER: unikly
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - unikly-pg-messaging-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unikly"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - unikly-net
+
+  postgres-notifications:
+    image: postgres:18
+    container_name: unikly-pg-notifications
+    ports:
+      - "5438:5432"
+    environment:
+      POSTGRES_DB: unikly_notifications
+      POSTGRES_USER: unikly
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - unikly-pg-notifications-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unikly"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - unikly-net
+
+  # ============================================================
+  # ELASTICSEARCH
+  # ============================================================
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.0.0
+    container_name: unikly-elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - unikly-es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - unikly-net
+
+  # ============================================================
+  # REDIS
+  # ============================================================
+  redis:
+    image: redis:7.4
+    container_name: unikly-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - unikly-redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - unikly-net
+
+# ============================================================
+# VOLUMES
+# ============================================================
+volumes:
+  unikly-pg-keycloak-data:
+  unikly-pg-jobs-data:
+  unikly-pg-users-data:
+  unikly-pg-payments-data:
+  unikly-pg-matching-data:
+  unikly-pg-messaging-data:
+  unikly-pg-notifications-data:
+  unikly-kafka-data:
+  unikly-es-data:
+  unikly-redis-data:
+
+# ============================================================
+# NETWORKS
+# ============================================================
+networks:
+  unikly-net:
+    driver: bridge
