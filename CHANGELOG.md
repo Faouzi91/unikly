@@ -165,3 +165,24 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   outbox_events with GIN index on skills
 - **`UserContext.requireRole()`** added to common module
 - **Dockerfile** + **Docker Compose** job-service on port 8081
+
+### Step 2.3 — Job Service: Event Consumption
+
+#### Added
+- **PaymentEventConsumer** — `@KafkaListener` on `payment.events` topic
+  (group `job-service-group`) handling:
+  - `PaymentCompletedEvent` — auto-transitions job OPEN → IN_PROGRESS when an
+    accepted proposal exists
+  - `EscrowReleasedEvent` — logs settlement event for tracking
+- **Idempotent consumer pattern**:
+  - `ProcessedEvent` entity with `event_id` UUID primary key + `processed_at`
+  - `ProcessedEventRepository` — checks for duplicate eventIds before processing
+  - Deduplication and event processing in the same `@Transactional` block
+  - Flyway migration `V2__create_processed_events.sql`
+- **Dead Letter Queue** — `DefaultErrorHandler` with `FixedBackOff(1000ms, 3
+  retries)` + `DeadLetterPublishingRecoverer` routing to `job-service.dlq` topic
+- **Kafka consumer configuration** — `auto-offset-reset: earliest`,
+  `enable-auto-commit: false`, `ack-mode: RECORD`, `concurrency: 3`
+- **`job-service.dlq`** topic added to Docker Compose kafka-init
+- **ARCHITECTURE.md** — system architecture diagram with service connections,
+  event flows, Kafka topics, security flow, and implementation progress
