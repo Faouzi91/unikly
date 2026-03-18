@@ -186,3 +186,41 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`job-service.dlq`** topic added to Docker Compose kafka-init
 - **ARCHITECTURE.md** — system architecture diagram with service connections,
   event flows, Kafka topics, security flow, and implementation progress
+
+### Step 2.4 — Search Service
+
+#### Added
+- **Search Service** module (`backend/search-service/`) — Elasticsearch-backed
+  full-text search with Kafka event sync
+- **Elasticsearch documents**:
+  - `JobDocument` (`@Document(indexName = "jobs")`) — jobId, title (analyzed),
+    description (analyzed), skills (keyword), budget, currency, status, clientId,
+    createdAt
+  - `FreelancerDocument` (`@Document(indexName = "freelancers")`) — userId,
+    displayName (analyzed), skills (keyword), hourlyRate, averageRating,
+    location, bio (analyzed)
+  - `ProcessedEventDocument` (`@Document(indexName = "processed-events")`) —
+    Elasticsearch-based idempotent consumer tracking
+- **Kafka consumers** (idempotent, with DLQ):
+  - `JobEventConsumer` — `job.events` group `search-service-group`:
+    `JobCreatedEvent` → index new job; `JobStatusChangedEvent` → update status
+    or delete from index if CANCELLED/CLOSED
+  - `UserEventConsumer` — `user.events` group `search-service-group`:
+    `UserProfileUpdatedEvent` → re-index freelancer via REST call to
+    user-service with event data fallback
+- **`UserProfileClient`** — REST client fetching full user profiles from
+  user-service for Elasticsearch indexing
+- **`SearchService`** — Elasticsearch `NativeQuery` with `BoolQuery`:
+  - `searchJobs`: multi_match on title+description, filter by skills/budget
+    range, always filter `status=OPEN`, sort by _score then createdAt desc
+  - `searchFreelancers`: multi_match on displayName+bio+skills, filter by
+    skills/minRating, sort by _score then averageRating desc
+  - `getSuggestions`: prefix-matched skill suggestions from curated skill set
+- **REST API** (`/api/v1/search`):
+  - `GET /jobs?q=&skills=&minBudget=&maxBudget=&page=&size=`
+  - `GET /freelancers?q=&skills=&minRating=&page=&size=`
+  - `GET /suggestions?q=&type=skill`
+- **DLQ** — `search-service.dlq` topic with `FixedBackOff(1000ms, 3 retries)`
+- **Dockerfile** (`infra/docker/Dockerfile.search-service`) — multi-stage Java 25
+- **Docker Compose** search-service on port 8087, depends on elasticsearch + kafka
+- **ARCHITECTURE.md** updated with search-service flows and connections
