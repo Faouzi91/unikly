@@ -324,6 +324,37 @@ services:
     networks:
       - unikly-net
 
+  # ============================================================
+  # JOB SERVICE
+  # ============================================================
+  job-service:
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.job-service
+    container_name: unikly-job-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres-jobs:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres-jobs
+      DB_PORT: 5432
+      DB_USER: unikly
+      DB_PASSWORD: ${DB_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - unikly-net
+
 # ============================================================
 # VOLUMES
 # ============================================================

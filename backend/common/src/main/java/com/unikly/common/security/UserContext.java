@@ -74,6 +74,15 @@ public final class UserContext {
         return getRoles().contains(role);
     }
 
+    /**
+     * Throws if the current user does not have the required role.
+     */
+    public static void requireRole(String role) {
+        if (!hasRole(role)) {
+            throw new SecurityException("Missing required role: " + role);
+        }
+    }
+
     private static HttpServletRequest getCurrentRequest() {
         var attrs = RequestContextHolder.getRequestAttributes();
         if (attrs instanceof ServletRequestAttributes servletAttrs) {

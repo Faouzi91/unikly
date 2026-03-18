@@ -124,3 +124,44 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   outbox_events tables with indexes
 - **Dockerfile** (`infra/docker/Dockerfile.user-service`) — multi-stage Java 25
 - **Docker Compose** user-service on port 8082, depends on postgres-users + kafka
+
+### Step 2.2 — Job Service: Domain Model & State Machine
+
+#### Added
+- **Job Service** module (`backend/job-service/`) — full DDD package structure
+- **Domain entities**:
+  - `Job` — UUID PK, clientId, title, description, budget, currency, skills
+    (PostgreSQL TEXT[] with GIN index), status with `@Version` optimistic locking
+  - `Proposal` — jobId (indexed FK), freelancerId, proposedBudget, coverLetter,
+    status (PENDING/ACCEPTED/REJECTED/WITHDRAWN), `@Version`
+  - `Contract` — unique jobId FK, clientId, freelancerId, agreedBudget, terms,
+    status (ACTIVE/COMPLETED/TERMINATED)
+- **Job lifecycle state machine** (`JobStatusMachine`):
+  DRAFT → OPEN → IN_PROGRESS → COMPLETED → CLOSED, with CANCELLED, DISPUTED,
+  REFUNDED branches. Validates all transitions, throws
+  `InvalidStatusTransitionException` on invalid moves
+- **Application services**:
+  - `JobService` — create job, list with dynamic filtering (Spring Data
+    Specifications for status/skill/budget range), update (DRAFT only), status
+    transitions with event publishing
+  - `ProposalService` — submit proposal (validates OPEN + not own job), accept
+    (rejects all other PENDING, creates Contract, transitions to IN_PROGRESS),
+    reject, list (job owner only)
+- **REST API** (`/api/jobs`):
+  - `POST /` — create job (ROLE_CLIENT)
+  - `GET /?status&skill&minBudget&maxBudget&sort&page&size` — filter/paginate
+  - `GET /{id}` — job details + proposal count
+  - `PATCH /{id}` — update (DRAFT only, owner)
+  - `PATCH /{id}/status` — transition status (owner)
+  - `POST /{id}/proposals` — submit proposal (ROLE_FREELANCER)
+  - `GET /{id}/proposals` — list proposals (owner)
+  - `PATCH /{id}/proposals/{pid}/accept` — accept + auto-create contract
+  - `PATCH /{id}/proposals/{pid}/reject` — reject proposal
+- **Events via outbox**: `JobCreatedEvent`, `JobStatusChangedEvent`,
+  `ProposalSubmittedEvent`, `ProposalAcceptedEvent`
+- **GlobalExceptionHandler** — 400, 403, 404, 409, 500 with traceId
+- **MapStruct mappers**: `JobMapper`, `ProposalMapper`, `ContractMapper`
+- **Flyway migration** `V1__create_job_tables.sql` — jobs, proposals, contracts,
+  outbox_events with GIN index on skills
+- **`UserContext.requireRole()`** added to common module
+- **Dockerfile** + **Docker Compose** job-service on port 8081
