@@ -39,6 +39,47 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Step 3.1 — Matching Service (Rule-Based)
+
+#### Added
+- **Matching Service** module (`backend/matching-service/`) — rule-based freelancer
+  matching engine with async Kafka-driven processing
+- **Domain entities**:
+  - `MatchResult` — UUID PK, jobId (indexed), freelancerId (indexed), score
+    `NUMERIC(5,4)`, matchedSkills (`TEXT[]`), strategy (`RULE_BASED`/`AI_EMBEDDING`),
+    createdAt
+  - `FreelancerSkillCache` — local read-model: userId PK, skills (`TEXT[]` GIN
+    indexed), hourlyRate, averageRating, updatedAt
+  - `ProcessedEvent` — idempotent consumer deduplication
+- **`MatchingEngine`** interface + **`RuleBasedMatchingEngine`** implementation:
+  - Filters freelancers with at least 1 skill overlap
+  - Scoring formula: skillOverlap × 0.40 + budgetCompat × 0.20 + ratingScore × 0.25
+    + responseScore × 0.15 (placeholder 0.5), clamped to [0.0, 1.0]
+  - Returns top 20 matches sorted by score DESC
+- **`MatchingService`**:
+  - `processJobForMatching` — runs engine, saves results, publishes `JobMatchedEvent`
+    via outbox pattern
+  - `getMatchesForJob` / `getMatchesForFreelancer` — paginated retrieval
+- **Kafka consumers** (both idempotent, DLQ with 3 retries):
+  - `job.events` (`matching-service-group`) — on `JobCreatedEvent`, schedules matching
+    with 30-second delay via `ScheduledExecutorService`
+  - `user.events` (`matching-service-group`) — on `UserProfileUpdatedEvent`, upserts
+    `FreelancerSkillCache`
+- **Kafka producer**: `JobMatchedEvent` published to `matching.events` via outbox
+- **REST API** (`/api/v1/matches`):
+  - `GET /api/v1/matches?jobId={uuid}&limit=20`
+  - `GET /api/v1/matches?freelancerId={uuid}&limit=10`
+  - `GET /api/v1/matches/{id}`
+- **Resilience4j** circuit breaker pre-configured for future AI matching service
+  (`ai-matching`: 50% failure threshold, 30s open state, 10-event window)
+- **`GlobalExceptionHandler`** — 400, 404, 500 with traceId
+- **Flyway migration** `V1__create_matching_tables.sql` — freelancer_skill_cache
+  (GIN index on skills), match_results (indexes on job_id, freelancer_id, score),
+  processed_events, outbox_events
+- **Dockerfile** (`infra/docker/Dockerfile.matching-service`) — multi-stage Java 25
+- **Docker Compose** matching-service on port 8084, depends on postgres-matching + kafka
+- **`settings.gradle.kts`** updated to include `matching-service`
+
 ### Step 1.1 — Docker Compose: Core Infrastructure
 
 #### Added
