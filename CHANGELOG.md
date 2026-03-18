@@ -224,3 +224,39 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Dockerfile** (`infra/docker/Dockerfile.search-service`) — multi-stage Java 25
 - **Docker Compose** search-service on port 8087, depends on elasticsearch + kafka
 - **ARCHITECTURE.md** updated with search-service flows and connections
+
+### Step 2.5 — Angular Frontend: Project Setup & Auth
+
+#### Added
+- **Angular 21 frontend** (`frontend/unikly-app/`) scaffolded with SCSS, routing,
+  standalone components
+- **Dependencies**: Angular Material 21, Tailwind CSS 4, keycloak-js,
+  @stomp/stompjs, ngx-toastr, ngx-spinner, sweetalert2
+- **Keycloak authentication**:
+  - `KeycloakService` — PKCE S256 init, login/logout, token management, role
+    checks, silent SSO check
+  - `authGuard` — CanActivateFn, redirects to Keycloak login if unauthenticated
+  - `roleGuard` — CanActivateFn factory, checks required realm role
+  - `authInterceptor` — attaches Bearer JWT to `/api/**` requests, handles 401
+    with silent token refresh + retry
+  - `errorInterceptor` — catches HTTP errors, shows MatSnackBar for 4xx/5xx
+    (skips 401)
+- **`ApiService`** — generic typed HTTP methods (get, post, put, patch, delete)
+  with base URL from environment
+- **Feature placeholders**: auth, jobs (list/create/detail), profile (my/public),
+  search, messaging (list/conversation), notifications, payments
+- **Shared components**: `LoadingSpinnerComponent` (Tailwind animated),
+  `TimeAgoPipe` (relative date formatting)
+- **Layouts**:
+  - `MainLayoutComponent` — MatSidenav (Jobs, Search, Messages, Profile) +
+    MatToolbar (notifications bell, user menu with logout)
+  - `AuthLayoutComponent` — centered MatCard for auth flows
+- **Routing** (`app.routes.ts`) — lazy-loaded routes with auth/role guards,
+  default redirect to `/jobs`
+- **App config** — `APP_INITIALIZER` for Keycloak, HTTP interceptors, animations
+- **Environment config** — apiUrl, wsUrl, Keycloak URL/realm/clientId for dev
+  and production
+- **Nginx config** (`infra/nginx/nginx.conf`) — SPA routing with `try_files`,
+  `/api/` proxy to gateway, `/ws/` WebSocket proxy with upgrade headers, gzip
+- **Dockerfile** (`infra/docker/Dockerfile.frontend`) — multi-stage Node 22
+  build + Nginx 1.27 Alpine runtime

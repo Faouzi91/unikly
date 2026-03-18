@@ -1,0 +1,13 @@
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-messaging',
+  standalone: true,
+  template: `
+    <div class="p-6">
+      <h1 class="text-2xl font-bold mb-4">Messages</h1>
+      <p class="text-gray-500">Your conversations will appear here.</p>
+    </div>
+  `,
+})
+export class MessagingComponent {}

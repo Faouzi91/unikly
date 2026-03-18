@@ -1,6 +1,6 @@
 # Unikly — Architecture Diagram
 
-> **Last updated:** Step 2.4 — Search Service
+> **Last updated:** Step 2.5 — Angular Frontend Setup & Auth
 
 ---
 
@@ -13,6 +13,8 @@
 │   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                  │
 │   │  Angular 21   │    │  Mobile App  │    │  External    │                  │
 │   │  (port 4200)  │    │  (future)    │    │  Webhooks    │                  │
+│   │  Keycloak PKCE│    │              │    │              │                  │
+│   │  Mat+Tailwind │    │              │    │              │                  │
 │   └──────┬───────┘    └──────┬───────┘    └──────┬───────┘                  │
 │          │                   │                   │                           │
 └──────────┼───────────────────┼───────────────────┼───────────────────────────┘
@@ -327,6 +329,7 @@
 | 2.2  | Job Service       | Done        |
 | 2.3  | Job Event Consume | Done        |
 | 2.4  | Search Service    | Done        |
+| 2.5  | Frontend Setup    | Done        |
 | 3.1  | Payment Service   | _Planned_   |
 | 3.2  | Matching Service  | _Planned_   |
 | 3.3  | Messaging Service | _Planned_   |
