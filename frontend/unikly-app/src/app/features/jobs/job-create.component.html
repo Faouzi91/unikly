@@ -1,0 +1,124 @@
+<div class="p-6 max-w-3xl mx-auto">
+  <h1 class="text-2xl font-bold mb-6">Post a New Job</h1>
+
+  <mat-card>
+    <mat-card-content>
+      <form
+        [formGroup]="form"
+        (ngSubmit)="onSubmit()"
+        class="flex flex-col gap-4 p-4"
+      >
+        <mat-form-field appearance="outline">
+          <mat-label>Job Title</mat-label>
+          <input
+            matInput
+            formControlName="title"
+            placeholder="e.g. Build a responsive landing page"
+            maxlength="200"
+          />
+          <mat-hint align="end">
+            {{ form.get('title')?.value?.length || 0 }}/200
+          </mat-hint>
+          @if (form.get('title')?.hasError('required')) {
+            <mat-error>Title is required</mat-error>
+          }
+          @if (form.get('title')?.hasError('maxlength')) {
+            <mat-error>Max 200 characters</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Description</mat-label>
+          <textarea
+            matInput
+            formControlName="description"
+            rows="6"
+            placeholder="Describe the job requirements, deliverables, and timeline..."
+          ></textarea>
+          @if (form.get('description')?.hasError('required')) {
+            <mat-error>Description is required</mat-error>
+          }
+        </mat-form-field>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <mat-form-field appearance="outline">
+            <mat-label>Budget</mat-label>
+            <input
+              matInput
+              type="number"
+              formControlName="budget"
+              min="1"
+            />
+            @if (form.get('budget')?.hasError('required')) {
+              <mat-error>Budget is required</mat-error>
+            }
+            @if (form.get('budget')?.hasError('min')) {
+              <mat-error>Must be greater than 0</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Currency</mat-label>
+            <mat-select formControlName="currency">
+              @for (c of currencies; track c) {
+                <mat-option [value]="c">{{ c }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- Skills Input -->
+        <mat-form-field appearance="outline">
+          <mat-label>Skills</mat-label>
+          <input
+            matInput
+            [formControl]="skillInputControl"
+            [matAutocomplete]="skillAuto"
+            placeholder="Type and select skills..."
+          />
+          <mat-autocomplete
+            #skillAuto="matAutocomplete"
+            (optionSelected)="addSkill($event)"
+          >
+            @for (suggestion of skillSuggestions; track suggestion) {
+              <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
+            }
+          </mat-autocomplete>
+          @if (skills.length === 0 && form.get('title')?.dirty) {
+            <mat-error>At least one skill is required</mat-error>
+          }
+        </mat-form-field>
+
+        @if (skills.length > 0) {
+          <div class="flex flex-wrap gap-2 -mt-2 mb-2">
+            @for (skill of skills; track skill) {
+              <mat-chip-row (removed)="removeSkill(skill)">
+                {{ skill }}
+                <button matChipRemove>
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </mat-chip-row>
+            }
+          </div>
+        }
+
+        <div class="flex justify-end gap-3 mt-4">
+          <button mat-button type="button" (click)="cancel()">
+            Cancel
+          </button>
+          <button
+            mat-flat-button
+            color="primary"
+            type="submit"
+            [disabled]="form.invalid || skills.length === 0 || submitting"
+          >
+            @if (submitting) {
+              <span class="animate-spin inline-block mr-2">⟳</span>
+            }
+            Post Job
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

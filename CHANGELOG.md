@@ -260,3 +260,67 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `/api/` proxy to gateway, `/ws/` WebSocket proxy with upgrade headers, gzip
 - **Dockerfile** (`infra/docker/Dockerfile.frontend`) — multi-stage Node 22
   build + Nginx 1.27 Alpine runtime
+
+### Step 2.6 — Angular: Job Features
+
+#### Added
+- **Job models** (`features/jobs/models/job.models.ts`) — TypeScript interfaces:
+  Job, Proposal, Contract, MatchEntry, PageResponse, CreateJobRequest,
+  SubmitProposalRequest, JobSearchResult, FreelancerSearchResult
+- **JobService** (`features/jobs/services/job.service.ts`) — API methods:
+  getJobs (search), getMyJobs, getJob, createJob, updateJob, updateJobStatus,
+  submitProposal, getProposals, acceptProposal, rejectProposal, getMatches,
+  getSuggestions
+- **Job list page** (`job-list.component.ts`) — responsive Material card grid
+  (3/2/1 cols), collapsible filter panel with search (300ms debounce), skill
+  autocomplete via search suggestions API, min/max budget inputs, MatPaginator,
+  empty state, status badges with color coding
+- **Job create page** (`job-create.component.ts`) — reactive form with
+  validation (title max 200, description required, budget > 0, currency
+  dropdown USD/EUR/XAF/GBP), MatChipInput with skill autocomplete, submit
+  navigates to job detail with success snackbar
+- **Job detail page** (`job-detail.component.ts`) — header with title, status
+  badge, budget, proposal count, skills chips; tab group:
+  - Tab 1 "Details" — full description
+  - Tab 2 "Proposals" (job owner only) — proposal list with freelancer link,
+    proposed budget, cover letter, accept/reject buttons with SweetAlert2
+    confirmation dialogs
+  - Tab 3 "Matches" (job owner only) — matched freelancers with match score
+    percentage, skills, hourly rate, rating
+- **Proposal dialog** (`components/proposal-dialog.component.ts`) — MatDialog
+  with proposed budget input and cover letter textarea (min 50 chars), shown
+  via FAB button for freelancers on OPEN jobs
+
+### Step 2.7 — Angular: Profile & Search Pages
+
+#### Added
+- **Reusable shared components**:
+  - `StarRatingComponent` — 5-star display (filled/half/empty), interactive mode
+    with hover + click, optional numeric value display
+  - `SkillChipsComponent` — MatChip list with optional editable mode and remove
+    events
+  - `UserAvatarComponent` — image avatar or colored initial circle fallback,
+    configurable size, deterministic color from name hash
+- **User models** (`features/profile/models/user.models.ts`) — TypeScript
+  interfaces: UserProfile, UserProfileRequest, Review, PageResponse
+- **UserService** (`features/profile/services/user.service.ts`) — API methods:
+  getMyProfile, updateMyProfile, getProfile, getReviews
+- **Profile page** (`profile.component.ts`) — view/edit mode toggle:
+  - View mode: avatar, display name, role, location, bio, skills chips, hourly
+    rate, portfolio links, average rating with stars, total reviews, member since
+  - Edit mode: reactive form with displayName, bio, hourlyRate, currency,
+    location, skill chip input with autocomplete, dynamic FormArray for
+    portfolio link URLs (add/remove), save with success snackbar
+  - Reviews tab: paginated review list with star ratings
+- **Public profile page** (`public-profile.component.ts`) — read-only profile
+  display with avatar, skills, hourly rate, clickable portfolio links, "Send
+  Message" button (disabled placeholder for Phase 4), paginated reviews section
+- **Search page** (`search.component.ts`) — unified search with MatTabGroup:
+  - Shared search input with 300ms debounce + skill filter chips
+    (add/remove/clear via autocomplete)
+  - Jobs tab: condensed card results with title, description, skills, budget,
+    posted time; click navigates to /jobs/{id}; paginated
+  - Freelancers tab: user cards with avatar, name, location, star rating,
+    skills, hourly rate; click navigates to /users/{id}; paginated
+- **JobService** updated with `searchFreelancers` method for freelancer search
+  API

@@ -1,0 +1,160 @@
+<div class="p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">Jobs</h1>
+    @if (keycloak.hasRole('ROLE_CLIENT')) {
+      <button mat-flat-button color="primary" routerLink="/jobs/create">
+        <mat-icon>add</mat-icon> Post a Job
+      </button>
+    }
+  </div>
+
+  <!-- Filter Panel -->
+  <mat-expansion-panel class="mb-6" [expanded]="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <mat-icon class="mr-2">filter_list</mat-icon> Filters
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+      <mat-form-field appearance="outline">
+        <mat-label>Search</mat-label>
+        <input
+          matInput
+          [formControl]="searchControl"
+          placeholder="Search jobs..."
+        />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Skills</mat-label>
+        <input
+          matInput
+          [formControl]="skillInputControl"
+          [matAutocomplete]="skillAuto"
+          placeholder="Type a skill..."
+        />
+        <mat-autocomplete
+          #skillAuto="matAutocomplete"
+          (optionSelected)="addSkill($event)"
+        >
+          @for (suggestion of skillSuggestions; track suggestion) {
+            <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Min Budget</mat-label>
+        <input
+          matInput
+          type="number"
+          [formControl]="minBudgetControl"
+          min="0"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Max Budget</mat-label>
+        <input
+          matInput
+          type="number"
+          [formControl]="maxBudgetControl"
+          min="0"
+        />
+      </mat-form-field>
+    </div>
+
+    @if (selectedSkills.length > 0) {
+      <div class="flex flex-wrap gap-2 mb-4">
+        @for (skill of selectedSkills; track skill) {
+          <mat-chip-row (removed)="removeSkill(skill)">
+            {{ skill }}
+            <button matChipRemove>
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip-row>
+        }
+      </div>
+    }
+  </mat-expansion-panel>
+
+  <!-- Job Cards Grid -->
+  @if (loading) {
+    <div class="flex justify-center py-12">
+      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+    </div>
+  } @else if (jobs.length === 0) {
+    <div class="text-center py-12">
+      <mat-icon class="text-6xl text-gray-300 mb-4">work_off</mat-icon>
+      <p class="text-gray-500 text-lg">No jobs found. Try adjusting your filters.</p>
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      @for (job of jobs; track job.jobId) {
+        <mat-card class="hover:shadow-lg transition-shadow cursor-pointer">
+          <mat-card-header>
+            <mat-card-title class="text-lg">{{ job.title }}</mat-card-title>
+            <mat-card-subtitle>
+              {{ job.createdAt | timeAgo }}
+            </mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-card-content class="mt-3">
+            <p class="text-gray-600 text-sm line-clamp-2 mb-3">
+              {{ job.description }}
+            </p>
+
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-lg font-semibold text-indigo-600">
+                {{ job.budget | number: '1.0-0' }} {{ job.currency }}
+              </span>
+              <span
+                class="px-2 py-1 rounded-full text-xs font-medium"
+                [ngClass]="getStatusClass(job.status)"
+              >
+                {{ job.status }}
+              </span>
+            </div>
+
+            <div class="flex flex-wrap gap-1">
+              @for (skill of job.skills | slice: 0 : 4; track skill) {
+                <span
+                  class="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full"
+                >
+                  {{ skill }}
+                </span>
+              }
+              @if (job.skills.length > 4) {
+                <span class="text-xs text-gray-400">
+                  +{{ job.skills.length - 4 }} more
+                </span>
+              }
+            </div>
+          </mat-card-content>
+
+          <mat-card-actions align="end">
+            <a
+              mat-button
+              color="primary"
+              [routerLink]="['/jobs', job.jobId]"
+            >
+              View Details
+            </a>
+          </mat-card-actions>
+        </mat-card>
+      }
+    </div>
+
+    <mat-paginator
+      class="mt-6"
+      [length]="totalElements"
+      [pageSize]="pageSize"
+      [pageIndex]="currentPage"
+      [pageSizeOptions]="[9, 18, 36]"
+      (page)="onPageChange($event)"
+      showFirstLastButtons
+    ></mat-paginator>
+  }
+</div>

@@ -1,0 +1,53 @@
+<h2 mat-dialog-title>Submit Proposal</h2>
+<p class="text-sm text-gray-500 px-6">
+  For: <strong>{{ data.jobTitle }}</strong> &mdash; Budget:
+  {{ data.jobBudget | number: '1.0-0' }} {{ data.jobCurrency }}
+</p>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="flex flex-col gap-4 mt-2">
+    <mat-form-field appearance="outline">
+      <mat-label>Proposed Budget ({{ data.jobCurrency }})</mat-label>
+      <input
+        matInput
+        type="number"
+        formControlName="proposedBudget"
+        min="1"
+      />
+      @if (form.get('proposedBudget')?.hasError('required')) {
+        <mat-error>Budget is required</mat-error>
+      }
+      @if (form.get('proposedBudget')?.hasError('min')) {
+        <mat-error>Must be greater than 0</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Cover Letter</mat-label>
+      <textarea
+        matInput
+        formControlName="coverLetter"
+        rows="6"
+        placeholder="Explain why you're the best fit for this job..."
+      ></textarea>
+      @if (form.get('coverLetter')?.hasError('required')) {
+        <mat-error>Cover letter is required</mat-error>
+      }
+      @if (form.get('coverLetter')?.hasError('minlength')) {
+        <mat-error>At least 50 characters required</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button
+    mat-flat-button
+    color="primary"
+    [disabled]="form.invalid"
+    (click)="submit()"
+  >
+    Submit Proposal
+  </button>
+</mat-dialog-actions>

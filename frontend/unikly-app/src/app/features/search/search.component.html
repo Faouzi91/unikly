@@ -1,0 +1,193 @@
+<div class="p-6 max-w-5xl mx-auto">
+  <h1 class="text-2xl font-bold mb-6">Search</h1>
+
+  <!-- Search Input -->
+  <div class="flex gap-4 mb-4">
+    <mat-form-field appearance="outline" class="flex-1">
+      <mat-label>Search</mat-label>
+      <input
+        matInput
+        [formControl]="searchControl"
+        placeholder="Search jobs and freelancers..."
+      />
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="w-64">
+      <mat-label>Add Skill Filter</mat-label>
+      <input
+        matInput
+        [formControl]="skillInputControl"
+        [matAutocomplete]="skillAuto"
+        placeholder="Filter by skill..."
+      />
+      <mat-autocomplete
+        #skillAuto="matAutocomplete"
+        (optionSelected)="addSkill($event)"
+      >
+        @for (suggestion of skillSuggestions; track suggestion) {
+          <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+  </div>
+
+  <!-- Skill Filter Chips -->
+  @if (selectedSkills.length > 0) {
+    <div class="flex flex-wrap gap-2 mb-4">
+      @for (skill of selectedSkills; track skill) {
+        <mat-chip-row (removed)="removeSkill(skill)">
+          {{ skill }}
+          <button matChipRemove>
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </mat-chip-row>
+      }
+      <button
+        mat-button
+        class="text-sm"
+        (click)="clearSkills()"
+      >
+        Clear all
+      </button>
+    </div>
+  }
+
+  <!-- Tabs -->
+  <mat-tab-group
+    animationDuration="200ms"
+    (selectedIndexChange)="onTabChange($event)"
+  >
+    <!-- Jobs Tab -->
+    <mat-tab label="Jobs">
+      <div class="py-4">
+        @if (jobsLoading) {
+          <div class="flex justify-center py-8">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+          </div>
+        } @else if (jobResults.length === 0) {
+          <div class="text-center py-8">
+            <mat-icon class="text-5xl text-gray-300 mb-2">work_off</mat-icon>
+            <p class="text-gray-500">No jobs found. Try a different search.</p>
+          </div>
+        } @else {
+          <div class="flex flex-col gap-3">
+            @for (job of jobResults; track job.jobId) {
+              <mat-card
+                class="hover:shadow-md transition-shadow cursor-pointer"
+                [routerLink]="['/jobs', job.jobId]"
+              >
+                <mat-card-content class="p-4">
+                  <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                      <h3 class="text-lg font-semibold text-indigo-600">
+                        {{ job.title }}
+                      </h3>
+                      <p class="text-gray-600 text-sm line-clamp-2 mt-1">
+                        {{ job.description }}
+                      </p>
+                      <div class="flex flex-wrap gap-1 mt-2">
+                        @for (skill of job.skills | slice: 0 : 5; track skill) {
+                          <span class="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full">
+                            {{ skill }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+                    <div class="text-right ml-4">
+                      <p class="text-lg font-bold text-indigo-600">
+                        {{ job.budget | number: '1.0-0' }} {{ job.currency }}
+                      </p>
+                      <p class="text-xs text-gray-400 mt-1">
+                        {{ job.createdAt | timeAgo }}
+                      </p>
+                    </div>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+            }
+
+            <mat-paginator
+              [length]="jobsTotalElements"
+              [pageSize]="pageSize"
+              [pageIndex]="jobsPage"
+              [pageSizeOptions]="[10, 20, 50]"
+              (page)="onJobsPageChange($event)"
+              showFirstLastButtons
+            ></mat-paginator>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- Freelancers Tab -->
+    <mat-tab label="Freelancers">
+      <div class="py-4">
+        @if (freelancersLoading) {
+          <div class="flex justify-center py-8">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+          </div>
+        } @else if (freelancerResults.length === 0) {
+          <div class="text-center py-8">
+            <mat-icon class="text-5xl text-gray-300 mb-2">people</mat-icon>
+            <p class="text-gray-500">No freelancers found. Try a different search.</p>
+          </div>
+        } @else {
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @for (freelancer of freelancerResults; track freelancer.userId) {
+              <mat-card
+                class="hover:shadow-md transition-shadow cursor-pointer"
+                [routerLink]="['/users', freelancer.userId]"
+              >
+                <mat-card-content class="p-4">
+                  <div class="flex items-start gap-4">
+                    <app-user-avatar
+                      [displayName]="freelancer.displayName"
+                      [size]="48"
+                    ></app-user-avatar>
+                    <div class="flex-1">
+                      <h3 class="font-semibold">{{ freelancer.displayName }}</h3>
+                      @if (freelancer.location) {
+                        <p class="text-xs text-gray-500">{{ freelancer.location }}</p>
+                      }
+                      <div class="flex items-center gap-2 mt-1">
+                        <app-star-rating
+                          [rating]="freelancer.averageRating"
+                          [showValue]="true"
+                        ></app-star-rating>
+                      </div>
+                      <div class="flex flex-wrap gap-1 mt-2">
+                        @for (skill of freelancer.skills | slice: 0 : 4; track skill) {
+                          <span class="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full">
+                            {{ skill }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+                    @if (freelancer.hourlyRate) {
+                      <div class="text-right">
+                        <p class="font-semibold text-indigo-600">
+                          {{ freelancer.hourlyRate | number: '1.0-0' }}/hr
+                        </p>
+                      </div>
+                    }
+                  </div>
+                </mat-card-content>
+              </mat-card>
+            }
+          </div>
+
+          <mat-paginator
+            class="mt-4"
+            [length]="freelancersTotalElements"
+            [pageSize]="pageSize"
+            [pageIndex]="freelancersPage"
+            [pageSizeOptions]="[10, 20, 50]"
+            (page)="onFreelancersPageChange($event)"
+            showFirstLastButtons
+          ></mat-paginator>
+        }
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

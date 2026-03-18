@@ -1,0 +1,278 @@
+@if (loading) {
+  <div class="flex justify-center py-12">
+    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+  </div>
+} @else if (profile) {
+  <div class="p-6 max-w-4xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">My Profile</h1>
+      <button
+        mat-stroked-button
+        (click)="toggleEditMode()"
+      >
+        <mat-icon>{{ editMode ? 'close' : 'edit' }}</mat-icon>
+        {{ editMode ? 'Cancel' : 'Edit Profile' }}
+      </button>
+    </div>
+
+    <mat-tab-group animationDuration="200ms">
+      <!-- Profile Tab -->
+      <mat-tab label="Profile">
+        <div class="py-4">
+          @if (!editMode) {
+            <!-- View Mode -->
+            <mat-card>
+              <mat-card-content class="p-6">
+                <div class="flex items-start gap-6 mb-6">
+                  <app-user-avatar
+                    [avatarUrl]="profile.avatarUrl"
+                    [displayName]="profile.displayName"
+                    [size]="80"
+                  ></app-user-avatar>
+                  <div class="flex-1">
+                    <h2 class="text-xl font-semibold">{{ profile.displayName }}</h2>
+                    <p class="text-gray-500 capitalize">{{ profile.role | lowercase }}</p>
+                    @if (profile.location) {
+                      <p class="text-gray-500 text-sm mt-1">
+                        <mat-icon class="text-sm align-middle">location_on</mat-icon>
+                        {{ profile.location }}
+                      </p>
+                    }
+                  </div>
+                  <div class="text-right">
+                    <div class="flex items-center gap-2">
+                      <app-star-rating
+                        [rating]="profile.averageRating"
+                        [showValue]="true"
+                      ></app-star-rating>
+                    </div>
+                    <p class="text-sm text-gray-500">
+                      {{ profile.totalReviews }} review{{ profile.totalReviews !== 1 ? 's' : '' }}
+                    </p>
+                    <p class="text-xs text-gray-400 mt-1">
+                      Member since {{ profile.createdAt | timeAgo }}
+                    </p>
+                  </div>
+                </div>
+
+                <mat-divider class="my-4"></mat-divider>
+
+                @if (profile.bio) {
+                  <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-gray-500 mb-1">Bio</h3>
+                    <p class="text-gray-700 whitespace-pre-line">{{ profile.bio }}</p>
+                  </div>
+                }
+
+                @if (profile.skills.length > 0) {
+                  <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-gray-500 mb-2">Skills</h3>
+                    <app-skill-chips [skills]="profile.skills"></app-skill-chips>
+                  </div>
+                }
+
+                @if (profile.hourlyRate) {
+                  <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-gray-500 mb-1">Hourly Rate</h3>
+                    <p class="text-lg font-semibold text-indigo-600">
+                      {{ profile.hourlyRate | number: '1.0-0' }} {{ profile.currency }}/hr
+                    </p>
+                  </div>
+                }
+
+                @if (profile.portfolioLinks.length > 0) {
+                  <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-gray-500 mb-2">Portfolio</h3>
+                    <ul class="space-y-1">
+                      @for (link of profile.portfolioLinks; track link) {
+                        <li>
+                          <a
+                            [href]="link"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-indigo-600 hover:underline text-sm"
+                          >
+                            {{ link }}
+                          </a>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+              </mat-card-content>
+            </mat-card>
+          } @else {
+            <!-- Edit Mode -->
+            <mat-card>
+              <mat-card-content class="p-6">
+                <form
+                  [formGroup]="form"
+                  (ngSubmit)="onSave()"
+                  class="flex flex-col gap-4"
+                >
+                  <mat-form-field appearance="outline">
+                    <mat-label>Display Name</mat-label>
+                    <input matInput formControlName="displayName" maxlength="100" />
+                    @if (form.get('displayName')?.hasError('required')) {
+                      <mat-error>Display name is required</mat-error>
+                    }
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Bio</mat-label>
+                    <textarea matInput formControlName="bio" rows="4"></textarea>
+                  </mat-form-field>
+
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Hourly Rate</mat-label>
+                      <input matInput type="number" formControlName="hourlyRate" min="0" />
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                      <mat-label>Currency</mat-label>
+                      <mat-select formControlName="currency">
+                        @for (c of currencies; track c) {
+                          <mat-option [value]="c">{{ c }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                      <mat-label>Location</mat-label>
+                      <input matInput formControlName="location" />
+                    </mat-form-field>
+                  </div>
+
+                  <!-- Skills -->
+                  <mat-form-field appearance="outline">
+                    <mat-label>Skills</mat-label>
+                    <input
+                      matInput
+                      [formControl]="skillInputControl"
+                      [matAutocomplete]="skillAuto"
+                      placeholder="Type and select skills..."
+                    />
+                    <mat-autocomplete
+                      #skillAuto="matAutocomplete"
+                      (optionSelected)="addSkill($event)"
+                    >
+                      @for (suggestion of skillSuggestions; track suggestion) {
+                        <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
+                      }
+                    </mat-autocomplete>
+                  </mat-form-field>
+
+                  @if (editSkills.length > 0) {
+                    <div class="flex flex-wrap gap-2 -mt-2 mb-2">
+                      @for (skill of editSkills; track skill) {
+                        <mat-chip-row (removed)="removeSkill(skill)">
+                          {{ skill }}
+                          <button matChipRemove>
+                            <mat-icon>cancel</mat-icon>
+                          </button>
+                        </mat-chip-row>
+                      }
+                    </div>
+                  }
+
+                  <!-- Portfolio Links -->
+                  <div class="mb-2">
+                    <div class="flex items-center justify-between mb-2">
+                      <h3 class="text-sm font-semibold text-gray-500">Portfolio Links</h3>
+                      <button
+                        mat-icon-button
+                        type="button"
+                        (click)="addPortfolioLink()"
+                      >
+                        <mat-icon>add_circle</mat-icon>
+                      </button>
+                    </div>
+                    @for (link of portfolioLinks.controls; track $index; let i = $index) {
+                      <div class="flex gap-2 mb-2">
+                        <mat-form-field appearance="outline" class="flex-1">
+                          <mat-label>URL {{ i + 1 }}</mat-label>
+                          <input matInput [formControl]="getPortfolioControl(i)" />
+                        </mat-form-field>
+                        <button
+                          mat-icon-button
+                          type="button"
+                          color="warn"
+                          (click)="removePortfolioLink(i)"
+                        >
+                          <mat-icon>remove_circle</mat-icon>
+                        </button>
+                      </div>
+                    }
+                  </div>
+
+                  <div class="flex justify-end gap-3">
+                    <button mat-button type="button" (click)="toggleEditMode()">
+                      Cancel
+                    </button>
+                    <button
+                      mat-flat-button
+                      color="primary"
+                      type="submit"
+                      [disabled]="form.invalid || saving"
+                    >
+                      Save Profile
+                    </button>
+                  </div>
+                </form>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+      </mat-tab>
+
+      <!-- Reviews Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          Reviews
+          @if (profile.totalReviews > 0) {
+            <span class="ml-2 bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full text-xs">
+              {{ profile.totalReviews }}
+            </span>
+          }
+        </ng-template>
+
+        <div class="py-4">
+          @if (reviews.length === 0) {
+            <div class="text-center py-8">
+              <mat-icon class="text-5xl text-gray-300 mb-2">rate_review</mat-icon>
+              <p class="text-gray-500">No reviews yet.</p>
+            </div>
+          } @else {
+            <div class="flex flex-col gap-4">
+              @for (review of reviews; track review.id) {
+                <mat-card>
+                  <mat-card-content class="p-4">
+                    <div class="flex items-start justify-between">
+                      <div>
+                        <app-star-rating [rating]="review.rating"></app-star-rating>
+                        <p class="text-gray-700 mt-2">{{ review.comment }}</p>
+                      </div>
+                      <span class="text-xs text-gray-400">
+                        {{ review.createdAt | timeAgo }}
+                      </span>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+              }
+
+              <mat-paginator
+                [length]="reviewsTotalElements"
+                [pageSize]="reviewsPageSize"
+                [pageIndex]="reviewsPage"
+                [pageSizeOptions]="[5, 10, 20]"
+                (page)="onReviewsPageChange($event)"
+                showFirstLastButtons
+              ></mat-paginator>
+            </div>
+          }
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+}
