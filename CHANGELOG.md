@@ -6,6 +6,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Spring Cloud Gateway with Keycloak JWT validation, route configuration for all
+  7 services + webhooks, Redis rate limiting (100/min per user), Resilience4j
+  circuit breakers, CORS config, Dockerfile
 - Keycloak realm `unikly` with frontend (PKCE) and backend (confidential) clients,
   ROLE_CLIENT/ROLE_FREELANCER/ROLE_ADMIN roles, test user creation script
 - Shared event records (11 events) for inter-service communication

@@ -266,6 +266,33 @@ services:
     networks:
       - unikly-net
 
+  # ============================================================
+  # API GATEWAY
+  # ============================================================
+  gateway:
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.gateway
+    container_name: unikly-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      REDIS_HOST: redis
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - unikly-net
+
 # ============================================================
 # VOLUMES
 # ============================================================
