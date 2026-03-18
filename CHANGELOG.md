@@ -39,6 +39,78 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Step 4.1 — Payment Service: Stripe & Escrow
+
+#### Added
+- **Payment Service** module (`backend/payment-service/`) — financial escrow service with
+  Stripe integration, state machine, and idempotent webhook processing
+- **Domain entities**:
+  - `PaymentStatus` enum — `PENDING, FUNDED, RELEASED, COMPLETED, FAILED, REFUNDED, DISPUTED`
+    with enforced valid transitions via `canTransitionTo()` guard
+  - `Payment` — UUID PK, jobId (indexed), clientId, freelancerId, `NUMERIC(12,2)` amount,
+    currency `CHAR(3)`, `@Version` optimistic lock, `stripePaymentIntentId` (unique),
+    `idempotencyKey` (unique), createdAt/updatedAt via `@PrePersist`/`@PreUpdate`;
+    `transitionTo()` throws `IllegalStateException` on invalid state change
+  - `LedgerEntry` — immutable financial record: paymentId FK, `LedgerEntryType`
+    (`ESCROW_FUND, ESCROW_RELEASE, REFUND, FEE_DEDUCTION`), amount, currency, description
+  - `WebhookEvent` — String PK = Stripe event ID (e.g. `evt_1234…`); prevents duplicate
+    Stripe webhook processing
+- **`PaymentService`** (all writes `@Transactional`):
+  - `createPaymentIntent` — checks idempotencyKey uniqueness (409 if dup), calls Stripe
+    `PaymentIntent.create`, saves `Payment(PENDING)`, publishes `PaymentInitiatedEvent` via outbox
+  - `handleWebhook` — `Webhook.constructEvent` HMAC verification, skips if already in
+    `webhook_events`, handles `payment_intent.succeeded` (→ FUNDED + `ESCROW_FUND` ledger +
+    `PaymentCompletedEvent`) and `payment_intent.payment_failed` (→ FAILED)
+  - `releaseEscrow` — ownership check, FUNDED guard, → RELEASED → COMPLETED,
+    `ESCROW_RELEASE` ledger, `EscrowReleasedEvent` via outbox
+    *(TODO: real Stripe Transfer once freelancer accounts onboarded)*
+  - `requestRefund` — FUNDED guard, `Refund.create`, → REFUNDED, `REFUND` ledger entry
+- **`StripeClient`** — wraps all Stripe SDK calls; each method decorated with
+  `@CircuitBreaker(name="stripe")` + `@Retry(name="stripe")`;
+  `constructWebhookEvent` is local HMAC-only (no Resilience4j); fallback throws
+  `PaymentProviderUnavailableException`
+- **Resilience4j config** — circuit breaker: 50% failure threshold, 30s open wait, window 10;
+  retry: 3 attempts, 1s base, ×2 exponential; time limiter: 10s timeout
+- **`SecurityConfig`** — `/webhooks/stripe` is `permitAll()` (JWT-free);
+  all other endpoints require JWT; stateless session
+- **REST API** (`/api/v1/payments`):
+  - `POST /api/v1/payments` — create PaymentIntent, returns `{ paymentId, clientSecret }`
+  - `GET  /api/v1/payments?jobId={uuid}` — list payments for a job
+  - `POST /api/v1/payments/{id}/release` — release escrow (client only)
+  - `POST /api/v1/payments/{id}/refund` — request refund (FUNDED only)
+  - `POST /webhooks/stripe` — Stripe webhook (no JWT, signature-only auth)
+- **`GlobalExceptionHandler`** — RFC 9457 `ProblemDetail` for 404, 409, 422, 403, 503
+- **Flyway migration** `V1__create_payment_tables.sql` — payments (unique idempotency_key,
+  indexed job_id/status/client_id), ledger_entries, webhook_events, outbox_events
+- **Dockerfile** (`infra/docker/Dockerfile.payment-service`) — multi-stage Java 25
+- **Docker Compose** — payment-service on port 8083, depends on postgres-payments + kafka;
+  `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` env vars
+- **`settings.gradle.kts`** updated to include `payment-service`
+
+### Step 3.3 — Angular: Notification Bell & Real-Time
+
+#### Added
+- **`WebSocketService`** (`core/services/websocket.service.ts`) — `@stomp/stompjs` client
+  connecting to `ws://localhost:8080/ws/notifications/websocket` with JWT `Authorization`
+  header; auto-reconnect (2s delay); on disconnect starts 30s polling fallback via
+  `GET /api/v1/notifications?unread=true`; exposes `notifications$: Subject<NotificationPayload>`
+- **`NotificationService`** (`core/services/notification.service.ts`) — signal-based state:
+  `unreadCount = signal<number>(0)`, `notifications = signal<NotificationItem[]>([])`; `init()`
+  loads initial unread page and subscribes to `WebSocketService.notifications$`; methods:
+  `getNotifications`, `markAsRead` (tap decrements count), `markAllRead` (tap resets to 0),
+  `getPreferences`, `updatePreferences`
+- **`NotificationBellComponent`** (`shared/components/notification-bell/`) — standalone
+  `MatIconButton` with `MatBadge` showing live unread count (hidden when 0); opens `MatMenu`
+  overlay with: header + "Mark all read" button, last-10 notifications with type icon / title /
+  body / time-ago, unread dot indicator; click → `markAsRead` + navigate to `actionUrl`; footer
+  "View all notifications" → `/notifications`; CSS bell-pulse animation on new notification
+- **`NotificationListComponent`** (`features/notifications/`) — full-page `/notifications` view:
+  `MatButtonToggle` All/Unread filter, paginated list (`MatPaginator`), per-item type icon +
+  title + body + time-ago + unread indicator, click marks as read and navigates; inline
+  preferences section with `MatSlideToggle` for email / push / real-time (saved on toggle change)
+- **`main-layout.component.ts`** updated — replaced static bell button with
+  `<app-notification-bell>` in the toolbar
+
 ### Step 3.2 — Notification Service
 
 #### Added

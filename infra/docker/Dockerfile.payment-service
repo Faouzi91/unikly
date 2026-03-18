@@ -1,0 +1,19 @@
+FROM eclipse-temurin:25-jdk AS build
+WORKDIR /workspace
+
+COPY backend/gradle backend/gradle
+COPY backend/gradlew backend/gradlew
+COPY backend/build.gradle.kts backend/build.gradle.kts
+COPY backend/settings.gradle.kts backend/settings.gradle.kts
+COPY backend/gradle.properties backend/gradle.properties
+COPY backend/common backend/common
+COPY backend/payment-service backend/payment-service
+
+WORKDIR /workspace/backend
+RUN chmod +x gradlew && ./gradlew :payment-service:bootJar --no-daemon
+
+FROM eclipse-temurin:25-jre
+WORKDIR /app
+COPY --from=build /workspace/backend/payment-service/build/libs/*.jar app.jar
+EXPOSE 8083
+ENTRYPOINT ["java", "-jar", "app.jar"]

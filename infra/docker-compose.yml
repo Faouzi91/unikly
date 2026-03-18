@@ -358,6 +358,39 @@ services:
       - unikly-net
 
   # ============================================================
+  # PAYMENT SERVICE
+  # ============================================================
+  payment-service:
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.payment-service
+    container_name: unikly-payment-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      postgres-payments:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres-payments
+      DB_PORT: 5432
+      DB_USER: unikly
+      DB_PASSWORD: ${DB_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8083/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - unikly-net
+
+  # ============================================================
   # MATCHING SERVICE
   # ============================================================
   matching-service:
