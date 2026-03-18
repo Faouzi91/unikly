@@ -497,3 +497,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`PaymentDialogComponent`** (`features/payments/payment-dialog.component.ts`) — `MatDialog` with summary step → Stripe `PaymentElement` mount → `confirmPayment({ redirect: 'if_required' })`; inline Stripe error display
 - **`PaymentStatusComponent`** (`features/payments/payment-status.component.ts`) — color-coded status badge; Release / Refund actions shown to client when status is `FUNDED` (SweetAlert2 confirm)
 - **`job-detail`** updated — "Fund Escrow" banner after proposal accepted; `<app-payment-status>` rendered once payment record exists
+
+### Step 4.3 — Messaging Service
+
+#### Added
+
+- **`messaging-service`** (`backend/messaging-service/`) — Spring Boot 4.0.3 Gradle submodule on port 8085
+- **`Conversation`** entity — UUID PK, `participantIds` (PostgreSQL `UUID[]`), optional `jobId`, `lastMessageAt` updated on each message
+- **`Message`** entity — UUID PK, `conversationId` (FK indexed), `senderId`, `content` (TEXT), `MessageContentType` enum (TEXT / FILE_LINK / SYSTEM), nullable `readAt`
+- **`ConversationService`** — `getOrCreateConversation` (find by participant set or create), `getUserConversations` (paginated, sorted by `lastMessageAt DESC`), `getById` (participant guard → 403)
+- **`MessageService`** — participant validation, message persistence, `lastMessageAt` update, WebSocket push to online recipients via Redis presence check, `MessageSentEvent` via outbox (100-char preview)
+- **WebSocket** (`/ws/messages` with SockJS, STOMP) — JWT auth via `ChannelInterceptor`, `/user/{recipientId}/queue/messages` delivery, `/app/typing` → `/user/{recipientId}/queue/typing` ephemeral indicator
+- **`MessagingPresenceManager`** — Redis `msg-user:{userId}:online` key, TTL 120 s, refreshed every 60 s via scheduler
+- **Flyway** `V1__create_messaging_tables.sql` — `conversations`, `messages`, `outbox_events` with GIN index on `participant_ids[]`
+- **`Dockerfile.messaging-service`** (`infra/docker/`) — multi-stage eclipse-temurin:25
+- **`docker-compose.yml`** updated — `messaging-service` on port 8085 with Postgres, Kafka, and Redis deps
+- **`settings.gradle.kts`** updated — added `include("messaging-service")`
