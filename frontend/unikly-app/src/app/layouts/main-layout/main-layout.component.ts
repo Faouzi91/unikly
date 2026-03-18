@@ -6,8 +6,8 @@ import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatBadgeModule } from '@angular/material/badge';
 import { KeycloakService } from '../../core/auth/keycloak.service';
+import { NotificationBellComponent } from '../../shared/components/notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-main-layout',
@@ -22,7 +22,7 @@ import { KeycloakService } from '../../core/auth/keycloak.service';
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
-    MatBadgeModule,
+    NotificationBellComponent,
   ],
   template: `
     <mat-sidenav-container class="h-screen">
@@ -51,10 +51,8 @@ import { KeycloakService } from '../../core/auth/keycloak.service';
       <mat-sidenav-content>
         <mat-toolbar color="primary" class="flex justify-between">
           <span>Unikly</span>
-          <div class="flex items-center gap-2">
-            <button mat-icon-button routerLink="/notifications">
-              <mat-icon matBadge="0" matBadgeColor="warn" matBadgeHidden>notifications</mat-icon>
-            </button>
+          <div class="flex items-center gap-1">
+            <app-notification-bell />
             <button mat-icon-button [matMenuTriggerFor]="userMenu">
               <mat-icon>account_circle</mat-icon>
             </button>

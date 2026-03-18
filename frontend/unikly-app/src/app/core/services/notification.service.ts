@@ -1,0 +1,115 @@
+import { Injectable, OnDestroy, signal, inject } from '@angular/core';
+import { Observable, Subscription, tap } from 'rxjs';
+import { ApiService } from './api.service';
+import { WebSocketService, NotificationPayload } from './websocket.service';
+import { KeycloakService } from '../auth/keycloak.service';
+
+export interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  actionUrl?: string;
+  createdAt: string;
+  read: boolean;
+}
+
+export interface NotificationPage {
+  content: NotificationItem[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+}
+
+export interface NotificationPreferences {
+  emailEnabled: boolean;
+  pushEnabled: boolean;
+  realtimeEnabled: boolean;
+  quietHoursStart?: string;
+  quietHoursEnd?: string;
+}
+
+@Injectable({ providedIn: 'root' })
+export class NotificationService implements OnDestroy {
+  readonly unreadCount = signal<number>(0);
+  readonly notifications = signal<NotificationItem[]>([]);
+
+  private readonly api = inject(ApiService);
+  private readonly ws = inject(WebSocketService);
+  private readonly keycloak = inject(KeycloakService);
+
+  private wsSub: Subscription | null = null;
+
+  init(): void {
+    if (!this.keycloak.isAuthenticated()) return;
+    this.loadInitialNotifications();
+    this.subscribeToWebSocket();
+    this.ws.activate();
+  }
+
+  private loadInitialNotifications(): void {
+    this.api
+      .get<NotificationPage>('/v1/notifications', { unread: true, page: 0, size: 20 })
+      .subscribe({
+        next: (page) => {
+          this.notifications.set(page.content);
+          this.unreadCount.set(page.content.filter((n) => !n.read).length);
+        },
+        error: () => { /* silently ignore — WS stream will update when ready */ },
+      });
+  }
+
+  private subscribeToWebSocket(): void {
+    if (this.wsSub) return;
+    this.wsSub = this.ws.notifications$.subscribe((incoming: NotificationPayload) => {
+      this.notifications.update((current) => {
+        const exists = current.some((n) => n.id === incoming.id);
+        return exists ? current : [incoming, ...current];
+      });
+      if (!incoming.read) {
+        this.unreadCount.update((c) => c + 1);
+      }
+    });
+  }
+
+  getNotifications(page = 0, size = 20, unreadOnly = false): Observable<NotificationPage> {
+    return this.api.get<NotificationPage>('/v1/notifications', {
+      page,
+      size,
+      unread: unreadOnly,
+    });
+  }
+
+  markAsRead(id: string): Observable<void> {
+    return this.api.patch<void>(`/v1/notifications/${id}/read`).pipe(
+      tap(() => {
+        this.notifications.update((list) =>
+          list.map((n) => (n.id === id ? { ...n, read: true } : n)),
+        );
+        this.unreadCount.update((c) => Math.max(0, c - 1));
+      }),
+    );
+  }
+
+  markAllRead(): Observable<void> {
+    return this.api.patch<void>('/v1/notifications/read-all').pipe(
+      tap(() => {
+        this.notifications.update((list) => list.map((n) => ({ ...n, read: true })));
+        this.unreadCount.set(0);
+      }),
+    );
+  }
+
+  getPreferences(): Observable<NotificationPreferences> {
+    return this.api.get<NotificationPreferences>('/v1/notifications/preferences');
+  }
+
+  updatePreferences(prefs: NotificationPreferences): Observable<NotificationPreferences> {
+    return this.api.put<NotificationPreferences>('/v1/notifications/preferences', prefs);
+  }
+
+  ngOnDestroy(): void {
+    this.wsSub?.unsubscribe();
+    this.ws.deactivate();
+  }
+}
