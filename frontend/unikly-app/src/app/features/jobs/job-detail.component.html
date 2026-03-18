@@ -196,6 +196,35 @@
       }
     </mat-tab-group>
 
+    <!-- Payment section (job owner only) -->
+    @if (isJobOwner) {
+      <div class="mt-6">
+        @if (showFundEscrow) {
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+            <div>
+              <p class="font-semibold text-green-800">Proposal accepted — ready to fund escrow</p>
+              <p class="text-sm text-green-600">
+                Secure {{ acceptedProposal?.proposedBudget | number: '1.0-0' }} {{ job!.currency }} in escrow to start work.
+              </p>
+            </div>
+            <button type="button" mat-flat-button color="primary" class="!bg-green-600" (click)="openPaymentDialog()">
+              <mat-icon>lock</mat-icon>
+              Fund Escrow
+            </button>
+          </div>
+        }
+        @if (showPaymentStatus) {
+          <div class="bg-white border border-gray-200 rounded-lg p-4">
+            <h3 class="font-semibold text-gray-700 mb-3">Payment</h3>
+            <app-payment-status
+              [jobId]="job!.id"
+              [clientId]="job!.clientId"
+            />
+          </div>
+        }
+      </div>
+    }
+
     <!-- Submit Proposal FAB (freelancer + OPEN job) -->
     @if (canSubmitProposal) {
       <button

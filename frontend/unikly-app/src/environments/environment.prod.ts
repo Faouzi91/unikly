@@ -7,4 +7,5 @@ export const environment = {
     realm: 'unikly',
     clientId: 'unikly-frontend',
   },
+  stripePublishableKey: 'pk_live_placeholder',
 };

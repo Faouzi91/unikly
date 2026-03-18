@@ -22,6 +22,12 @@ import {
   ProposalDialogComponent,
   ProposalDialogData,
 } from './components/proposal-dialog.component';
+import {
+  PaymentDialogComponent,
+  PaymentDialogData,
+} from '../payments/payment-dialog.component';
+import { PaymentStatusComponent } from '../payments/payment-status.component';
+import { PaymentService, PaymentRecord } from '../../core/services/payment.service';
 
 @Component({
   selector: 'app-job-detail',
@@ -39,8 +45,8 @@ import {
     MatDividerModule,
     MatListModule,
     TimeAgoPipe,
+    PaymentStatusComponent,
   ],
-  templateUrl: './job-detail.component.html',
 })
 export class JobDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -48,15 +54,38 @@ export class JobDetailComponent implements OnInit {
   private readonly keycloak = inject(KeycloakService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly paymentService = inject(PaymentService);
 
   job: Job | null = null;
   proposals: Proposal[] = [];
   matches: MatchEntry[] = [];
+  payment: PaymentRecord | null = null;
   loading = true;
   matchesLoading = false;
 
   get isJobOwner(): boolean {
     return this.job?.clientId === this.keycloak.getUserId();
+  }
+
+  get hasAcceptedProposal(): boolean {
+    return this.proposals.some((p) => p.status === 'ACCEPTED');
+  }
+
+  get acceptedProposal(): Proposal | undefined {
+    return this.proposals.find((p) => p.status === 'ACCEPTED');
+  }
+
+  get showFundEscrow(): boolean {
+    return (
+      this.isJobOwner &&
+      this.hasAcceptedProposal &&
+      this.payment === null &&
+      (this.job?.status === 'IN_PROGRESS' || this.job?.status === 'OPEN')
+    );
+  }
+
+  get showPaymentStatus(): boolean {
+    return this.payment !== null;
   }
 
   get canSubmitProposal(): boolean {
@@ -82,6 +111,7 @@ export class JobDetailComponent implements OnInit {
         if (this.isJobOwner) {
           this.loadProposals(jobId);
           this.loadMatches(jobId);
+          this.loadPayment(jobId);
         }
       },
       error: () => {
@@ -93,6 +123,12 @@ export class JobDetailComponent implements OnInit {
   private loadProposals(jobId: string): void {
     this.jobService.getProposals(jobId).subscribe({
       next: (proposals) => (this.proposals = proposals),
+    });
+  }
+
+  private loadPayment(jobId: string): void {
+    this.paymentService.getPaymentStatus(jobId).subscribe({
+      next: (records) => (this.payment = records[0] ?? null),
     });
   }
 
@@ -181,6 +217,30 @@ export class JobDetailComponent implements OnInit {
           },
         });
     }
+  }
+
+  openPaymentDialog(): void {
+    if (!this.job) return;
+    const accepted = this.acceptedProposal;
+    if (!accepted) return;
+
+    const dialogRef = this.dialog.open(PaymentDialogComponent, {
+      width: '480px',
+      disableClose: true,
+      data: {
+        jobId: this.job.id,
+        jobTitle: this.job.title,
+        budget: accepted.proposedBudget,
+        currency: this.job.currency,
+        freelancerId: accepted.freelancerId,
+      } as PaymentDialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result?.success && this.job) {
+        this.loadPayment(this.job.id);
+      }
+    });
   }
 
   getStatusClass(status: string): Record<string, boolean> {

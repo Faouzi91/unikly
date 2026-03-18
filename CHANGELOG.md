@@ -39,170 +39,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Step 4.1 — Payment Service: Stripe & Escrow
-
-#### Added
-- **Payment Service** module (`backend/payment-service/`) — financial escrow service with
-  Stripe integration, state machine, and idempotent webhook processing
-- **Domain entities**:
-  - `PaymentStatus` enum — `PENDING, FUNDED, RELEASED, COMPLETED, FAILED, REFUNDED, DISPUTED`
-    with enforced valid transitions via `canTransitionTo()` guard
-  - `Payment` — UUID PK, jobId (indexed), clientId, freelancerId, `NUMERIC(12,2)` amount,
-    currency `CHAR(3)`, `@Version` optimistic lock, `stripePaymentIntentId` (unique),
-    `idempotencyKey` (unique), createdAt/updatedAt via `@PrePersist`/`@PreUpdate`;
-    `transitionTo()` throws `IllegalStateException` on invalid state change
-  - `LedgerEntry` — immutable financial record: paymentId FK, `LedgerEntryType`
-    (`ESCROW_FUND, ESCROW_RELEASE, REFUND, FEE_DEDUCTION`), amount, currency, description
-  - `WebhookEvent` — String PK = Stripe event ID (e.g. `evt_1234…`); prevents duplicate
-    Stripe webhook processing
-- **`PaymentService`** (all writes `@Transactional`):
-  - `createPaymentIntent` — checks idempotencyKey uniqueness (409 if dup), calls Stripe
-    `PaymentIntent.create`, saves `Payment(PENDING)`, publishes `PaymentInitiatedEvent` via outbox
-  - `handleWebhook` — `Webhook.constructEvent` HMAC verification, skips if already in
-    `webhook_events`, handles `payment_intent.succeeded` (→ FUNDED + `ESCROW_FUND` ledger +
-    `PaymentCompletedEvent`) and `payment_intent.payment_failed` (→ FAILED)
-  - `releaseEscrow` — ownership check, FUNDED guard, → RELEASED → COMPLETED,
-    `ESCROW_RELEASE` ledger, `EscrowReleasedEvent` via outbox
-    *(TODO: real Stripe Transfer once freelancer accounts onboarded)*
-  - `requestRefund` — FUNDED guard, `Refund.create`, → REFUNDED, `REFUND` ledger entry
-- **`StripeClient`** — wraps all Stripe SDK calls; each method decorated with
-  `@CircuitBreaker(name="stripe")` + `@Retry(name="stripe")`;
-  `constructWebhookEvent` is local HMAC-only (no Resilience4j); fallback throws
-  `PaymentProviderUnavailableException`
-- **Resilience4j config** — circuit breaker: 50% failure threshold, 30s open wait, window 10;
-  retry: 3 attempts, 1s base, ×2 exponential; time limiter: 10s timeout
-- **`SecurityConfig`** — `/webhooks/stripe` is `permitAll()` (JWT-free);
-  all other endpoints require JWT; stateless session
-- **REST API** (`/api/v1/payments`):
-  - `POST /api/v1/payments` — create PaymentIntent, returns `{ paymentId, clientSecret }`
-  - `GET  /api/v1/payments?jobId={uuid}` — list payments for a job
-  - `POST /api/v1/payments/{id}/release` — release escrow (client only)
-  - `POST /api/v1/payments/{id}/refund` — request refund (FUNDED only)
-  - `POST /webhooks/stripe` — Stripe webhook (no JWT, signature-only auth)
-- **`GlobalExceptionHandler`** — RFC 9457 `ProblemDetail` for 404, 409, 422, 403, 503
-- **Flyway migration** `V1__create_payment_tables.sql` — payments (unique idempotency_key,
-  indexed job_id/status/client_id), ledger_entries, webhook_events, outbox_events
-- **Dockerfile** (`infra/docker/Dockerfile.payment-service`) — multi-stage Java 25
-- **Docker Compose** — payment-service on port 8083, depends on postgres-payments + kafka;
-  `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` env vars
-- **`settings.gradle.kts`** updated to include `payment-service`
-
-### Step 3.3 — Angular: Notification Bell & Real-Time
-
-#### Added
-- **`WebSocketService`** (`core/services/websocket.service.ts`) — `@stomp/stompjs` client
-  connecting to `ws://localhost:8080/ws/notifications/websocket` with JWT `Authorization`
-  header; auto-reconnect (2s delay); on disconnect starts 30s polling fallback via
-  `GET /api/v1/notifications?unread=true`; exposes `notifications$: Subject<NotificationPayload>`
-- **`NotificationService`** (`core/services/notification.service.ts`) — signal-based state:
-  `unreadCount = signal<number>(0)`, `notifications = signal<NotificationItem[]>([])`; `init()`
-  loads initial unread page and subscribes to `WebSocketService.notifications$`; methods:
-  `getNotifications`, `markAsRead` (tap decrements count), `markAllRead` (tap resets to 0),
-  `getPreferences`, `updatePreferences`
-- **`NotificationBellComponent`** (`shared/components/notification-bell/`) — standalone
-  `MatIconButton` with `MatBadge` showing live unread count (hidden when 0); opens `MatMenu`
-  overlay with: header + "Mark all read" button, last-10 notifications with type icon / title /
-  body / time-ago, unread dot indicator; click → `markAsRead` + navigate to `actionUrl`; footer
-  "View all notifications" → `/notifications`; CSS bell-pulse animation on new notification
-- **`NotificationListComponent`** (`features/notifications/`) — full-page `/notifications` view:
-  `MatButtonToggle` All/Unread filter, paginated list (`MatPaginator`), per-item type icon +
-  title + body + time-ago + unread indicator, click marks as read and navigates; inline
-  preferences section with `MatSlideToggle` for email / push / real-time (saved on toggle change)
-- **`main-layout.component.ts`** updated — replaced static bell button with
-  `<app-notification-bell>` in the toolbar
-
-### Step 3.2 — Notification Service
-
-#### Added
-- **Notification Service** module (`backend/notification-service/`) — hybrid real-time +
-  push notification delivery with WebSocket STOMP, Redis presence, and Kafka consumers
-- **Domain entities**:
-  - `Notification` — UUID PK, userId (indexed), type (`NotificationType`), title
-    (max 200), body (TEXT), read flag (partial index on unread), actionUrl, createdAt
-  - `NotificationPreference` — userId PK, emailEnabled, pushEnabled,
-    realtimeEnabled, quietHoursStart/End (nullable `LocalTime`)
-  - `JobClientCache` — local read-model: jobId PK, clientId, title, freelancerId
-    (populated from Kafka events to avoid cross-service coupling)
-  - `ProcessedEvent` — idempotent consumer deduplication
-- **`NotificationDeliveryService`**:
-  - `createAndDeliver` — saves notification, loads preferences, sends via WebSocket
-    if user is online, otherwise logs FCM push placeholder
-  - `getNotifications` — paginated list with optional `unreadOnly` filter
-  - `markRead` / `markAllRead` — ownership-validated mark-as-read
-  - `getPreferences` / `savePreferences` — preference CRUD
-- **`WebSocketPresenceManager`** — Redis TTL-based user presence (`user:{id}:online`,
-  120s), `@Scheduled` heartbeat refreshes TTL every 60s for active sessions
-- **`WebSocketAuthInterceptor`** — `ChannelInterceptor` on STOMP CONNECT: extracts
-  JWT from `Authorization` / `token` header, validates with Spring JwtDecoder, sets
-  user principal, registers presence in Redis
-- **`WebSocketEventListener`** — handles `SessionDisconnectEvent` to clean up Redis
-- **WebSocket** — STOMP endpoint `/ws/notifications` (SockJS), simple broker on
-  `/user`, app prefix `/app`, user destination prefix `/user`
-- **Kafka consumers** (all idempotent with DLQ, 3 retries):
-  - `job.events` (`notification-service-group`): `JobCreatedEvent` → populate
-    `JobClientCache`; `ProposalSubmittedEvent` → notify client; `ProposalAcceptedEvent`
-    → update freelancerId cache + notify freelancer
-  - `payment.events`: `PaymentCompletedEvent` → notify freelancer (looked up from
-    cache); `EscrowReleasedEvent` → notify freelancer with amount
-  - `matching.events`: `JobMatchedEvent` → notify client with match count
-  - `messaging.events`: `MessageSentEvent` → notify recipient unless active in
-    conversation (checked via Redis key `user:{id}:active-conversation`)
-- **REST API** (`/api/v1/notifications`):
-  - `GET /api/v1/notifications?unread=false&page=0&size=20`
-  - `PATCH /api/v1/notifications/{id}/read`
-  - `PATCH /api/v1/notifications/read-all`
-  - `GET /api/v1/notifications/preferences`
-  - `PUT /api/v1/notifications/preferences`
-  - `WS /ws/notifications`
-- **Flyway migration** `V1__create_notification_tables.sql` — notifications
-  (partial index on unread), notification_preferences, job_client_cache,
-  processed_events
-- **Dockerfile** (`infra/docker/Dockerfile.notification-service`) — multi-stage Java 25
-- **Docker Compose** notification-service on port 8086, depends on
-  postgres-notifications + kafka + redis
-- **`settings.gradle.kts`** updated to include `notification-service`
-
-### Step 3.1 — Matching Service (Rule-Based)
-
-#### Added
-- **Matching Service** module (`backend/matching-service/`) — rule-based freelancer
-  matching engine with async Kafka-driven processing
-- **Domain entities**:
-  - `MatchResult` — UUID PK, jobId (indexed), freelancerId (indexed), score
-    `NUMERIC(5,4)`, matchedSkills (`TEXT[]`), strategy (`RULE_BASED`/`AI_EMBEDDING`),
-    createdAt
-  - `FreelancerSkillCache` — local read-model: userId PK, skills (`TEXT[]` GIN
-    indexed), hourlyRate, averageRating, updatedAt
-  - `ProcessedEvent` — idempotent consumer deduplication
-- **`MatchingEngine`** interface + **`RuleBasedMatchingEngine`** implementation:
-  - Filters freelancers with at least 1 skill overlap
-  - Scoring formula: skillOverlap × 0.40 + budgetCompat × 0.20 + ratingScore × 0.25
-    + responseScore × 0.15 (placeholder 0.5), clamped to [0.0, 1.0]
-  - Returns top 20 matches sorted by score DESC
-- **`MatchingService`**:
-  - `processJobForMatching` — runs engine, saves results, publishes `JobMatchedEvent`
-    via outbox pattern
-  - `getMatchesForJob` / `getMatchesForFreelancer` — paginated retrieval
-- **Kafka consumers** (both idempotent, DLQ with 3 retries):
-  - `job.events` (`matching-service-group`) — on `JobCreatedEvent`, schedules matching
-    with 30-second delay via `ScheduledExecutorService`
-  - `user.events` (`matching-service-group`) — on `UserProfileUpdatedEvent`, upserts
-    `FreelancerSkillCache`
-- **Kafka producer**: `JobMatchedEvent` published to `matching.events` via outbox
-- **REST API** (`/api/v1/matches`):
-  - `GET /api/v1/matches?jobId={uuid}&limit=20`
-  - `GET /api/v1/matches?freelancerId={uuid}&limit=10`
-  - `GET /api/v1/matches/{id}`
-- **Resilience4j** circuit breaker pre-configured for future AI matching service
-  (`ai-matching`: 50% failure threshold, 30s open state, 10-event window)
-- **`GlobalExceptionHandler`** — 400, 404, 500 with traceId
-- **Flyway migration** `V1__create_matching_tables.sql` — freelancer_skill_cache
-  (GIN index on skills), match_results (indexes on job_id, freelancer_id, score),
-  processed_events, outbox_events
-- **Dockerfile** (`infra/docker/Dockerfile.matching-service`) — multi-stage Java 25
-- **Docker Compose** matching-service on port 8084, depends on postgres-matching + kafka
-- **`settings.gradle.kts`** updated to include `matching-service`
-
 ### Step 1.1 — Docker Compose: Core Infrastructure
 
 #### Added
@@ -488,3 +324,176 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     skills, hourly rate; click navigates to /users/{id}; paginated
 - **JobService** updated with `searchFreelancers` method for freelancer search
   API
+
+### Step 3.1 — Matching Service (Rule-Based)
+
+#### Added
+- **Matching Service** module (`backend/matching-service/`) — rule-based freelancer
+  matching engine with async Kafka-driven processing
+- **Domain entities**:
+  - `MatchResult` — UUID PK, jobId (indexed), freelancerId (indexed), score
+    `NUMERIC(5,4)`, matchedSkills (`TEXT[]`), strategy (`RULE_BASED`/`AI_EMBEDDING`),
+    createdAt
+  - `FreelancerSkillCache` — local read-model: userId PK, skills (`TEXT[]` GIN
+    indexed), hourlyRate, averageRating, updatedAt
+  - `ProcessedEvent` — idempotent consumer deduplication
+- **`MatchingEngine`** interface + **`RuleBasedMatchingEngine`** implementation:
+  - Filters freelancers with at least 1 skill overlap
+  - Scoring formula: skillOverlap × 0.40 + budgetCompat × 0.20 + ratingScore × 0.25
+    + responseScore × 0.15 (placeholder 0.5), clamped to [0.0, 1.0]
+  - Returns top 20 matches sorted by score DESC
+- **`MatchingService`**:
+  - `processJobForMatching` — runs engine, saves results, publishes `JobMatchedEvent`
+    via outbox pattern
+  - `getMatchesForJob` / `getMatchesForFreelancer` — paginated retrieval
+- **Kafka consumers** (both idempotent, DLQ with 3 retries):
+  - `job.events` (`matching-service-group`) — on `JobCreatedEvent`, schedules matching
+    with 30-second delay via `ScheduledExecutorService`
+  - `user.events` (`matching-service-group`) — on `UserProfileUpdatedEvent`, upserts
+    `FreelancerSkillCache`
+- **Kafka producer**: `JobMatchedEvent` published to `matching.events` via outbox
+- **REST API** (`/api/v1/matches`):
+  - `GET /api/v1/matches?jobId={uuid}&limit=20`
+  - `GET /api/v1/matches?freelancerId={uuid}&limit=10`
+  - `GET /api/v1/matches/{id}`
+- **Resilience4j** circuit breaker pre-configured for future AI matching service
+  (`ai-matching`: 50% failure threshold, 30s open state, 10-event window)
+- **`GlobalExceptionHandler`** — 400, 404, 500 with traceId
+- **Flyway migration** `V1__create_matching_tables.sql` — freelancer_skill_cache
+  (GIN index on skills), match_results (indexes on job_id, freelancer_id, score),
+  processed_events, outbox_events
+- **Dockerfile** (`infra/docker/Dockerfile.matching-service`) — multi-stage Java 25
+- **Docker Compose** matching-service on port 8084, depends on postgres-matching + kafka
+- **`settings.gradle.kts`** updated to include `matching-service`
+
+### Step 3.2 — Notification Service
+
+#### Added
+- **Notification Service** module (`backend/notification-service/`) — hybrid real-time +
+  push notification delivery with WebSocket STOMP, Redis presence, and Kafka consumers
+- **Domain entities**:
+  - `Notification` — UUID PK, userId (indexed), type (`NotificationType`), title
+    (max 200), body (TEXT), read flag (partial index on unread), actionUrl, createdAt
+  - `NotificationPreference` — userId PK, emailEnabled, pushEnabled,
+    realtimeEnabled, quietHoursStart/End (nullable `LocalTime`)
+  - `JobClientCache` — local read-model: jobId PK, clientId, title, freelancerId
+    (populated from Kafka events to avoid cross-service coupling)
+  - `ProcessedEvent` — idempotent consumer deduplication
+- **`NotificationDeliveryService`**:
+  - `createAndDeliver` — saves notification, loads preferences, sends via WebSocket
+    if user is online, otherwise logs FCM push placeholder
+  - `getNotifications` — paginated list with optional `unreadOnly` filter
+  - `markRead` / `markAllRead` — ownership-validated mark-as-read
+  - `getPreferences` / `savePreferences` — preference CRUD
+- **`WebSocketPresenceManager`** — Redis TTL-based user presence (`user:{id}:online`,
+  120s), `@Scheduled` heartbeat refreshes TTL every 60s for active sessions
+- **`WebSocketAuthInterceptor`** — `ChannelInterceptor` on STOMP CONNECT: extracts
+  JWT from `Authorization` / `token` header, validates with Spring JwtDecoder, sets
+  user principal, registers presence in Redis
+- **`WebSocketEventListener`** — handles `SessionDisconnectEvent` to clean up Redis
+- **WebSocket** — STOMP endpoint `/ws/notifications` (SockJS), simple broker on
+  `/user`, app prefix `/app`, user destination prefix `/user`
+- **Kafka consumers** (all idempotent with DLQ, 3 retries):
+  - `job.events` (`notification-service-group`): `JobCreatedEvent` → populate
+    `JobClientCache`; `ProposalSubmittedEvent` → notify client; `ProposalAcceptedEvent`
+    → update freelancerId cache + notify freelancer
+  - `payment.events`: `PaymentCompletedEvent` → notify freelancer (looked up from
+    cache); `EscrowReleasedEvent` → notify freelancer with amount
+  - `matching.events`: `JobMatchedEvent` → notify client with match count
+  - `messaging.events`: `MessageSentEvent` → notify recipient unless active in
+    conversation (checked via Redis key `user:{id}:active-conversation`)
+- **REST API** (`/api/v1/notifications`):
+  - `GET /api/v1/notifications?unread=false&page=0&size=20`
+  - `PATCH /api/v1/notifications/{id}/read`
+  - `PATCH /api/v1/notifications/read-all`
+  - `GET /api/v1/notifications/preferences`
+  - `PUT /api/v1/notifications/preferences`
+  - `WS /ws/notifications`
+- **Flyway migration** `V1__create_notification_tables.sql` — notifications
+  (partial index on unread), notification_preferences, job_client_cache,
+  processed_events
+- **Dockerfile** (`infra/docker/Dockerfile.notification-service`) — multi-stage Java 25
+- **Docker Compose** notification-service on port 8086, depends on
+  postgres-notifications + kafka + redis
+- **`settings.gradle.kts`** updated to include `notification-service`
+
+### Step 3.3 — Angular: Notification Bell & Real-Time
+
+#### Added
+- **`WebSocketService`** (`core/services/websocket.service.ts`) — `@stomp/stompjs` client
+  connecting to `ws://localhost:8080/ws/notifications/websocket` with JWT `Authorization`
+  header; auto-reconnect (2s delay); on disconnect starts 30s polling fallback via
+  `GET /api/v1/notifications?unread=true`; exposes `notifications$: Subject<NotificationPayload>`
+- **`NotificationService`** (`core/services/notification.service.ts`) — signal-based state:
+  `unreadCount = signal<number>(0)`, `notifications = signal<NotificationItem[]>([])`; `init()`
+  loads initial unread page and subscribes to `WebSocketService.notifications$`; methods:
+  `getNotifications`, `markAsRead` (tap decrements count), `markAllRead` (tap resets to 0),
+  `getPreferences`, `updatePreferences`
+- **`NotificationBellComponent`** (`shared/components/notification-bell/`) — standalone
+  `MatIconButton` with `MatBadge` showing live unread count (hidden when 0); opens `MatMenu`
+  overlay with: header + "Mark all read" button, last-10 notifications with type icon / title /
+  body / time-ago, unread dot indicator; click → `markAsRead` + navigate to `actionUrl`; footer
+  "View all notifications" → `/notifications`; CSS bell-pulse animation on new notification
+- **`NotificationListComponent`** (`features/notifications/`) — full-page `/notifications` view:
+  `MatButtonToggle` All/Unread filter, paginated list (`MatPaginator`), per-item type icon +
+  title + body + time-ago + unread indicator, click marks as read and navigates; inline
+  preferences section with `MatSlideToggle` for email / push / real-time (saved on toggle change)
+- **`main-layout.component.ts`** updated — replaced static bell button with
+  `<app-notification-bell>` in the toolbar
+
+### Step 4.1 — Payment Service: Stripe & Escrow
+
+#### Added
+- **Payment Service** module (`backend/payment-service/`) — financial escrow service with
+  Stripe integration, state machine, and idempotent webhook processing
+- **Domain entities**:
+  - `PaymentStatus` enum — `PENDING, FUNDED, RELEASED, COMPLETED, FAILED, REFUNDED, DISPUTED`
+    with enforced valid transitions via `canTransitionTo()` guard
+  - `Payment` — UUID PK, jobId (indexed), clientId, freelancerId, `NUMERIC(12,2)` amount,
+    currency `CHAR(3)`, `@Version` optimistic lock, `stripePaymentIntentId` (unique),
+    `idempotencyKey` (unique), createdAt/updatedAt via `@PrePersist`/`@PreUpdate`;
+    `transitionTo()` throws `IllegalStateException` on invalid state change
+  - `LedgerEntry` — immutable financial record: paymentId FK, `LedgerEntryType`
+    (`ESCROW_FUND, ESCROW_RELEASE, REFUND, FEE_DEDUCTION`), amount, currency, description
+  - `WebhookEvent` — String PK = Stripe event ID (e.g. `evt_1234…`); prevents duplicate
+    Stripe webhook processing
+- **`PaymentService`** (all writes `@Transactional`):
+  - `createPaymentIntent` — checks idempotencyKey uniqueness (409 if dup), calls Stripe
+    `PaymentIntent.create`, saves `Payment(PENDING)`, publishes `PaymentInitiatedEvent` via outbox
+  - `handleWebhook` — `Webhook.constructEvent` HMAC verification, skips if already in
+    `webhook_events`, handles `payment_intent.succeeded` (→ FUNDED + `ESCROW_FUND` ledger +
+    `PaymentCompletedEvent`) and `payment_intent.payment_failed` (→ FAILED)
+  - `releaseEscrow` — ownership check, FUNDED guard, → RELEASED → COMPLETED,
+    `ESCROW_RELEASE` ledger, `EscrowReleasedEvent` via outbox
+    *(TODO: real Stripe Transfer once freelancer accounts onboarded)*
+  - `requestRefund` — FUNDED guard, `Refund.create`, → REFUNDED, `REFUND` ledger entry
+- **`StripeClient`** — wraps all Stripe SDK calls; each method decorated with
+  `@CircuitBreaker(name="stripe")` + `@Retry(name="stripe")`;
+  `constructWebhookEvent` is local HMAC-only (no Resilience4j); fallback throws
+  `PaymentProviderUnavailableException`
+- **Resilience4j config** — circuit breaker: 50% failure threshold, 30s open wait, window 10;
+  retry: 3 attempts, 1s base, ×2 exponential; time limiter: 10s timeout
+- **`SecurityConfig`** — `/webhooks/stripe` is `permitAll()` (JWT-free);
+  all other endpoints require JWT; stateless session
+- **REST API** (`/api/v1/payments`):
+  - `POST /api/v1/payments` — create PaymentIntent, returns `{ paymentId, clientSecret }`
+  - `GET  /api/v1/payments?jobId={uuid}` — list payments for a job
+  - `POST /api/v1/payments/{id}/release` — release escrow (client only)
+  - `POST /api/v1/payments/{id}/refund` — request refund (FUNDED only)
+  - `POST /webhooks/stripe` — Stripe webhook (no JWT, signature-only auth)
+- **`GlobalExceptionHandler`** — RFC 9457 `ProblemDetail` for 404, 409, 422, 403, 503
+- **Flyway migration** `V1__create_payment_tables.sql` — payments (unique idempotency_key,
+  indexed job_id/status/client_id), ledger_entries, webhook_events, outbox_events
+- **Dockerfile** (`infra/docker/Dockerfile.payment-service`) — multi-stage Java 25
+- **Docker Compose** — payment-service on port 8083, depends on postgres-payments + kafka;
+  `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` env vars
+- **`settings.gradle.kts`** updated to include `payment-service`
+
+### Step 4.2 — Angular: Payment UI with Stripe.js
+
+#### Added
+- **`@stripe/stripe-js`** added to `package.json`; `stripePublishableKey` placeholder added to `environment.ts` and `environment.prod.ts`
+- **`PaymentService`** (`core/services/payment.service.ts`) — lazy singleton `loadStripe()`; `createPaymentIntent`, `getPaymentStatus`, `releaseEscrow`, `requestRefund`
+- **`PaymentDialogComponent`** (`features/payments/payment-dialog.component.ts`) — `MatDialog` with summary step → Stripe `PaymentElement` mount → `confirmPayment({ redirect: 'if_required' })`; inline Stripe error display
+- **`PaymentStatusComponent`** (`features/payments/payment-status.component.ts`) — color-coded status badge; Release / Refund actions shown to client when status is `FUNDED` (SweetAlert2 confirm)
+- **`job-detail`** updated — "Fund Escrow" banner after proposal accepted; `<app-payment-status>` rendered once payment record exists
