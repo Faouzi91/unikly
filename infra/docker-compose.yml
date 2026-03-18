@@ -416,6 +416,41 @@ services:
     networks:
       - unikly-net
 
+  # ============================================================
+  # NOTIFICATION SERVICE
+  # ============================================================
+  notification-service:
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.notification-service
+    container_name: unikly-notification-service
+    ports:
+      - "8086:8086"
+    depends_on:
+      postgres-notifications:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres-notifications
+      DB_PORT: 5432
+      DB_USER: unikly
+      DB_PASSWORD: ${DB_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KEYCLOAK_URL: http://keycloak:8080
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8086/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - unikly-net
+
 # ============================================================
 # VOLUMES
 # ============================================================

@@ -39,6 +39,57 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Step 3.2 — Notification Service
+
+#### Added
+- **Notification Service** module (`backend/notification-service/`) — hybrid real-time +
+  push notification delivery with WebSocket STOMP, Redis presence, and Kafka consumers
+- **Domain entities**:
+  - `Notification` — UUID PK, userId (indexed), type (`NotificationType`), title
+    (max 200), body (TEXT), read flag (partial index on unread), actionUrl, createdAt
+  - `NotificationPreference` — userId PK, emailEnabled, pushEnabled,
+    realtimeEnabled, quietHoursStart/End (nullable `LocalTime`)
+  - `JobClientCache` — local read-model: jobId PK, clientId, title, freelancerId
+    (populated from Kafka events to avoid cross-service coupling)
+  - `ProcessedEvent` — idempotent consumer deduplication
+- **`NotificationDeliveryService`**:
+  - `createAndDeliver` — saves notification, loads preferences, sends via WebSocket
+    if user is online, otherwise logs FCM push placeholder
+  - `getNotifications` — paginated list with optional `unreadOnly` filter
+  - `markRead` / `markAllRead` — ownership-validated mark-as-read
+  - `getPreferences` / `savePreferences` — preference CRUD
+- **`WebSocketPresenceManager`** — Redis TTL-based user presence (`user:{id}:online`,
+  120s), `@Scheduled` heartbeat refreshes TTL every 60s for active sessions
+- **`WebSocketAuthInterceptor`** — `ChannelInterceptor` on STOMP CONNECT: extracts
+  JWT from `Authorization` / `token` header, validates with Spring JwtDecoder, sets
+  user principal, registers presence in Redis
+- **`WebSocketEventListener`** — handles `SessionDisconnectEvent` to clean up Redis
+- **WebSocket** — STOMP endpoint `/ws/notifications` (SockJS), simple broker on
+  `/user`, app prefix `/app`, user destination prefix `/user`
+- **Kafka consumers** (all idempotent with DLQ, 3 retries):
+  - `job.events` (`notification-service-group`): `JobCreatedEvent` → populate
+    `JobClientCache`; `ProposalSubmittedEvent` → notify client; `ProposalAcceptedEvent`
+    → update freelancerId cache + notify freelancer
+  - `payment.events`: `PaymentCompletedEvent` → notify freelancer (looked up from
+    cache); `EscrowReleasedEvent` → notify freelancer with amount
+  - `matching.events`: `JobMatchedEvent` → notify client with match count
+  - `messaging.events`: `MessageSentEvent` → notify recipient unless active in
+    conversation (checked via Redis key `user:{id}:active-conversation`)
+- **REST API** (`/api/v1/notifications`):
+  - `GET /api/v1/notifications?unread=false&page=0&size=20`
+  - `PATCH /api/v1/notifications/{id}/read`
+  - `PATCH /api/v1/notifications/read-all`
+  - `GET /api/v1/notifications/preferences`
+  - `PUT /api/v1/notifications/preferences`
+  - `WS /ws/notifications`
+- **Flyway migration** `V1__create_notification_tables.sql` — notifications
+  (partial index on unread), notification_preferences, job_client_cache,
+  processed_events
+- **Dockerfile** (`infra/docker/Dockerfile.notification-service`) — multi-stage Java 25
+- **Docker Compose** notification-service on port 8086, depends on
+  postgres-notifications + kafka + redis
+- **`settings.gradle.kts`** updated to include `notification-service`
+
 ### Step 3.1 — Matching Service (Rule-Based)
 
 #### Added
