@@ -93,3 +93,34 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Dockerfile** (`infra/docker/Dockerfile.gateway`) — multi-stage build with
   Java 25
 - **Docker Compose** gateway service on port 8080, depends on Keycloak and Redis
+
+### Step 2.1 — User Profile Service
+
+#### Added
+- **User Profile Service** module (`backend/user-service/`) — full DDD package
+  structure: `domain`, `application`, `infrastructure`, `api`
+- **Domain entities**:
+  - `UserProfile` — UUID PK (same as Keycloak userId), display name, bio, avatar,
+    role (CLIENT/FREELANCER), skills (PostgreSQL TEXT[]), hourly rate, currency,
+    location, portfolio links (TEXT[]), average rating, total reviews, optimistic
+    locking (`@Version`)
+  - `Review` — reviewer/reviewee/job UUIDs, rating (1–5), comment, timestamp
+- **Application services**:
+  - `UserProfileService` — create/update profile, get profile, search freelancers
+    by skill, publishes `UserProfileUpdatedEvent` via outbox pattern
+  - `ReviewService` — create review (self-review validation), auto-recalculates
+    `averageRating` and `totalReviews` on reviewee profile
+- **REST API** (`/api/users`):
+  - `GET /me` — current user's profile
+  - `PUT /me` — update current user's profile
+  - `GET /{id}` — public profile
+  - `GET ?role=FREELANCER&skill=Angular&page=0&size=20` — search freelancers
+  - `POST /{id}/reviews` — submit a review
+  - `GET /{id}/reviews?page=0&size=10` — list reviews
+- **GlobalExceptionHandler** — 400 (validation), 404, 409 (optimistic lock), 500
+  with traceId
+- **MapStruct mappers** for entity ↔ DTO conversion
+- **Flyway migration** `V1__create_user_tables.sql` — user_profiles, reviews,
+  outbox_events tables with indexes
+- **Dockerfile** (`infra/docker/Dockerfile.user-service`) — multi-stage Java 25
+- **Docker Compose** user-service on port 8082, depends on postgres-users + kafka
