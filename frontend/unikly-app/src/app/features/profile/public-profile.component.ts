@@ -1,12 +1,13 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { StarRatingComponent } from '../../shared/components/star-rating/star-rating.component';
 import { SkillChipsComponent } from '../../shared/components/skill-chips/skill-chips.component';
@@ -14,6 +15,8 @@ import { UserAvatarComponent } from '../../shared/components/user-avatar/user-av
 import { TimeAgoPipe } from '../../shared/pipes/time-ago.pipe';
 import { UserService } from './services/user.service';
 import { UserProfile, Review } from './models/user.models';
+import { MessagingService } from '../messaging/services/messaging.service';
+import { KeycloakService } from '../../core/auth/keycloak.service';
 
 @Component({
   selector: 'app-public-profile',
@@ -25,6 +28,7 @@ import { UserProfile, Review } from './models/user.models';
     MatIconModule,
     MatDividerModule,
     MatPaginatorModule,
+    MatProgressSpinnerModule,
     StarRatingComponent,
     SkillChipsComponent,
     UserAvatarComponent,
@@ -34,10 +38,14 @@ import { UserProfile, Review } from './models/user.models';
 })
 export class PublicProfileComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly userService = inject(UserService);
+  private readonly messagingService = inject(MessagingService);
+  private readonly keycloak = inject(KeycloakService);
 
   profile: UserProfile | null = null;
   loading = true;
+  startingConversation = signal(false);
 
   reviews: Review[] = [];
   reviewsPage = 0;
@@ -47,6 +55,26 @@ export class PublicProfileComponent implements OnInit {
   ngOnInit(): void {
     const userId = this.route.snapshot.paramMap.get('id')!;
     this.loadProfile(userId);
+  }
+
+  sendMessage(): void {
+    if (!this.profile) return;
+    const currentUserId = this.keycloak.getUserId();
+    if (!currentUserId) {
+      this.keycloak.login();
+      return;
+    }
+
+    this.startingConversation.set(true);
+    this.messagingService
+      .getOrCreateConversation([currentUserId, this.profile.id])
+      .subscribe({
+        next: (conversation) => {
+          this.startingConversation.set(false);
+          this.router.navigate(['/messages', conversation.id]);
+        },
+        error: () => this.startingConversation.set(false),
+      });
   }
 
   private loadProfile(userId: string): void {

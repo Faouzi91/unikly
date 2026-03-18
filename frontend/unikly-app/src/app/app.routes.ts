@@ -38,8 +38,8 @@ export const routes: Routes = [
       {
         path: 'messages',
         loadComponent: () =>
-          import('./features/messaging/messaging.component').then(
-            (m) => m.MessagingComponent
+          import('./features/messaging/conversation-list.component').then(
+            (m) => m.ConversationListComponent
           ),
         canActivate: [authGuard],
       },

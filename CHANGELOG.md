@@ -513,3 +513,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`Dockerfile.messaging-service`** (`infra/docker/`) — multi-stage eclipse-temurin:25
 - **`docker-compose.yml`** updated — `messaging-service` on port 8085 with Postgres, Kafka, and Redis deps
 - **`settings.gradle.kts`** updated — added `include("messaging-service")`
+
+### Step 4.4 — Angular: Chat Interface
+
+#### Added
+
+- **`MessageWebSocketService`** (`core/services/message-websocket.service.ts`) — STOMP client connecting to `/ws/messages`; exposes `messages$` and `typing$` subjects; `sendTypingIndicator(conversationId, recipientId)` publishes to `/app/typing`
+- **`MessagingService`** (`features/messaging/services/messaging.service.ts`) — `getConversations`, `getMessages`, `sendMessage`, `markAsRead`, `getOrCreateConversation` via REST API
+- **`ConversationListComponent`** (`features/messaging/conversation-list.component.ts`) — `/messages` route; lists conversations sorted by `lastMessageAt DESC`; real-time reordering on incoming WS message; empty state
+- **`ConversationComponent`** (`features/messaging/conversation.component.ts`) — `/messages/:id` route; chat bubble layout (sent right/indigo, received left/gray); real-time WS delivery; typing indicator animation; send-on-Enter / Shift+Enter newline; infinite scroll up for older messages via `IntersectionObserver`; auto-read on open; read receipt `done_all` icon
+- **`public-profile.component`** updated — "Send Message" button calls `getOrCreateConversation` then navigates to `/messages/:id`
+- **`app.routes.ts`** updated — `/messages` now loads `ConversationListComponent`
