@@ -8,6 +8,10 @@ import com.unikly.jobservice.api.dto.StatusTransitionRequest;
 import com.unikly.jobservice.api.dto.UpdateJobRequest;
 import com.unikly.jobservice.application.JobService;
 import com.unikly.jobservice.domain.JobStatus;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,11 +31,16 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
+@Tag(name = "Jobs", description = "Job lifecycle management")
 public class JobController {
 
     private final JobService jobService;
 
     @PostMapping
+    @Operation(summary = "Create a new job", description = "Creates a job posting. Requires CLIENT role.")
+    @ApiResponse(responseCode = "201", description = "Job created")
+    @ApiResponse(responseCode = "400", description = "Validation failed")
+    @ApiResponse(responseCode = "403", description = "Forbidden — not a client")
     public ResponseEntity<JobResponse> createJob(@Valid @RequestBody CreateJobRequest request) {
         UUID clientId = UserContext.getUserId();
         UserContext.requireRole("ROLE_CLIENT");
@@ -40,33 +49,49 @@ public class JobController {
     }
 
     @GetMapping
+    @Operation(summary = "List jobs", description = "Returns a paginated list of jobs with optional filters")
+    @ApiResponse(responseCode = "200", description = "Jobs retrieved")
     public ResponseEntity<PageResponse<JobResponse>> listJobs(
-            @RequestParam(required = false) JobStatus status,
-            @RequestParam(required = false) String skill,
-            @RequestParam(required = false) BigDecimal minBudget,
-            @RequestParam(required = false) BigDecimal maxBudget,
-            @RequestParam(defaultValue = "createdAt") String sort,
-            @RequestParam(defaultValue = "desc") String direction,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @Parameter(description = "Filter by job status") @RequestParam(required = false) JobStatus status,
+            @Parameter(description = "Filter by required skill") @RequestParam(required = false) String skill,
+            @Parameter(description = "Minimum budget") @RequestParam(required = false) BigDecimal minBudget,
+            @Parameter(description = "Maximum budget") @RequestParam(required = false) BigDecimal maxBudget,
+            @Parameter(description = "Sort field") @RequestParam(defaultValue = "createdAt") String sort,
+            @Parameter(description = "Sort direction: asc or desc") @RequestParam(defaultValue = "desc") String direction,
+            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(jobService.listJobs(status, skill, minBudget, maxBudget, sort, direction, page, size));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<JobResponse> getJob(@PathVariable UUID id) {
+    @Operation(summary = "Get a job by ID")
+    @ApiResponse(responseCode = "200", description = "Job found")
+    @ApiResponse(responseCode = "404", description = "Job not found")
+    public ResponseEntity<JobResponse> getJob(
+            @Parameter(description = "Job UUID") @PathVariable UUID id) {
         return ResponseEntity.ok(jobService.getJob(id));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<JobResponse> updateJob(@PathVariable UUID id,
-                                                  @Valid @RequestBody UpdateJobRequest request) {
+    @Operation(summary = "Update a job", description = "Partial update of job fields. Only the owning client may update.")
+    @ApiResponse(responseCode = "200", description = "Job updated")
+    @ApiResponse(responseCode = "400", description = "Validation failed")
+    @ApiResponse(responseCode = "403", description = "Forbidden")
+    @ApiResponse(responseCode = "404", description = "Job not found")
+    public ResponseEntity<JobResponse> updateJob(
+            @Parameter(description = "Job UUID") @PathVariable UUID id,
+            @Valid @RequestBody UpdateJobRequest request) {
         UUID clientId = UserContext.getUserId();
         return ResponseEntity.ok(jobService.updateJob(id, clientId, request));
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<JobResponse> transitionStatus(@PathVariable UUID id,
-                                                         @Valid @RequestBody StatusTransitionRequest request) {
+    @Operation(summary = "Transition job status", description = "Move the job through its lifecycle state machine")
+    @ApiResponse(responseCode = "200", description = "Status updated")
+    @ApiResponse(responseCode = "409", description = "Invalid status transition")
+    public ResponseEntity<JobResponse> transitionStatus(
+            @Parameter(description = "Job UUID") @PathVariable UUID id,
+            @Valid @RequestBody StatusTransitionRequest request) {
         UUID userId = UserContext.getUserId();
         return ResponseEntity.ok(jobService.transitionStatus(id, userId, request.status()));
     }

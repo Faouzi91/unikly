@@ -18,6 +18,7 @@ dependencies {
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
 
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.0")
     implementation("com.stripe:stripe-java:28.2.0")
     implementation("io.github.resilience4j:resilience4j-spring-boot3:2.3.0") {
         exclude(group = "org.springframework.boot", module = "spring-boot-starter-aop")

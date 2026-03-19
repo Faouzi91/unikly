@@ -122,6 +122,25 @@ spring:
           predicates:
             - Path=/ws/**
 
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: Job Service
+        url: /api/jobs/api-docs
+      - name: User Service
+        url: /api/users/api-docs
+      - name: Payment Service
+        url: /api/payments/api-docs
+      - name: Matching Service
+        url: /api/matches/api-docs
+      - name: Messaging Service
+        url: /api/messages/api-docs
+      - name: Notification Service
+        url: /api/notifications/api-docs
+      - name: Search Service
+        url: /api/search/api-docs
+
   security:
     oauth2:
       resourceserver:

@@ -23,6 +23,12 @@ spring:
     template:
       observation-enabled: true
 
+springdoc:
+  api-docs:
+    path: /api/search/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
 services:
   user-service:
     url: ${USER_SERVICE_URL:http://localhost:8082}

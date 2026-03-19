@@ -12,4 +12,5 @@ dependencies {
     implementation("io.micrometer:micrometer-tracing-bridge-otel")
     implementation("io.opentelemetry:opentelemetry-exporter-otlp")
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webflux-api:2.8.0")
 }

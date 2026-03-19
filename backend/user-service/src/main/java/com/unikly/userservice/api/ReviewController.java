@@ -5,6 +5,10 @@ import com.unikly.common.security.UserContext;
 import com.unikly.userservice.api.dto.ReviewRequest;
 import com.unikly.userservice.api.dto.ReviewResponse;
 import com.unikly.userservice.application.ReviewService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,13 +26,17 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Tag(name = "Reviews", description = "User reviews and ratings")
 public class ReviewController {
 
     private final ReviewService reviewService;
 
     @PostMapping("/{id}/reviews")
+    @Operation(summary = "Create a review", description = "Submit a review for a user after completing a contract")
+    @ApiResponse(responseCode = "201", description = "Review created")
+    @ApiResponse(responseCode = "400", description = "Validation failed")
     public ResponseEntity<ReviewResponse> createReview(
-            @PathVariable UUID id,
+            @Parameter(description = "Reviewed user UUID") @PathVariable UUID id,
             @Valid @RequestBody ReviewRequest request) {
         UUID reviewerId = UserContext.getUserId();
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -36,10 +44,12 @@ public class ReviewController {
     }
 
     @GetMapping("/{id}/reviews")
+    @Operation(summary = "List reviews for a user")
+    @ApiResponse(responseCode = "200", description = "Reviews retrieved")
     public ResponseEntity<PageResponse<ReviewResponse>> getReviews(
-            @PathVariable UUID id,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @Parameter(description = "User UUID") @PathVariable UUID id,
+            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(reviewService.getReviews(id, page, size));
     }
 }

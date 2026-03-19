@@ -576,3 +576,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Kafka DLQ routing** — all 6 consumer services have `KafkaConfig` with `DeadLetterPublishingRecoverer` and 3 retries at 1s backoff ✅
 - **Idempotent consumers** — all consumers check `processedEventRepository.existsById()` before processing ✅
 - **Unique consumer group IDs** — each service has distinct `groupId` ✅
+
+### Step 5.4 — OpenAPI Documentation
+
+#### Added
+
+- **`springdoc-openapi-starter-webmvc-ui:2.8.0`** dependency added to all 7 backend services (job, user, payment, matching, messaging, notification, search)
+- **`springdoc-openapi-starter-webflux-api:2.8.0`** dependency added to gateway
+- **`OpenApiConfig`** (`@OpenAPIDefinition` + JWT `@SecurityScheme`) created in each of the 7 services with service-specific title and description
+- **`@Tag`, `@Operation`, `@ApiResponse`, `@Parameter`** annotations added to all controllers: `JobController`, `ProposalController`, `UserProfileController`, `ReviewController`, `PaymentController`, `MatchController`, `ConversationController`, `NotificationController`, `SearchController`
+- **`@Schema`** annotations added to key DTOs: `CreateJobRequest`, `JobResponse`, `SubmitProposalRequest`, `UserProfileRequest`, `CreatePaymentRequest`, `JobSearchResult`, `FreelancerSearchResult`
+
+#### Changed
+
+- **`springdoc.api-docs.path`** per service configured to match the gateway's routing prefix (e.g., `/api/jobs/api-docs`, `/api/users/api-docs`) enabling transparent proxy via existing gateway predicates
+- **Gateway `application.yml`** — added `springdoc.swagger-ui.urls` block listing all 7 service api-docs endpoints; users visit `http://localhost:8080/swagger-ui.html` and select any service from the dropdown

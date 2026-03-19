@@ -34,6 +34,12 @@ spring:
         jwt:
           issuer-uri: ${KEYCLOAK_URL:http://localhost:8180}/realms/unikly
 
+springdoc:
+  api-docs:
+    path: /api/users/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
 management:
   endpoints:
     web:

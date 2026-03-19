@@ -2,6 +2,10 @@ package com.unikly.matchingservice.api;
 
 import com.unikly.matchingservice.api.dto.MatchResultResponse;
 import com.unikly.matchingservice.application.MatchingService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,19 +20,22 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/matches")
 @RequiredArgsConstructor
+@Tag(name = "Matching", description = "AI-powered freelancer-job matching")
 public class MatchController {
 
     private final MatchingService matchingService;
 
-    /**
-     * GET /api/v1/matches?jobId={uuid}&limit=20
-     * GET /api/v1/matches?freelancerId={uuid}&limit=10
-     */
     @GetMapping
+    @Operation(
+            summary = "Get matches",
+            description = "Returns ranked match results for a job (by jobId) or for a freelancer (by freelancerId). Exactly one query param must be provided."
+    )
+    @ApiResponse(responseCode = "200", description = "Matches retrieved")
+    @ApiResponse(responseCode = "400", description = "Neither jobId nor freelancerId provided")
     public ResponseEntity<List<MatchResultResponse>> getMatches(
-            @RequestParam(required = false) UUID jobId,
-            @RequestParam(required = false) UUID freelancerId,
-            @RequestParam(defaultValue = "20") int limit) {
+            @Parameter(description = "Job UUID — find matching freelancers") @RequestParam(required = false) UUID jobId,
+            @Parameter(description = "Freelancer UUID — find matching jobs") @RequestParam(required = false) UUID freelancerId,
+            @Parameter(description = "Maximum number of results") @RequestParam(defaultValue = "20") int limit) {
 
         if (jobId != null) {
             var results = matchingService.getMatchesForJob(jobId, limit).stream()
@@ -47,9 +54,12 @@ public class MatchController {
         return ResponseEntity.badRequest().build();
     }
 
-    /** GET /api/v1/matches/{id} */
     @GetMapping("/{id}")
-    public ResponseEntity<MatchResultResponse> getMatch(@PathVariable UUID id) {
+    @Operation(summary = "Get a match result by ID")
+    @ApiResponse(responseCode = "200", description = "Match result retrieved")
+    @ApiResponse(responseCode = "404", description = "Match not found")
+    public ResponseEntity<MatchResultResponse> getMatch(
+            @Parameter(description = "Match UUID") @PathVariable UUID id) {
         return ResponseEntity.ok(MatchResultResponse.from(matchingService.getMatch(id)));
     }
 }

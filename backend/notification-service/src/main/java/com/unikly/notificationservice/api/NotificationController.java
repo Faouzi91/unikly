@@ -7,6 +7,10 @@ import com.unikly.notificationservice.api.dto.NotificationPreferenceResponse;
 import com.unikly.notificationservice.api.dto.NotificationResponse;
 import com.unikly.notificationservice.application.NotificationDeliveryService;
 import com.unikly.notificationservice.domain.NotificationPreference;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -25,16 +29,18 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/notifications")
 @RequiredArgsConstructor
+@Tag(name = "Notifications", description = "User notification delivery and preferences")
 public class NotificationController {
 
     private final NotificationDeliveryService deliveryService;
 
-    /** GET /api/v1/notifications?unread=true&page=0&size=20 */
     @GetMapping
+    @Operation(summary = "List notifications", description = "Returns paginated notifications for the current user, optionally filtered to unread only")
+    @ApiResponse(responseCode = "200", description = "Notifications retrieved")
     public ResponseEntity<PageResponse<NotificationResponse>> getNotifications(
-            @RequestParam(defaultValue = "false") boolean unread,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @Parameter(description = "Return only unread notifications") @RequestParam(defaultValue = "false") boolean unread,
+            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
 
         UUID userId = UserContext.getUserId();
         var notifications = deliveryService.getNotifications(userId, unread, PageRequest.of(page, size));
@@ -47,30 +53,36 @@ public class NotificationController {
         return ResponseEntity.ok(response);
     }
 
-    /** PATCH /api/v1/notifications/{id}/read */
     @PatchMapping("/{id}/read")
-    public ResponseEntity<NotificationResponse> markRead(@PathVariable UUID id) {
+    @Operation(summary = "Mark notification as read")
+    @ApiResponse(responseCode = "200", description = "Notification marked as read")
+    @ApiResponse(responseCode = "404", description = "Notification not found")
+    public ResponseEntity<NotificationResponse> markRead(
+            @Parameter(description = "Notification UUID") @PathVariable UUID id) {
         UUID userId = UserContext.getUserId();
         return ResponseEntity.ok(NotificationResponse.from(deliveryService.markRead(id, userId)));
     }
 
-    /** PATCH /api/v1/notifications/read-all */
     @PatchMapping("/read-all")
+    @Operation(summary = "Mark all notifications as read")
+    @ApiResponse(responseCode = "200", description = "All notifications marked as read")
     public ResponseEntity<Map<String, Object>> markAllRead() {
         UUID userId = UserContext.getUserId();
         int count = deliveryService.markAllRead(userId);
         return ResponseEntity.ok(Map.of("markedRead", count));
     }
 
-    /** GET /api/v1/notifications/preferences */
     @GetMapping("/preferences")
+    @Operation(summary = "Get notification preferences")
+    @ApiResponse(responseCode = "200", description = "Preferences retrieved")
     public ResponseEntity<NotificationPreferenceResponse> getPreferences() {
         UUID userId = UserContext.getUserId();
         return ResponseEntity.ok(NotificationPreferenceResponse.from(deliveryService.getPreferences(userId)));
     }
 
-    /** PUT /api/v1/notifications/preferences */
     @PutMapping("/preferences")
+    @Operation(summary = "Update notification preferences")
+    @ApiResponse(responseCode = "200", description = "Preferences updated")
     public ResponseEntity<NotificationPreferenceResponse> updatePreferences(
             @RequestBody NotificationPreferenceRequest request) {
 

@@ -43,6 +43,12 @@ spring:
         jwt:
           issuer-uri: ${KEYCLOAK_URL:http://localhost:8180}/realms/unikly
 
+springdoc:
+  api-docs:
+    path: /api/payments/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
 stripe:
   secret-key: ${STRIPE_SECRET_KEY:sk_test_placeholder}
   webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_placeholder}
