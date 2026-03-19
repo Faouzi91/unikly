@@ -5,6 +5,38 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [6.2.0] - 2026-03-19
+
+### Step 6.2 — Nginx & Production Docker Compose
+
+#### Added
+
+- **`infra/docker-compose.prod.yml`** — production override:
+  - `restart: unless-stopped` on all services
+  - Memory limits: gateway 512 MB, each backend service 768 MB, Kafka 1 GB,
+    Elasticsearch 1 GB, each PostgreSQL 256 MB, matching-ai 1 GB, Redis 256 MB, nginx 128 MB
+  - JSON-file logging (`max-size: 10m`, `max-file: 3`) on all services
+  - `SPRING_JPA_HIBERNATE_DDL_AUTO=validate` environment override on all Spring JPA services
+  - `nginx` service (Dockerfile.frontend) exposed on port 80 as the sole external entry point
+- **`Makefile`** — root-level developer shortcuts: `dev`, `dev-logs`, `dev-monitor`, `prod`,
+  `build`, `down`, `clean`, `test`, `status`
+- **`build.sh`** — end-to-end build script: Gradle `bootJar` → Angular production build →
+  `docker compose build`
+
+#### Updated
+
+- **`infra/nginx/nginx.conf`** — rewritten as a full nginx config:
+  - `worker_processes auto`, `worker_connections 1024`
+  - Gzip compression for HTML, JS, CSS, JSON
+  - Security headers: `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`,
+    `Referrer-Policy`
+  - Static asset caching (`Cache-Control: public, immutable`, `expires 1y`)
+  - `/api/` proxy, `/ws/` WebSocket proxy, `/webhooks/` Stripe webhook proxy → gateway
+- **`infra/docker/Dockerfile.frontend`** — updated nginx config COPY destination to
+  `/etc/nginx/nginx.conf` (full-config path, matching the rewritten nginx.conf format)
+
+---
+
 ## [6.1.0] - 2026-03-19
 
 ### Step 6.1 — AI Matching Microservice (Python/FastAPI)

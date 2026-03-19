@@ -1,0 +1,303 @@
+# Production override — use alongside docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# What this file adds / changes:
+#   - restart: unless-stopped on every service
+#   - Memory limits per service
+#   - Structured JSON logging (json-file, max 10 MB × 3 files)
+#   - Nginx reverse proxy as the sole externally exposed entry point (port 80)
+#   - ddl-auto=validate on all Spring JPA services (safety guard in prod)
+
+services:
+
+  # ── Infrastructure ────────────────────────────────────────────────────────
+
+  postgres-keycloak:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  keycloak:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  kafka:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  kafka-init:
+    restart: "no"
+
+  postgres-jobs:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres-users:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres-payments:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres-matching:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres-messaging:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres-notifications:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  elasticsearch:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Application services ──────────────────────────────────────────────────
+
+  gateway:
+    restart: unless-stopped
+    environment:
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  user-service:
+    restart: unless-stopped
+    environment:
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  job-service:
+    restart: unless-stopped
+    environment:
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  payment-service:
+    restart: unless-stopped
+    environment:
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  matching-service:
+    restart: unless-stopped
+    environment:
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  messaging-service:
+    restart: unless-stopped
+    environment:
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  search-service:
+    restart: unless-stopped
+    environment:
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  notification-service:
+    restart: unless-stopped
+    environment:
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  matching-ai:
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── Nginx reverse proxy (production entry point) ──────────────────────────
+
+  nginx:
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.frontend
+    container_name: unikly-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - unikly-net
+
+networks:
+  unikly-net:
+    external: true
