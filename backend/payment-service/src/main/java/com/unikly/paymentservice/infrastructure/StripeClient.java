@@ -42,6 +42,8 @@ public class StripeClient {
 
             com.stripe.net.RequestOptions options = com.stripe.net.RequestOptions.builder()
                     .setIdempotencyKey(idempotencyKey)
+                    .setReadTimeout(5000)
+                    .setConnectTimeout(5000)
                     .build();
 
             return PaymentIntent.create(params, options);

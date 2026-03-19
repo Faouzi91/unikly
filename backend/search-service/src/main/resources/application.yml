@@ -31,7 +31,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,prometheus,info,metrics
+        include: health,prometheus,info,metrics,circuitbreakers
   endpoint:
     health:
       show-details: always

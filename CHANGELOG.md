@@ -552,3 +552,27 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`infra/tempo/tempo.yaml`** — Grafana Tempo config; OTLP HTTP receiver on `0.0.0.0:4318`; local trace storage under `/var/tempo`; 48-hour block retention
 - **`docker-compose.monitoring.yml`** updated — `unikly-tempo` service (ports 4318 OTLP HTTP, 3200 query UI); Grafana `depends_on` tempo; `unikly-tempo-data` volume
 - **`infra/grafana/provisioning/datasources.yml`** updated — Tempo datasource added (`http://tempo:3200`); service map linked to Prometheus; node graph enabled
+
+### Step 5.3 — Resilience Patterns Audit
+
+#### Added
+
+- **`AiMatchingClient`** (`matching-service/application/`) — `@CircuitBreaker(name="ai-matching")` placeholder for Step 6.1 AI service; always falls back to `RuleBasedMatchingEngine` until `matching-ai:8090` is deployed; logs "AI unavailable, using rule-based"
+- **`MatchingService`** updated — injects `AiMatchingClient` instead of `MatchingEngine` directly so all matching calls are CB-protected
+- **`SearchUnavailableException`** + **`GlobalExceptionHandler`** (`search-service/api/`) — Elasticsearch failures map to 503 `"Search temporarily unavailable"`
+- **`SearchService`** updated — `searchJobs()` and `searchFreelancers()` wrapped in try-catch; throws `SearchUnavailableException` on ES error
+
+#### Changed
+
+- **`StripeClient`** (`payment-service`) — `createPaymentIntent` sets `readTimeout=5000ms` and `connectTimeout=5000ms` on Stripe SDK `RequestOptions`
+- **`payment-service/application.yml`** — actuator exposure extended with `circuitbreakers,retries`
+- **`matching-service/application.yml`** — actuator exposure extended with `circuitbreakers,retries`
+- **`search-service/application.yml`** — actuator exposure extended with `circuitbreakers`
+
+#### Verified (already in place)
+
+- **Gateway** — all 7 routes have `CircuitBreaker` filter; `FallbackController` returns `503 { error, service }` ✅
+- **StripeClient** — `@CircuitBreaker(name="stripe")` + `@Retry(name="stripe")` on all Stripe calls; `PaymentProviderUnavailableException` → 503 ✅
+- **Kafka DLQ routing** — all 6 consumer services have `KafkaConfig` with `DeadLetterPublishingRecoverer` and 3 retries at 1s backoff ✅
+- **Idempotent consumers** — all consumers check `processedEventRepository.existsById()` before processing ✅
+- **Unique consumer group IDs** — each service has distinct `groupId` ✅

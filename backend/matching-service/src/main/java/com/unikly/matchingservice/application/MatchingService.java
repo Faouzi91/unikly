@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class MatchingService {
 
-    private final MatchingEngine matchingEngine;
+    private final AiMatchingClient aiMatchingClient;
     private final MatchResultRepository matchResultRepository;
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
@@ -41,12 +41,12 @@ public class MatchingService {
     @Value("${matching.max-results:20}")
     private int maxResults;
 
-    public MatchingService(MatchingEngine matchingEngine,
+    public MatchingService(AiMatchingClient aiMatchingClient,
                            MatchResultRepository matchResultRepository,
                            OutboxRepository outboxRepository,
                            ObjectMapper objectMapper,
                            MeterRegistry meterRegistry) {
-        this.matchingEngine = matchingEngine;
+        this.aiMatchingClient = aiMatchingClient;
         this.matchResultRepository = matchResultRepository;
         this.outboxRepository = outboxRepository;
         this.objectMapper = objectMapper;
@@ -72,7 +72,7 @@ public class MatchingService {
             matchResultRepository.deleteByJobId(event.jobId());
 
             List<MatchResult> results = matchingDurationTimer.record(() ->
-                    matchingEngine.computeMatches(
+                    aiMatchingClient.computeMatches(
                             event.jobId(),
                             event.title(),
                             event.description(),

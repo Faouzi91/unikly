@@ -11,6 +11,7 @@ import co.elastic.clients.json.JsonData;
 import com.unikly.common.dto.PageResponse;
 import com.unikly.searchservice.api.dto.FreelancerSearchResult;
 import com.unikly.searchservice.api.dto.JobSearchResult;
+import com.unikly.searchservice.api.exception.SearchUnavailableException;
 import com.unikly.searchservice.domain.FreelancerDocument;
 import com.unikly.searchservice.domain.JobDocument;
 import lombok.RequiredArgsConstructor;
@@ -91,16 +92,18 @@ public class SearchService {
                 .withSort(s -> s.field(f -> f.field("createdAt").order(co.elastic.clients.elasticsearch._types.SortOrder.Desc)))
                 .build();
 
-        var hits = elasticsearchOperations.search(nativeQuery, JobDocument.class);
-
-        var results = hits.getSearchHits().stream()
-                .map(hit -> toJobSearchResult(hit.getContent(), hit.getScore()))
-                .toList();
-
-        long totalHits = hits.getTotalHits();
-        int totalPages = (int) Math.ceil((double) totalHits / size);
-
-        return new PageResponse<>(results, page, size, totalHits, totalPages);
+        try {
+            var hits = elasticsearchOperations.search(nativeQuery, JobDocument.class);
+            var results = hits.getSearchHits().stream()
+                    .map(hit -> toJobSearchResult(hit.getContent(), hit.getScore()))
+                    .toList();
+            long totalHits = hits.getTotalHits();
+            int totalPages = (int) Math.ceil((double) totalHits / size);
+            return new PageResponse<>(results, page, size, totalHits, totalPages);
+        } catch (Exception e) {
+            log.error("Elasticsearch job search failed", e);
+            throw new SearchUnavailableException("Search temporarily unavailable");
+        }
     }
 
     public PageResponse<FreelancerSearchResult> searchFreelancers(String query, List<String> skills,
@@ -138,16 +141,18 @@ public class SearchService {
                 .withSort(s -> s.field(f -> f.field("averageRating").order(co.elastic.clients.elasticsearch._types.SortOrder.Desc)))
                 .build();
 
-        var hits = elasticsearchOperations.search(nativeQuery, FreelancerDocument.class);
-
-        var results = hits.getSearchHits().stream()
-                .map(hit -> toFreelancerSearchResult(hit.getContent(), hit.getScore()))
-                .toList();
-
-        long totalHits = hits.getTotalHits();
-        int totalPages = (int) Math.ceil((double) totalHits / size);
-
-        return new PageResponse<>(results, page, size, totalHits, totalPages);
+        try {
+            var hits = elasticsearchOperations.search(nativeQuery, FreelancerDocument.class);
+            var results = hits.getSearchHits().stream()
+                    .map(hit -> toFreelancerSearchResult(hit.getContent(), hit.getScore()))
+                    .toList();
+            long totalHits = hits.getTotalHits();
+            int totalPages = (int) Math.ceil((double) totalHits / size);
+            return new PageResponse<>(results, page, size, totalHits, totalPages);
+        } catch (Exception e) {
+            log.error("Elasticsearch freelancer search failed", e);
+            throw new SearchUnavailableException("Search temporarily unavailable");
+        }
     }
 
     public List<String> getSuggestions(String prefix, String type) {
