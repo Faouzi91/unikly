@@ -6,7 +6,7 @@ CREATE TABLE payments (
     client_id                   UUID            NOT NULL,
     freelancer_id               UUID            NOT NULL,
     amount                      NUMERIC(12, 2)  NOT NULL CHECK (amount > 0),
-    currency                    CHAR(3)         NOT NULL,
+    currency                    VARCHAR(3)      NOT NULL,
     status                      VARCHAR(20)     NOT NULL DEFAULT 'PENDING',
     stripe_payment_intent_id    VARCHAR(255)    UNIQUE,
     stripe_transfer_id          VARCHAR(255),
@@ -25,7 +25,7 @@ CREATE TABLE ledger_entries (
     payment_id  UUID            NOT NULL REFERENCES payments (id),
     entry_type  VARCHAR(30)     NOT NULL,
     amount      NUMERIC(12, 2)  NOT NULL,
-    currency    CHAR(3)         NOT NULL,
+    currency    VARCHAR(3)      NOT NULL,
     description TEXT            NOT NULL,
     created_at  TIMESTAMPTZ     NOT NULL DEFAULT now()
 );

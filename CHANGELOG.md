@@ -5,6 +5,59 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [6.3.0] - 2026-03-19
+
+### Step 6.3 — Integration Testing with Testcontainers
+
+#### Added
+
+- **`job-service/src/test/java/.../JobLifecycleIntegrationTest.java`** — 4 integration tests:
+  - `testCreateJob_returnsCreated` — POST /api/v1/jobs → 201, status=DRAFT
+  - `testCreateJob_invalidTitle_returns400` — blank title → 400 with field error detail
+  - `testFullJobLifecycle` — DRAFT → OPEN → proposal submitted → contract accepted
+  - `testInvalidStatusTransition_returns409` — DRAFT → COMPLETED raises 409 Conflict
+- **`payment-service/src/test/java/.../PaymentWebhookIntegrationTest.java`** — 3 integration tests:
+  - `testCreatePaymentIntent_success` — mocked Stripe SDK, POST /api/v1/payments → 201 PENDING
+  - `testWebhookProcessing_updatesToFunded` — Stripe webhook → payment FUNDED, LedgerEntry created
+  - `testWebhookIdempotency_processesOnce` — same webhook twice → exactly one LedgerEntry
+- **`matching-service/src/test/java/.../MatchingEngineIntegrationTest.java`** — 2 integration tests:
+  - `testRuleBasedMatching_producesScores` — 5 freelancers, AI mocked empty, rule-based scores in [0,1]
+  - `testIdempotentConsumer_skipsDuplicate` — same JobCreated event twice → exactly 1 match result
+- **Test `application-test.yml`** for job-service, payment-service, and matching-service
+  (mocked JWT issuer URI, Flyway migration path, `ddl-auto: validate`, tracing disabled)
+
+#### Fixed (Spring Boot 4.0 compatibility discovered during testing)
+
+- **Flyway auto-configuration** — replaced `org.flywaydb:flyway-core` with
+  `org.springframework.boot:spring-boot-starter-flyway` in all 6 services; Spring Boot 4.0 moved
+  `FlywayAutoConfiguration` from `spring-boot-autoconfigure` to a separate `spring-boot-flyway` module
+- **Kafka auto-configuration** — replaced `org.springframework.kafka:spring-kafka` with
+  `org.springframework.boot:spring-boot-starter-kafka` in all 7 services; Spring Boot 4.0 moved
+  `KafkaAutoConfiguration` to a separate `spring-boot-kafka` module
+- **JPA entity/repository scanning** — added `@EntityScan` and `@EnableJpaRepositories` to
+  job-service, payment-service, matching-service, and user-service `Application` classes to include
+  `com.unikly.common` packages (`OutboxEvent` entity and `OutboxRepository` interface);
+  `scanBasePackages` does not extend JPA auto-configuration scanning in Spring Boot 4.0
+- **Jackson 2.x compatibility** — added `Jackson2CompatAutoConfiguration` to common module
+  auto-configuration; Spring Boot 4.0 uses Jackson 3.x (`tools.jackson`) by default but services
+  use `com.fasterxml.jackson.databind.ObjectMapper`
+- **JSONB column binding** — added `@JdbcTypeCode(SqlTypes.JSON)` to `OutboxEvent.payload`;
+  Hibernate 7.x (Spring Boot 4.0) requires explicit JSON type annotation for JSONB columns
+- **Flyway migration `CHAR(3)` → `VARCHAR(3)`** — corrected `currency` column type in
+  `payment-service/V1__create_payment_tables.sql`; Hibernate schema validation rejected `bpchar`
+  when entity mapped `currency` as `String` (expected `varchar`)
+- **`UnreachableFilterChainException`** — in `PaymentWebhookIntegrationTest`, renamed test
+  `SecurityFilterChain` bean to `filterChain` with `allow-bean-definition-overriding: true`;
+  Spring Security 7.x (Spring Boot 4.0) throws this exception when two chains both use `anyRequest()`
+
+#### Updated
+
+- **Testcontainers 2.0 artifact IDs** — updated all three services to use renamed modules:
+  `testcontainers-postgresql`, `testcontainers-kafka`, `testcontainers-junit-jupiter`; used
+  `ConfluentKafkaContainer("confluentinc/cp-kafka:7.6.0")` (full image reference required in TC 2.0)
+
+---
+
 ## [6.2.0] - 2026-03-19
 
 ### Step 6.2 — Nginx & Production Docker Compose
