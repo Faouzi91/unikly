@@ -5,6 +5,36 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [6.1.0] - 2026-03-19
+
+### Step 6.1 — AI Matching Microservice (Python/FastAPI)
+
+#### Added
+
+- **`matching-ai/`** — standalone Python FastAPI microservice for semantic freelancer–job matching:
+  - `app/models.py` — Pydantic v2 models: `FreelancerProfile`, `MatchRequest`, `MatchScore`, `MatchResponse`
+  - `app/matching_engine.py` — loads `all-MiniLM-L6-v2` on startup; computes cosine-similarity
+    embeddings per freelancer; returns top-20 matches sorted by score (0.0–1.0)
+  - `app/main.py` — FastAPI app with lifespan model loading, CORS middleware, request-logging
+    middleware; endpoints `POST /api/ai/match` and `GET /health`
+  - `app/config.py` — environment-driven settings (`MODEL_NAME`, `MAX_MATCHES`, `LOG_LEVEL`)
+  - `Dockerfile` — Python 3.12-slim, pre-downloads model at build time, exposes port 8090
+  - `README.md` — usage, Docker, and endpoint reference
+- **`infra/docker-compose.yml`** — added `matching-ai` service (port 8090, 1 GB memory limit,
+  60 s start period for model warm-up)
+
+#### Updated
+
+- **`backend/matching-service`** — hybrid AI + rule-based scoring:
+  - `AiMatchingClient` — replaced stub with real `RestClient` call to `http://matching-ai:8090/api/ai/match`;
+    pre-filters candidates by skill intersection; circuit breaker fallback returns empty list
+  - `MatchingService` — injects `RuleBasedMatchingEngine`; runs both engines, merges with
+    50 % AI + 50 % rule-based hybrid score (`MatchStrategy.AI_EMBEDDING`);
+    falls back to 100 % rule-based when AI circuit is open; publishes actual strategy in `JobMatchedEvent`
+  - `application.yml` — adds `matching.ai-service-url` property (env: `AI_SERVICE_URL`)
+
+---
+
 ## [0.1.0] - 2026-03-17
 
 ### Step 0.1 — Project Initialization

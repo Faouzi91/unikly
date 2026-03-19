@@ -519,6 +519,29 @@ services:
     networks:
       - unikly-net
 
+  # ============================================================
+  # MATCHING AI SERVICE (Python / FastAPI)
+  # ============================================================
+  matching-ai:
+    build:
+      context: ../matching-ai
+      dockerfile: Dockerfile
+    container_name: unikly-matching-ai
+    ports:
+      - "8090:8090"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8090/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    networks:
+      - unikly-net
+
 # ============================================================
 # VOLUMES
 # ============================================================

@@ -60,6 +60,7 @@ resilience4j:
 matching:
   batch-delay-seconds: 30
   max-results: 20
+  ai-service-url: ${AI_SERVICE_URL:http://matching-ai:8090}
 
 management:
   endpoints:
