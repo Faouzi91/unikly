@@ -152,7 +152,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [Unreleased]
+## [1.0.0] - 2026-03-19
+
+Initial release of Unikly — a fully event-driven microservices freelancing platform with AI matching, Stripe escrow payments, real-time messaging, and comprehensive observability.
 
 ### Step 1.1 — Docker Compose: Core Infrastructure
 
