@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
 
 /**
- * Auto-configuration that registers {@link MdcUserIdFilter} for all
+ * Auto-configuration that registers servlet filters for all
  * servlet-based microservices. Skipped automatically for the reactive gateway.
  */
 @AutoConfiguration
@@ -18,6 +18,14 @@ public class TracingAutoConfiguration {
     public FilterRegistrationBean<MdcUserIdFilter> mdcUserIdFilter() {
         FilterRegistrationBean<MdcUserIdFilter> registration = new FilterRegistrationBean<>(new MdcUserIdFilter());
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
+        registration.addUrlPatterns("/*");
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<RequestLoggingFilter> requestLoggingFilter() {
+        FilterRegistrationBean<RequestLoggingFilter> registration = new FilterRegistrationBean<>(new RequestLoggingFilter());
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 20);
         registration.addUrlPatterns("/*");
         return registration;
     }

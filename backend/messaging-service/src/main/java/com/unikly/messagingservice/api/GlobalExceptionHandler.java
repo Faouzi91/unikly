@@ -1,4 +1,4 @@
-package com.unikly.userservice.api;
+package com.unikly.messagingservice.api;
 
 import com.unikly.common.error.GlobalExceptionHandlerBase;
 import org.springframework.web.bind.annotation.RestControllerAdvice;

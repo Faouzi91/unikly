@@ -1,5 +1,7 @@
 package com.unikly.paymentservice.api;
 
+import com.unikly.common.error.ErrorResponse;
+import com.unikly.common.error.GlobalExceptionHandlerBase;
 import com.unikly.paymentservice.application.exception.DuplicateIdempotencyKeyException;
 import com.unikly.paymentservice.application.exception.InvalidPaymentStateException;
 import com.unikly.paymentservice.application.exception.PaymentAccessDeniedException;
@@ -7,42 +9,44 @@ import com.unikly.paymentservice.application.exception.PaymentNotFoundException;
 import com.unikly.paymentservice.application.exception.PaymentProviderUnavailableException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @Slf4j
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler extends GlobalExceptionHandlerBase {
 
     @ExceptionHandler(PaymentNotFoundException.class)
-    public ProblemDetail handleNotFound(PaymentNotFoundException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleNotFound(PaymentNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(404, "Not Found", ex.getMessage(), getTraceId()));
     }
 
     @ExceptionHandler(DuplicateIdempotencyKeyException.class)
-    public ProblemDetail handleDuplicate(DuplicateIdempotencyKeyException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleDuplicate(DuplicateIdempotencyKeyException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(409, "Conflict", ex.getMessage(), getTraceId()));
     }
 
     @ExceptionHandler(InvalidPaymentStateException.class)
-    public ProblemDetail handleInvalidState(InvalidPaymentStateException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleInvalidState(InvalidPaymentStateException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(ErrorResponse.of(422, "Unprocessable Entity", ex.getMessage(), getTraceId()));
     }
 
     @ExceptionHandler(PaymentAccessDeniedException.class)
-    public ProblemDetail handleAccessDenied(PaymentAccessDeniedException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+    public ResponseEntity<ErrorResponse> handleAccessDenied(PaymentAccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of(403, "Forbidden",
+                        "You don't have permission for this action", getTraceId()));
     }
 
     @ExceptionHandler(PaymentProviderUnavailableException.class)
-    public ProblemDetail handleProviderUnavailable(PaymentProviderUnavailableException ex) {
+    public ResponseEntity<ErrorResponse> handleProviderUnavailable(PaymentProviderUnavailableException ex) {
         log.error("Payment provider unavailable: {}", ex.getMessage());
-        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ProblemDetail handleBadRequest(IllegalArgumentException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ErrorResponse.of(503, "Service Unavailable",
+                        "Payment service temporarily unavailable. Please try again.", getTraceId()));
     }
 }

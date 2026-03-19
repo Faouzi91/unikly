@@ -14,7 +14,7 @@ public record UserProfileRequest(
         @NotBlank @Size(max = 100) String displayName,
 
         @Schema(description = "User bio", example = "Full-stack developer with 8 years experience", maxLength = 5000)
-        String bio,
+        @Size(max = 5000) String bio,
 
         @Schema(description = "Avatar image URL") String avatarUrl,
 

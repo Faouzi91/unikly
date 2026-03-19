@@ -591,3 +591,23 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **`springdoc.api-docs.path`** per service configured to match the gateway's routing prefix (e.g., `/api/jobs/api-docs`, `/api/users/api-docs`) enabling transparent proxy via existing gateway predicates
 - **Gateway `application.yml`** — added `springdoc.swagger-ui.urls` block listing all 7 service api-docs endpoints; users visit `http://localhost:8080/swagger-ui.html` and select any service from the dropdown
+
+### Step 5.5 — Error Handling & Validation Hardening
+
+#### Added
+
+- **`ErrorDetail`** record (`common/error/`) — field + message pair for validation errors
+- **`ErrorResponse`** record (`common/error/`) — unified error body: `{ status, error, message, traceId, timestamp, details }` with static factory methods; `traceId` sourced from Micrometer MDC
+- **`GlobalExceptionHandlerBase`** (`common/error/`) — abstract base class handling: `MethodArgumentNotValidException` → 400 with per-field `details`, `ConstraintViolationException` → 400, `EntityNotFoundException` → 404, `AccessDeniedException` → 403, `ObjectOptimisticLockingFailureException` → 409, `IllegalArgumentException` → 400, generic `Exception` → 500 (never exposes stack trace)
+- **`RequestLoggingFilter`** (`common/observability/`) — logs `METHOD PATH user=X status=Y duration=Zms` at INFO level for every request
+- **`GlobalExceptionHandler`** (`messaging-service/api/`) — new, extends base class
+- **`GlobalExceptionHandler`** (`messaging-service`) — all 7 services' handlers now extend `GlobalExceptionHandlerBase` for consistent error format
+
+#### Changed
+
+- **`TracingAutoConfiguration`** — registers `RequestLoggingFilter` via `FilterRegistrationBean` (order +20, after MDC filter)
+- **`GlobalExceptionHandler`** in job-service, user-service, matching-service, notification-service — rewritten to extend base class, service-specific exceptions preserved
+- **`GlobalExceptionHandler`** in payment-service — migrated from `ProblemDetail` to `ErrorResponse`; preserves all payment-specific exception handlers
+- **`GlobalExceptionHandler`** in search-service — migrated from `ProblemDetail` to `ErrorResponse`
+- **`UserProfileRequest`** — added `@Size(max=5000)` validation on `bio` field
+- **Angular `error.interceptor.ts`** — updated to parse structured `ErrorResponse`: 400 shows first field detail, 403 → "You don't have permission", 404 → "Resource not found", 409 → "This resource was modified", 503 → "Service temporarily unavailable", 500 → "Something went wrong" with traceId reference
