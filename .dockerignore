@@ -1,0 +1,12 @@
+.git/
+.gitignore
+**/*.md
+backend/.gradle/
+backend/build/
+backend/*/build/
+frontend/unikly-app/node_modules/
+frontend/unikly-app/dist/
+frontend/unikly-app/.angular/
+infra/.env
+*.env.local
+docs/

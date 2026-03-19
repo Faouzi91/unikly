@@ -13,7 +13,10 @@ WORKDIR /workspace/backend
 RUN chmod +x gradlew && ./gradlew :search-service:bootJar --no-daemon
 
 FROM eclipse-temurin:25-jre
+RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup
 WORKDIR /app
 COPY --from=build /workspace/backend/search-service/build/libs/*.jar app.jar
+RUN chown appuser:appgroup app.jar
+USER appuser
 EXPOSE 8087
 ENTRYPOINT ["java", "-jar", "app.jar"]

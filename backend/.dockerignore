@@ -1,0 +1,10 @@
+.gradle/
+build/
+*/build/
+**/.gradle/
+**/build/
+*.jar
+.git/
+.gitignore
+**/*.md
+**/src/test/
