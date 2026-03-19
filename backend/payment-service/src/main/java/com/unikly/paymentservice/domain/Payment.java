@@ -1,3 +1,4 @@
+
 package com.unikly.paymentservice.domain;
 
 import jakarta.persistence.Column;

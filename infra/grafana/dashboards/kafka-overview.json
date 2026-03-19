@@ -1,0 +1,70 @@
+{
+  "title": "Unikly — Kafka Overview",
+  "uid": "unikly-kafka-overview",
+  "schemaVersion": 38,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "topic",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(kafka_consumer_fetch_manager_records_consumed_total, topic)",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".*"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Consumer Lag per Group",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "kafka_consumer_fetch_manager_records_lag{topic=~\"$topic\"}",
+          "legendFormat": "{{group}} — {{topic}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Records Consumed / s per Topic",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(kafka_consumer_fetch_manager_records_consumed_total{topic=~\"$topic\"}[1m])) by (topic)",
+          "legendFormat": "{{topic}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Records Produced / s per Topic",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(kafka_producer_topic_record_send_total{topic=~\"$topic\"}[1m])) by (topic)",
+          "legendFormat": "{{topic}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "DLQ Depth",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "kafka_consumer_fetch_manager_records_lag{topic=~\".*\\.dlq\"}",
+          "legendFormat": "{{topic}}"
+        }
+      ]
+    }
+  ]
+}

@@ -17,12 +17,17 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   flyway:
     enabled: true
+  metrics:
+    tags:
+      service: ${spring.application.name}
     locations: classpath:db/migration
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    template:
+      observation-enabled: true
   security:
     oauth2:
       resourceserver:
@@ -33,7 +38,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,prometheus,info
+        include: health,prometheus,info,metrics
   endpoint:
     health:
       show-details: always
@@ -41,3 +46,12 @@ management:
     metrics:
       export:
         enabled: true
+  metrics:
+    tags:
+      service: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://tempo:4318/v1/traces

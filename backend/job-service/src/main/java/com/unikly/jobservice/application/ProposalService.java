@@ -40,6 +40,7 @@ public class ProposalService {
     private final OutboxRepository outboxRepository;
     private final ProposalMapper proposalMapper;
     private final ObjectMapper objectMapper;
+    private final JobService jobService;
 
     @Transactional
     public ProposalResponse submitProposal(UUID jobId, UUID freelancerId, SubmitProposalRequest request) {
@@ -63,6 +64,7 @@ public class ProposalService {
 
         proposal = proposalRepository.save(proposal);
         publishProposalSubmittedEvent(job, proposal);
+        jobService.recordProposalSubmitted();
 
         log.info("Proposal submitted: id={}, jobId={}, freelancerId={}", proposal.getId(), jobId, freelancerId);
         return proposalMapper.toResponse(proposal);

@@ -23,7 +23,9 @@ import com.unikly.paymentservice.infrastructure.LedgerEntryRepository;
 import com.unikly.paymentservice.infrastructure.PaymentRepository;
 import com.unikly.paymentservice.infrastructure.StripeClient;
 import com.unikly.paymentservice.infrastructure.WebhookEventRepository;
-import lombok.RequiredArgsConstructor;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +37,6 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
@@ -44,6 +45,36 @@ public class PaymentService {
     private final OutboxEventRepository outboxEventRepository;
     private final StripeClient stripeClient;
     private final ObjectMapper objectMapper;
+
+    private final Counter paymentCompletedCounter;
+    private final Counter paymentFailedCounter;
+    private final Timer stripeApiCallTimer;
+
+    public PaymentService(PaymentRepository paymentRepository,
+                          LedgerEntryRepository ledgerEntryRepository,
+                          WebhookEventRepository webhookEventRepository,
+                          OutboxEventRepository outboxEventRepository,
+                          StripeClient stripeClient,
+                          ObjectMapper objectMapper,
+                          MeterRegistry meterRegistry) {
+        this.paymentRepository = paymentRepository;
+        this.ledgerEntryRepository = ledgerEntryRepository;
+        this.webhookEventRepository = webhookEventRepository;
+        this.outboxEventRepository = outboxEventRepository;
+        this.stripeClient = stripeClient;
+        this.objectMapper = objectMapper;
+
+        this.paymentCompletedCounter = Counter.builder("unikly_payment_completed_total")
+                .description("Total number of completed payments")
+                .tag("currency", "USD")
+                .register(meterRegistry);
+        this.paymentFailedCounter = Counter.builder("unikly_payment_failed_total")
+                .description("Total number of failed payments")
+                .register(meterRegistry);
+        this.stripeApiCallTimer = Timer.builder("unikly_stripe_api_call_seconds")
+                .description("Time spent calling Stripe API")
+                .register(meterRegistry);
+    }
 
     @Transactional
     public PaymentIntentResult createPaymentIntent(UUID jobId, UUID clientId, UUID freelancerId,
@@ -103,6 +134,7 @@ public class PaymentService {
                 UUID.randomUUID(), "PaymentCompleted", Instant.now(),
                 payment.getId(), payment.getJobId(), piId
         ));
+        paymentCompletedCounter.increment();
         log.info("Payment {} transitioned to FUNDED", payment.getId());
     }
 
@@ -110,6 +142,7 @@ public class PaymentService {
         String piId = extractPaymentIntentId(event);
         paymentRepository.findByStripePaymentIntentId(piId).ifPresent(payment -> {
             payment.transitionTo(PaymentStatus.FAILED);
+            paymentFailedCounter.increment();
             log.warn("Payment {} transitioned to FAILED", payment.getId());
         });
     }

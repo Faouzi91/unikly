@@ -524,3 +524,31 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`ConversationComponent`** (`features/messaging/conversation.component.ts`) — `/messages/:id` route; chat bubble layout (sent right/indigo, received left/gray); real-time WS delivery; typing indicator animation; send-on-Enter / Shift+Enter newline; infinite scroll up for older messages via `IntersectionObserver`; auto-read on open; read receipt `done_all` icon
 - **`public-profile.component`** updated — "Send Message" button calls `getOrCreateConversation` then navigates to `/messages/:id`
 - **`app.routes.ts`** updated — `/messages` now loads `ConversationListComponent`
+
+### Step 5.1 — Prometheus Metrics & Grafana Dashboards
+
+#### Added
+
+- **Management config** updated across all 8 services — `metrics` added to `management.endpoints.web.exposure.include`; `management.metrics.tags.service: ${spring.application.name}` added for per-service label in Prometheus
+- **Job Service custom metrics** — `unikly_job_created_total` (Counter), `unikly_proposal_submitted_total` (Counter), `unikly_job_status_transition_seconds` (Timer)
+- **Payment Service custom metrics** — `unikly_payment_completed_total` (Counter, tag: currency), `unikly_payment_failed_total` (Counter), `unikly_stripe_api_call_seconds` (Timer)
+- **Matching Service custom metrics** — `unikly_match_generated_total` (Counter, tag: strategy), `unikly_matching_duration_seconds` (Timer), `unikly_matching_queue_size` (Gauge)
+- **Grafana dashboards** (`infra/grafana/dashboards/`) — `service-overview.json` (request rate, error rate, p50/p95/p99, JVM heap, threads), `kafka-overview.json` (consumer lag, records in/out, DLQ depth), `business-metrics.json` (jobs, proposals, payments, matches over time), `alerts.json` (circuit breaker state, failure rate, DLQ depth, retry calls)
+- **Grafana provisioning** (`infra/grafana/provisioning/`) — `datasources.yml` (Prometheus at `http://prometheus:9090`), `dashboards.yml` (auto-load from `/var/lib/grafana/dashboards`)
+- **`docker-compose.monitoring.yml`** updated — Grafana volume mounts for provisioning and dashboards dirs; persistent `unikly-grafana-data` volume
+
+### Step 5.2 — Distributed Tracing
+
+#### Added
+
+- **OTel tracing deps** added to all 8 `build.gradle.kts` files — `io.micrometer:micrometer-tracing-bridge-otel`, `io.opentelemetry:opentelemetry-exporter-otlp`, `net.logstash.logback:logstash-logback-encoder:8.0`
+- **Tracing config** added to all 8 `application.yml` files — `management.tracing.sampling.probability: 1.0`, `management.otlp.tracing.endpoint: http://tempo:4318/v1/traces`
+- **Kafka observation** enabled per service — `spring.kafka.listener.observation-enabled: true` (consumers) and `spring.kafka.template.observation-enabled: true` (producers) so traceId propagates through Kafka message headers
+- **`MdcUserIdFilter`** (`common/observability/`) — `jakarta.servlet.Filter` that reads userId from JWT SecurityContext (or `X-User-Id` header) and puts it into SLF4J MDC; cleared after each request
+- **`TracingAutoConfiguration`** (`common/observability/`) — `@AutoConfiguration` + `@ConditionalOnWebApplication(SERVLET)` registers `MdcUserIdFilter` for all 7 servlet services; skipped automatically by the reactive gateway
+- **`META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`** (`common/src/main/resources/`) — registers `TracingAutoConfiguration` for Spring Boot auto-configuration discovery
+- **`logback-spring.xml`** created for all 8 services — `LogstashEncoder` outputs structured JSON; reads `spring.application.name` via `<springProperty>`; all MDC fields (traceId, spanId, userId) included automatically
+- **`MdcLoggingFilter`** (`gateway/filter/`) — reactive `GlobalFilter` (order 1) that extracts `X-User-Id` from the relayed request header and applies it to MDC for gateway log lines
+- **`infra/tempo/tempo.yaml`** — Grafana Tempo config; OTLP HTTP receiver on `0.0.0.0:4318`; local trace storage under `/var/tempo`; 48-hour block retention
+- **`docker-compose.monitoring.yml`** updated — `unikly-tempo` service (ports 4318 OTLP HTTP, 3200 query UI); Grafana `depends_on` tempo; `unikly-tempo-data` volume
+- **`infra/grafana/provisioning/datasources.yml`** updated — Tempo datasource added (`http://tempo:3200`); service map linked to Prometheus; node graph enabled

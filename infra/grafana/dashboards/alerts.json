@@ -1,0 +1,61 @@
+{
+  "title": "Unikly — Alerts & Circuit Breakers",
+  "uid": "unikly-alerts",
+  "schemaVersion": 38,
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Circuit Breaker State (0=CLOSED, 1=OPEN, 2=HALF_OPEN)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "expr": "resilience4j_circuitbreaker_state{state=\"open\"}",
+          "legendFormat": "{{service}} — {{name}} (OPEN)"
+        },
+        {
+          "expr": "resilience4j_circuitbreaker_state{state=\"half_open\"}",
+          "legendFormat": "{{service}} — {{name}} (HALF_OPEN)"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Circuit Breaker Failure Rate (%)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "resilience4j_circuitbreaker_failure_rate * 100",
+          "legendFormat": "{{service}} — {{name}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "DLQ Depth",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "kafka_consumer_fetch_manager_records_lag{topic=~\".*\\.dlq\"}",
+          "legendFormat": "{{topic}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Retry Calls per Service",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(resilience4j_retry_calls_total[1m])) by (service, name, kind)",
+          "legendFormat": "{{service}} — {{name}} ({{kind}})"
+        }
+      ]
+    }
+  ]
+}

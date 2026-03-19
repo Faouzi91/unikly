@@ -19,6 +19,9 @@ spring:
     listener:
       ack-mode: RECORD
       concurrency: 3
+      observation-enabled: true
+    template:
+      observation-enabled: true
 
 services:
   user-service:
@@ -28,7 +31,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,prometheus,info
+        include: health,prometheus,info,metrics
   endpoint:
     health:
       show-details: always
@@ -36,3 +39,12 @@ management:
     metrics:
       export:
         enabled: true
+  metrics:
+    tags:
+      service: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://tempo:4318/v1/traces

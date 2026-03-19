@@ -161,7 +161,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,prometheus,info,circuitbreakers
+        include: health,prometheus,info,metrics,circuitbreakers
   endpoint:
     health:
       show-details: always
@@ -169,3 +169,12 @@ management:
     metrics:
       export:
         enabled: true
+  metrics:
+    tags:
+      service: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://tempo:4318/v1/traces

@@ -17,8 +17,10 @@ import com.unikly.jobservice.domain.JobStatusMachine;
 import com.unikly.jobservice.infrastructure.JobRepository;
 import com.unikly.jobservice.infrastructure.JobSpecifications;
 import com.unikly.jobservice.infrastructure.ProposalRepository;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -32,7 +34,6 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class JobService {
 
     private final JobRepository jobRepository;
@@ -40,6 +41,34 @@ public class JobService {
     private final OutboxRepository outboxRepository;
     private final JobMapper jobMapper;
     private final ObjectMapper objectMapper;
+
+    private final Counter jobCreatedCounter;
+    private final Counter proposalSubmittedCounter;
+    private final Timer jobStatusTransitionTimer;
+
+    public JobService(JobRepository jobRepository,
+                      ProposalRepository proposalRepository,
+                      OutboxRepository outboxRepository,
+                      JobMapper jobMapper,
+                      ObjectMapper objectMapper,
+                      MeterRegistry meterRegistry) {
+        this.jobRepository = jobRepository;
+        this.proposalRepository = proposalRepository;
+        this.outboxRepository = outboxRepository;
+        this.jobMapper = jobMapper;
+        this.objectMapper = objectMapper;
+
+        this.jobCreatedCounter = Counter.builder("unikly_job_created_total")
+                .description("Total number of jobs created")
+                .tag("status", "OPEN")
+                .register(meterRegistry);
+        this.proposalSubmittedCounter = Counter.builder("unikly_proposal_submitted_total")
+                .description("Total number of proposals submitted")
+                .register(meterRegistry);
+        this.jobStatusTransitionTimer = Timer.builder("unikly_job_status_transition_seconds")
+                .description("Time taken for job status transitions")
+                .register(meterRegistry);
+    }
 
     @Transactional
     public JobResponse createJob(UUID clientId, CreateJobRequest request) {
@@ -120,6 +149,8 @@ public class JobService {
         var previousStatus = job.getStatus();
         JobStatusMachine.validateTransition(previousStatus, newStatus);
 
+        var sample = Timer.start();
+
         job.setStatus(newStatus);
         job.setUpdatedAt(Instant.now());
         job = jobRepository.save(job);
@@ -128,10 +159,16 @@ public class JobService {
 
         if (previousStatus == JobStatus.DRAFT && newStatus == JobStatus.OPEN) {
             publishJobCreatedEvent(job);
+            jobCreatedCounter.increment();
         }
 
+        sample.stop(jobStatusTransitionTimer);
         log.info("Job status transitioned: id={}, {} → {}", id, previousStatus, newStatus);
         return jobMapper.toResponse(job, proposalRepository.countByJobId(id));
+    }
+
+    public void recordProposalSubmitted() {
+        proposalSubmittedCounter.increment();
     }
 
     private Job findJobOrThrow(UUID id) {
