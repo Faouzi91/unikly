@@ -7,7 +7,6 @@ import {
   computed,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { DatePipe } from '@angular/common';
 import { Subscription } from 'rxjs';
 
 import { MatListModule } from '@angular/material/list';
@@ -25,7 +24,6 @@ import { KeycloakService } from '../../core/auth/keycloak.service';
   standalone: true,
   imports: [
     RouterLink,
-    DatePipe,
     MatListModule,
     MatIconModule,
     MatButtonModule,

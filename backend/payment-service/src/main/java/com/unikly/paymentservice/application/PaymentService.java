@@ -9,7 +9,7 @@ import com.unikly.common.events.EscrowReleasedEvent;
 import com.unikly.common.events.PaymentCompletedEvent;
 import com.unikly.common.events.PaymentInitiatedEvent;
 import com.unikly.common.outbox.OutboxEvent;
-import com.unikly.common.outbox.OutboxEventRepository;
+import com.unikly.common.outbox.OutboxRepository;
 import com.unikly.paymentservice.application.exception.DuplicateIdempotencyKeyException;
 import com.unikly.paymentservice.application.exception.InvalidPaymentStateException;
 import com.unikly.paymentservice.application.exception.PaymentAccessDeniedException;
@@ -42,7 +42,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
     private final WebhookEventRepository webhookEventRepository;
-    private final OutboxEventRepository outboxEventRepository;
+    private final OutboxRepository outboxEventRepository;
     private final StripeClient stripeClient;
     private final ObjectMapper objectMapper;
 
@@ -53,7 +53,7 @@ public class PaymentService {
     public PaymentService(PaymentRepository paymentRepository,
                           LedgerEntryRepository ledgerEntryRepository,
                           WebhookEventRepository webhookEventRepository,
-                          OutboxEventRepository outboxEventRepository,
+                          OutboxRepository outboxEventRepository,
                           StripeClient stripeClient,
                           ObjectMapper objectMapper,
                           MeterRegistry meterRegistry) {

@@ -32,6 +32,7 @@ import { PaymentService, PaymentRecord } from '../../core/services/payment.servi
 @Component({
   selector: 'app-job-detail',
   standalone: true,
+  templateUrl: './job-detail.component.html',
   imports: [
     CommonModule,
     RouterLink,

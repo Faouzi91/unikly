@@ -36,28 +36,28 @@ public class NotificationController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        UUID userId = UserContext.currentUserId();
+        UUID userId = UserContext.getUserId();
         var notifications = deliveryService.getNotifications(userId, unread, PageRequest.of(page, size));
-        var response = PageResponse.of(
+        var response = new PageResponse<>(
                 notifications.getContent().stream().map(NotificationResponse::from).toList(),
-                notifications.getTotalElements(),
-                notifications.getTotalPages(),
                 page,
-                size);
+                size,
+                notifications.getTotalElements(),
+                notifications.getTotalPages());
         return ResponseEntity.ok(response);
     }
 
     /** PATCH /api/v1/notifications/{id}/read */
     @PatchMapping("/{id}/read")
     public ResponseEntity<NotificationResponse> markRead(@PathVariable UUID id) {
-        UUID userId = UserContext.currentUserId();
+        UUID userId = UserContext.getUserId();
         return ResponseEntity.ok(NotificationResponse.from(deliveryService.markRead(id, userId)));
     }
 
     /** PATCH /api/v1/notifications/read-all */
     @PatchMapping("/read-all")
     public ResponseEntity<Map<String, Object>> markAllRead() {
-        UUID userId = UserContext.currentUserId();
+        UUID userId = UserContext.getUserId();
         int count = deliveryService.markAllRead(userId);
         return ResponseEntity.ok(Map.of("markedRead", count));
     }
@@ -65,7 +65,7 @@ public class NotificationController {
     /** GET /api/v1/notifications/preferences */
     @GetMapping("/preferences")
     public ResponseEntity<NotificationPreferenceResponse> getPreferences() {
-        UUID userId = UserContext.currentUserId();
+        UUID userId = UserContext.getUserId();
         return ResponseEntity.ok(NotificationPreferenceResponse.from(deliveryService.getPreferences(userId)));
     }
 
@@ -74,7 +74,7 @@ public class NotificationController {
     public ResponseEntity<NotificationPreferenceResponse> updatePreferences(
             @RequestBody NotificationPreferenceRequest request) {
 
-        UUID userId = UserContext.currentUserId();
+        UUID userId = UserContext.getUserId();
         var prefs = NotificationPreference.builder()
                 .userId(userId)
                 .emailEnabled(request.emailEnabled())

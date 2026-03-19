@@ -45,14 +45,14 @@ public class MessageService {
         message.setSenderId(senderId);
         message.setContent(content);
         message.setContentType(contentType);
-        message = messageRepository.save(message);
+        final Message savedMessage = messageRepository.save(message);
 
         // Update conversation's lastMessageAt
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
 
         // Push to all other participants via WebSocket if online
-        MessageDto dto = toDto(message);
+        MessageDto dto = toDto(savedMessage);
         conversation.getParticipantIds().stream()
                 .filter(pid -> !pid.equals(senderId))
                 .forEach(recipientId -> {
@@ -62,12 +62,12 @@ public class MessageService {
                                 "/queue/messages",
                                 dto
                         );
-                        log.debug("Pushed message {} to online user {}", message.getId(), recipientId);
+                        log.debug("Pushed message {} to online user {}", savedMessage.getId(), recipientId);
                     }
                 });
 
         // Publish MessageSentEvent via outbox
-        publishOutboxEvent(message, content, conversationId, senderId);
+        publishOutboxEvent(savedMessage, content, conversationId, senderId);
 
         return dto;
     }

@@ -19,11 +19,12 @@ dependencies {
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
 
     implementation("com.stripe:stripe-java:28.2.0")
-    implementation("io.github.resilience4j:resilience4j-spring-boot3:2.3.0")
+    implementation("io.github.resilience4j:resilience4j-spring-boot3:2.3.0") {
+        exclude(group = "org.springframework.boot", module = "spring-boot-starter-aop")
+    }
     implementation("io.github.resilience4j:resilience4j-circuitbreaker:2.3.0")
     implementation("io.github.resilience4j:resilience4j-retry:2.3.0")
     implementation("io.github.resilience4j:resilience4j-timelimiter:2.3.0")
-    implementation("org.springframework.boot:spring-boot-starter-aop")
 
     runtimeOnly("org.postgresql:postgresql")
 }

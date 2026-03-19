@@ -8,7 +8,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { NgClass, NgIf } from '@angular/common';
+import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TimeAgoPipe } from '../../shared/pipes/time-ago.pipe';
@@ -33,7 +33,6 @@ const TYPE_ICONS: Record<string, string> = {
   standalone: true,
   imports: [
     NgClass,
-    NgIf,
     FormsModule,
     MatIconModule,
     MatButtonModule,
