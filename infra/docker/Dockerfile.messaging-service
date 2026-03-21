@@ -25,6 +25,7 @@ RUN --mount=type=cache,target=/root/.gradle/caches,sharing=locked \
     ./gradlew :messaging-service:bootJar --no-daemon
 
 FROM eclipse-temurin:25-jre
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup
 WORKDIR /app
 COPY --from=build /app/messaging-service/build/libs/*.jar app.jar

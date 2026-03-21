@@ -1,5 +1,5 @@
-import { Injectable, OnDestroy, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Injectable, OnDestroy, inject } from '@angular/core';
 import { Client, IMessage } from '@stomp/stompjs';
 import { Subject } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -25,14 +25,10 @@ export class WebSocketService implements OnDestroy {
   private client: Client;
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
 
-  private readonly wsBaseUrl = environment.wsUrl
-    .replace('ws://', 'http://')
-    .replace('wss://', 'https://');
+  private readonly wsBaseUrl = environment.wsUrl.replace('ws://', 'http://').replace('wss://', 'https://');
 
   constructor() {
-    this.client = new Client({
-      reconnectDelay: 2000,
-    });
+    this.client = new Client({ reconnectDelay: 2000 });
   }
 
   async activate(): Promise<void> {
@@ -43,23 +39,18 @@ export class WebSocketService implements OnDestroy {
       connectHeaders: { Authorization: `Bearer ${token}` },
       reconnectDelay: 2000,
       onConnect: () => {
-        console.log('WebSocket connected');
         this.stopPolling();
-        this.client.subscribe('/user/queue/notifications', (msg: IMessage) => {
+        this.client.subscribe('/user/queue/notifications', (message: IMessage) => {
           try {
-            const notification = JSON.parse(msg.body) as NotificationPayload;
+            const notification = JSON.parse(message.body) as NotificationPayload;
             this.notifications$.next(notification);
           } catch {
-            console.error('Failed to parse notification payload', msg.body);
+            console.error('Failed to parse notification payload', message.body);
           }
         });
       },
-      onDisconnect: () => {
-        this.startPolling();
-      },
-      onStompError: () => {
-        this.startPolling();
-      },
+      onDisconnect: () => this.startPolling(),
+      onStompError: () => this.startPolling(),
     });
 
     this.client.activate();
@@ -72,26 +63,28 @@ export class WebSocketService implements OnDestroy {
     }
   }
 
+  ngOnDestroy(): void {
+    this.deactivate();
+    this.notifications$.complete();
+  }
+
   private startPolling(): void {
     if (this.pollingInterval) return;
     const apiUrl = this.wsBaseUrl.replace('/ws', '') + '/api/v1/notifications?unread=true&page=0&size=10';
+
     this.pollingInterval = setInterval(() => {
       this.http.get<{ content: NotificationPayload[] }>(apiUrl).subscribe({
-        next: (page) => page.content.forEach((n) => this.notifications$.next(n)),
-        error: () => { /* silent — will retry on next tick */ },
+        next: (page) => page.content.forEach((item) => this.notifications$.next(item)),
+        error: () => {
+          // Silent retry fallback while websocket is reconnecting.
+        },
       });
     }, 30_000);
   }
 
   private stopPolling(): void {
-    if (this.pollingInterval) {
-      clearInterval(this.pollingInterval);
-      this.pollingInterval = null;
-    }
-  }
-
-  ngOnDestroy(): void {
-    this.deactivate();
-    this.notifications$.complete();
+    if (!this.pollingInterval) return;
+    clearInterval(this.pollingInterval);
+    this.pollingInterval = null;
   }
 }

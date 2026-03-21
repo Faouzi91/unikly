@@ -1,394 +1,163 @@
-<div class="min-h-screen bg-white dark:bg-surface-950 transition-colors duration-300 overflow-x-hidden">
-
-  <!-- ══════════════════════════════════════════════════════════
-       NAVBAR
-  ══════════════════════════════════════════════════════════ -->
+<div class="page-shell overflow-x-hidden">
   <nav class="glass-nav">
-    <div class="max-w-7xl mx-auto px-6 lg:px-8">
-      <div class="flex justify-between items-center h-20">
+    <div class="container-wide flex h-20 items-center justify-between">
+      <a routerLink="/" class="inline-flex items-center gap-2">
+        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand text-lg font-bold text-white">U</div>
+        <span class="text-xl font-bold tracking-tight text-ink-900">Unikly</span>
+      </a>
 
-        <!-- Logo -->
-        <div class="flex items-center gap-10">
-          <a routerLink="/" class="flex items-center gap-2.5 group">
-            <div class="w-9 h-9 bg-accent rounded-xl flex items-center justify-center
-                        shadow-lg shadow-accent/25 group-hover:shadow-accent/50 transition-shadow">
-              <span class="text-white font-black text-base leading-none">U</span>
-            </div>
-            <span class="text-xl font-black tracking-tighter text-surface-900 dark:text-white uppercase">
-              Unikly
-            </span>
-          </a>
+      <div class="hidden items-center gap-8 text-sm font-semibold text-[var(--ui-muted)] lg:flex">
+        <a href="#how" class="hover:text-brand-dark">How it works</a>
+        <a href="#categories" class="hover:text-brand-dark">Categories</a>
+        <a href="#projects" class="hover:text-brand-dark">Projects</a>
+      </div>
 
-          <!-- Desktop nav links -->
-          <div class="hidden lg:flex items-center gap-6 text-xs font-black uppercase tracking-widest">
-            <a href="#how" class="text-surface-500 dark:text-surface-400 hover:text-accent dark:hover:text-accent transition-colors">
-              How it works
-            </a>
-            <a href="#categories" class="text-surface-500 dark:text-surface-400 hover:text-accent dark:hover:text-accent transition-colors">
-              Categories
-            </a>
-            <a href="#projects" class="text-surface-500 dark:text-surface-400 hover:text-accent dark:hover:text-accent transition-colors">
-              Projects
-            </a>
-          </div>
-        </div>
-
-        <!-- Actions -->
-        <div class="flex items-center gap-3">
-          <!-- Theme toggle -->
-          <button (click)="theme.toggleTheme()" aria-label="Toggle theme"
-                  class="p-2 rounded-xl border border-ui-border
-                         bg-white dark:bg-surface-900
-                         hover:border-accent/40 transition-all">
-            @if (!theme.isDarkMode()) {
-              <svg class="w-4 h-4 text-surface-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-              </svg>
-            }
-            @if (theme.isDarkMode()) {
-              <svg class="w-4 h-4 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M16.071 16.071l.707.707M7.757 7.757l.707-.707"/>
-              </svg>
-            }
-          </button>
-
-          <a routerLink="/auth/login"
-             class="hidden sm:block text-xs font-black uppercase tracking-widest
-                    text-surface-600 dark:text-surface-400
-                    hover:text-accent dark:hover:text-accent transition-colors px-3 py-2">
-            Sign In
-          </a>
-
-          <a routerLink="/auth/register" class="btn-market-primary text-xs uppercase tracking-widest">
-            Join Free
-          </a>
-        </div>
+      <div class="flex items-center gap-3">
+        <button type="button" class="btn-ghost px-3 py-2" (click)="theme.toggleTheme()">Theme</button>
+        <a routerLink="/auth/login" class="btn-ghost hidden sm:inline-flex">Sign In</a>
+        <a routerLink="/auth/register" class="btn-primary">Join Free</a>
       </div>
     </div>
   </nav>
 
-  <!-- ══════════════════════════════════════════════════════════
-       HERO
-  ══════════════════════════════════════════════════════════ -->
-  <section class="relative pt-28 pb-20 lg:pt-40 lg:pb-32">
-    <!-- Ambient glow -->
-    <div class="hero-glow absolute inset-0 pointer-events-none"></div>
-
-    <div class="max-w-7xl mx-auto px-6 lg:px-8 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-
-      <!-- Copy -->
-      <div class="relative z-10">
-        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full
-                    bg-accent/10 dark:bg-accent/15
-                    border border-accent/25
-                    text-accent text-[11px] font-black uppercase tracking-[0.18em] mb-7">
-          <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span>
-          AI-Native Talent Network · Est. 2026
-        </div>
-
-        <h1 class="text-5xl sm:text-6xl lg:text-[4.5rem] xl:text-[5.5rem]
-                   font-black tracking-[-0.03em] leading-[0.92]
-                   text-surface-900 dark:text-white mb-7">
-          The world's<br/>
-          <span class="text-accent">elite talent,</span><br/>
-          on demand.
-        </h1>
-
-        <p class="text-lg text-surface-500 dark:text-surface-400 font-medium
-                  max-w-lg leading-relaxed mb-10">
-          Unikly's semantic AI matches high-growth companies with the top&nbsp;1% of
-          independent engineers, designers, and AI specialists. No résumé sifting.
-          No bidding wars. Just the perfect fit — in minutes.
+  <section class="relative py-16 sm:py-24">
+    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-brand-soft/70 via-transparent to-transparent"></div>
+    <div class="container-wide grid gap-10 lg:grid-cols-2 lg:items-center">
+      <div>
+        <p class="mb-4 inline-flex rounded-full border border-brand/25 bg-brand-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-brand-dark">
+          Light, fast, trusted freelancing
         </p>
+        <h1 class="text-5xl font-bold leading-[1.03] tracking-tight text-ink-900 sm:text-6xl">
+          Hire world-class talent
+          <span class="text-brand-dark">without the noise.</span>
+        </h1>
+        <p class="mt-5 max-w-xl text-base text-[var(--ui-muted)] sm:text-lg">
+          Unikly helps teams and freelancers work smarter with intelligent matching, milestone-based delivery, and secure escrow payments.
+        </p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a routerLink="/auth/register" class="btn-primary px-6 py-3">Hire Talent</a>
+          <a routerLink="/auth/register" [queryParams]="{ role: 'freelancer' }" class="btn-secondary px-6 py-3">Find Projects</a>
+        </div>
+      </div>
 
-        <div class="flex flex-wrap gap-4">
-          <a routerLink="/auth/register"
-             class="btn-market-primary !px-8 !py-4 !text-sm uppercase tracking-widest shadow-xl shadow-accent/20">
-            Hire Elite Talent
-          </a>
-          <a routerLink="/auth/register" [queryParams]="{role: 'freelancer'}"
-             class="btn-market-ghost !px-8 !py-4 !text-sm uppercase tracking-widest">
-            Find Projects
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+      <div class="card-panel p-6 sm:p-7">
+        <div class="mb-5 flex items-center justify-between">
+          <p class="text-sm font-semibold text-ink-900">Recommended matches</p>
+          <span class="pill bg-brand-soft text-brand-dark">Live</span>
+        </div>
+        <div class="space-y-3">
+          <div class="rounded-xl border border-[var(--ui-border)] p-3">
+            <p class="text-sm font-semibold text-ink-900">Senior Angular Engineer</p>
+            <p class="mt-1 text-xs text-[var(--ui-muted)]">UI architecture, performance optimization, enterprise workflows</p>
+            <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ink-100">
+              <div class="h-full w-[96%] rounded-full bg-brand"></div>
+            </div>
+          </div>
+          <div class="rounded-xl border border-[var(--ui-border)] p-3">
+            <p class="text-sm font-semibold text-ink-900">Product Designer</p>
+            <p class="mt-1 text-xs text-[var(--ui-muted)]">Design systems, multi-role dashboards, onboarding funnels</p>
+            <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ink-100">
+              <div class="h-full w-[92%] rounded-full bg-brand"></div>
+            </div>
+          </div>
+          <div class="rounded-xl border border-[var(--ui-border)] p-3">
+            <p class="text-sm font-semibold text-ink-900">Backend Platform Engineer</p>
+            <p class="mt-1 text-xs text-[var(--ui-muted)]">Reliable event pipelines, resilient APIs, observability</p>
+            <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ink-100">
+              <div class="h-full w-[89%] rounded-full bg-brand"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="border-y border-[var(--ui-border)] bg-[var(--ui-surface)] py-8">
+    <div class="container-wide flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+      @for (logo of logos; track logo) {
+        <span class="text-sm font-semibold uppercase tracking-[0.12em] text-ink-400">{{ logo }}</span>
+      }
+    </div>
+  </section>
+
+  <section class="py-16 sm:py-20">
+    <div class="container-wide grid grid-cols-2 gap-6 sm:grid-cols-4">
+      @for (stat of stats; track stat.label) {
+        <div class="card-panel p-5 text-center">
+          <p class="text-3xl font-bold tracking-tight text-ink-900">{{ stat.value }}</p>
+          <p class="mt-1 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--ui-muted)]">{{ stat.label }}</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section id="how" class="bg-[var(--ui-surface)] py-16 sm:py-20">
+    <div class="container-wide">
+      <div class="mb-10 text-center">
+        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-brand-dark">How it works</p>
+        <h2 class="mt-2 text-4xl font-bold tracking-tight text-ink-900">Simple process, premium outcomes</h2>
+      </div>
+      <div class="grid gap-5 md:grid-cols-3">
+        @for (step of steps; track step.title) {
+          <article class="card-panel p-6">
+            <div class="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-brand-dark">
+              {{ $index + 1 }}
+            </div>
+            <h3 class="text-lg font-semibold text-ink-900">{{ step.title }}</h3>
+            <p class="mt-2 text-sm text-[var(--ui-muted)]">{{ step.description }}</p>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section id="categories" class="py-16 sm:py-20">
+    <div class="container-wide">
+      <div class="mb-8 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-brand-dark">Talent categories</p>
+          <h2 class="mt-2 text-4xl font-bold tracking-tight text-ink-900">Find specialists by discipline</h2>
+        </div>
+        <a routerLink="/search" class="btn-secondary">Browse all talent</a>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        @for (category of categories; track category.name) {
+          <a routerLink="/search" class="card-panel flex items-center justify-between p-4 transition hover:border-brand/35">
+            <div>
+              <p class="text-sm font-semibold text-ink-900">{{ category.name }}</p>
+              <p class="text-xs text-[var(--ui-muted)]">{{ category.count }} available experts</p>
+            </div>
+            <svg class="h-4 w-4 text-[var(--ui-muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
             </svg>
           </a>
-        </div>
-
-        <!-- Quick trust line -->
-        <p class="mt-8 text-xs text-surface-400 dark:text-surface-500 font-medium">
-          No subscription required · First hire is free · Escrow-protected payments
-        </p>
-      </div>
-
-      <!-- AI Match Widget -->
-      <div class="relative hidden lg:flex flex-col">
-        <div class="marketplace-card !p-7 w-full relative z-10">
-          <!-- Header -->
-          <div class="flex items-center justify-between mb-6">
-            <div>
-              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400 mb-1">
-                Live AI Orchestration
-              </p>
-              <h3 class="text-sm font-black text-surface-900 dark:text-white">Top matches for your project</h3>
-            </div>
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20">
-              <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span>
-              <span class="text-[10px] font-black text-accent uppercase tracking-widest">Live</span>
-            </div>
-          </div>
-
-          <!-- Match rows -->
-          <div class="space-y-3">
-            @for (match of aiMatches; track match.initials) {
-              <div class="flex items-center gap-3.5 p-3.5 rounded-xl
-                          bg-surface-50 dark:bg-surface-900/60
-                          border border-surface-100 dark:border-surface-800
-                          hover:border-accent/30 transition-all duration-200">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center
-                            text-sm font-black shrink-0" [class]="match.color">
-                  {{ match.initials }}
-                </div>
-                <div class="flex-grow min-w-0">
-                  <p class="text-sm font-black text-surface-900 dark:text-white truncate">
-                    {{ match.name }}
-                  </p>
-                  <p class="text-[11px] text-surface-400 font-medium mt-0.5">{{ match.role }}</p>
-                  <div class="h-1 w-full bg-surface-200 dark:bg-surface-700 rounded-full mt-2 overflow-hidden">
-                    <div class="h-full bg-accent rounded-full"
-                         [style.width]="match.score + '%'"></div>
-                  </div>
-                </div>
-                <div class="shrink-0 text-right">
-                  <span class="text-sm font-black text-accent">{{ match.score }}%</span>
-                  <p class="text-[10px] text-surface-400 font-medium">match</p>
-                </div>
-              </div>
-            }
-          </div>
-
-          <!-- Footer stat -->
-          <div class="mt-5 pt-5 border-t border-ui-border flex items-center justify-between">
-            <span class="text-[11px] text-surface-400 font-medium">
-              Scanned <strong class="text-surface-700 dark:text-surface-300">12,482</strong> profiles
-            </span>
-            <span class="text-[11px] text-accent font-black uppercase tracking-widest">View all →</span>
-          </div>
-        </div>
-
-        <!-- Ambient blur -->
-        <div class="absolute -top-16 -right-16 w-80 h-80
-                    bg-accent/8 dark:bg-accent/5
-                    blur-[90px] rounded-full pointer-events-none"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══════════════════════════════════════════════════════════
-       TRUST LOGO TICKER
-  ══════════════════════════════════════════════════════════ -->
-  <div class="py-10 border-y border-ui-border bg-ui-surface overflow-hidden">
-    <p class="text-center text-[10px] font-black uppercase tracking-[0.25em] text-surface-400 dark:text-surface-500 mb-6">
-      Trusted by engineers at
-    </p>
-    <div class="relative flex overflow-hidden">
-      <div class="ticker-track flex items-center gap-16 whitespace-nowrap">
-        @for (logo of [...trustLogos, ...trustLogos]; track $index) {
-          <span class="text-surface-400 dark:text-surface-600 font-black text-lg tracking-tighter uppercase opacity-60 hover:opacity-100 transition-opacity cursor-default">
-            {{ logo }}
-          </span>
-        }
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════════
-       STATS RIBBON
-  ══════════════════════════════════════════════════════════ -->
-  <section class="py-20 bg-white dark:bg-surface-950">
-    <div class="max-w-5xl mx-auto px-6">
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-4">
-        @for (stat of stats; track stat.label) {
-          <div class="text-center group">
-            <div class="text-4xl lg:text-5xl font-black tracking-tighter
-                        text-surface-900 dark:text-white mb-2
-                        group-hover:text-accent transition-colors duration-300">
-              {{ stat.value }}
-            </div>
-            <div class="text-[11px] font-black uppercase tracking-[0.18em] text-surface-400 dark:text-surface-500">
-              {{ stat.label }}
-            </div>
-          </div>
         }
       </div>
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════
-       HOW IT WORKS
-  ══════════════════════════════════════════════════════════ -->
-  <section id="how" class="py-28 bg-ui-surface">
-    <div class="max-w-7xl mx-auto px-6 lg:px-8">
-      <div class="text-center mb-20">
-        <div class="inline-block px-3 py-1 rounded-full bg-accent/10 border border-accent/20
-                    text-accent text-[11px] font-black uppercase tracking-[0.18em] mb-5">
-          Simple by design
-        </div>
-        <h2 class="text-4xl lg:text-5xl font-black tracking-tight
-                   text-surface-900 dark:text-white mb-5 leading-tight">
-          From idea to shipped,<br class="hidden sm:block"/>
-          in days — not months.
-        </h2>
-        <p class="text-surface-500 dark:text-surface-400 text-lg font-medium max-w-xl mx-auto">
-          We handle sourcing, vetting, and payments so you can focus on what matters.
-        </p>
-      </div>
-
-      <div class="grid lg:grid-cols-3 gap-6">
-        @for (step of howItWorks; track step.step) {
-          <div class="marketplace-card group text-center relative overflow-hidden">
-            <!-- Step number backdrop -->
-            <div class="absolute -top-4 -right-4 text-[8rem] font-black
-                        text-surface-100 dark:text-surface-800/60
-                        leading-none select-none pointer-events-none transition-all
-                        group-hover:text-accent/8 duration-500">
-              {{ step.step }}
-            </div>
-
-            <div class="relative z-10">
-              <div class="w-14 h-14 rounded-2xl bg-accent/10 border border-accent/20
-                          flex items-center justify-center mx-auto mb-6
-                          group-hover:bg-accent group-hover:border-accent group-hover:shadow-lg
-                          group-hover:shadow-accent/25 transition-all duration-300">
-                <span class="text-2xl">{{ step.icon }}</span>
-              </div>
-              <h3 class="text-xl font-black mb-3 text-surface-900 dark:text-white">
-                {{ step.title }}
-              </h3>
-              <p class="text-surface-500 dark:text-surface-400 text-sm leading-relaxed font-medium">
-                {{ step.desc }}
-              </p>
-            </div>
-          </div>
-        }
-      </div>
-    </div>
-  </section>
-
-  <!-- ══════════════════════════════════════════════════════════
-       CATEGORIES
-  ══════════════════════════════════════════════════════════ -->
-  <section id="categories" class="py-28 bg-white dark:bg-surface-950">
-    <div class="max-w-7xl mx-auto px-6 lg:px-8">
-      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-14">
+  <section id="projects" class="bg-[var(--ui-surface)] py-16 sm:py-20">
+    <div class="container-wide">
+      <div class="mb-8 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div class="text-[11px] font-black uppercase tracking-[0.18em] text-accent mb-3">
-            Browse by category
-          </div>
-          <h2 class="text-4xl font-black tracking-tight text-surface-900 dark:text-white">
-            Every skill.<br/>One platform.
-          </h2>
+          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-brand-dark">Featured opportunities</p>
+          <h2 class="mt-2 text-4xl font-bold tracking-tight text-ink-900">Active projects from growing teams</h2>
         </div>
-        <a routerLink="/search" class="btn-market-ghost text-xs uppercase tracking-widest self-start sm:self-auto">
-          Explore all categories
-        </a>
+        <a routerLink="/jobs" class="btn-secondary">See all jobs</a>
       </div>
-
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        @for (cat of categories; track cat.name) {
-          <a routerLink="/search" [queryParams]="{category: cat.name}"
-             class="group flex items-center gap-4 p-5 rounded-2xl
-                    border border-ui-border bg-ui-surface
-                    hover:border-accent/40 hover:bg-accent/5 dark:hover:bg-accent/5
-                    transition-all duration-200 cursor-pointer">
-            <div class="w-10 h-10 rounded-xl bg-surface-100 dark:bg-surface-800
-                        flex items-center justify-center text-xl shrink-0
-                        group-hover:bg-accent/15 transition-colors duration-200">
-              {{ cat.icon }}
-            </div>
-            <div class="min-w-0">
-              <p class="text-sm font-black text-surface-900 dark:text-white truncate">{{ cat.name }}</p>
-              <p class="text-[11px] text-surface-400 font-medium mt-0.5">{{ cat.count }} experts</p>
-            </div>
-          </a>
-        }
-      </div>
-    </div>
-  </section>
-
-  <!-- ══════════════════════════════════════════════════════════
-       FEATURED PROJECTS
-  ══════════════════════════════════════════════════════════ -->
-  <section id="projects" class="py-28 bg-ui-surface">
-    <div class="max-w-7xl mx-auto px-6 lg:px-8">
-      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-14">
-        <div>
-          <div class="text-[11px] font-black uppercase tracking-[0.18em] text-accent mb-3">
-            Live on the platform
-          </div>
-          <h2 class="text-4xl font-black tracking-tight text-surface-900 dark:text-white">
-            Elite projects.<br/>Trusted escrow.
-          </h2>
-        </div>
-        <a routerLink="/jobs" class="btn-market-ghost text-xs uppercase tracking-widest self-start sm:self-auto">
-          View all projects
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-          </svg>
-        </a>
-      </div>
-
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="grid gap-5 lg:grid-cols-3">
         @for (job of featuredJobs; track job.title) {
-          <article class="marketplace-card group flex flex-col">
-            <!-- Budget & type -->
-            <div class="flex justify-between items-start mb-5">
-              <span class="px-2.5 py-1 rounded-lg
-                           bg-surface-100 dark:bg-surface-800
-                           text-[10px] font-black uppercase tracking-widest
-                           text-surface-500 dark:text-surface-400">
-                {{ job.type }}
-              </span>
-              <span class="text-accent font-black text-sm">{{ job.budget }}</span>
+          <article class="card-panel flex flex-col p-5">
+            <div class="mb-3 flex items-center justify-between">
+              <span class="pill bg-ink-100 text-ink-600">{{ job.type }}</span>
+              <span class="text-sm font-semibold text-brand-dark">{{ job.budget }}</span>
             </div>
-
-            <!-- Title & desc -->
-            <h3 class="text-base font-black mb-2.5
-                       text-surface-900 dark:text-white leading-snug
-                       group-hover:text-accent transition-colors duration-200">
-              {{ job.title }}
-            </h3>
-            <p class="text-surface-500 dark:text-surface-400 text-sm leading-relaxed
-                      flex-grow mb-5 line-clamp-2 font-medium">
-              {{ job.desc }}
-            </p>
-
-            <!-- Tags -->
-            <div class="flex flex-wrap gap-1.5 mb-5">
+            <h3 class="text-lg font-semibold text-ink-900">{{ job.title }}</h3>
+            <p class="mt-2 flex-1 text-sm text-[var(--ui-muted)]">{{ job.summary }}</p>
+            <div class="mt-4 flex flex-wrap gap-2">
               @for (tag of job.tags; track tag) {
-                <span class="text-[10px] font-bold px-2.5 py-1
-                             bg-white dark:bg-surface-900
-                             border border-ui-border rounded-lg
-                             text-surface-500 dark:text-surface-400">
-                  {{ tag }}
-                </span>
+                <span class="pill bg-ink-100 text-ink-600">{{ tag }}</span>
               }
-            </div>
-
-            <!-- Footer -->
-            <div class="pt-4 border-t border-ui-border flex justify-between items-center">
-              <div class="flex items-center gap-2">
-                <div class="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
-                  <span class="text-[10px] font-black text-accent">{{ job.company[0] }}</span>
-                </div>
-                <span class="text-xs font-bold text-surface-500 dark:text-surface-400">{{ job.company }}</span>
-              </div>
-              <span class="text-[10px] font-black uppercase tracking-tight
-                           text-surface-400 dark:text-surface-500">
-                {{ job.posted }}
-              </span>
             </div>
           </article>
         }
@@ -396,160 +165,48 @@
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════
-       TESTIMONIALS
-  ══════════════════════════════════════════════════════════ -->
-  <section class="py-28 bg-white dark:bg-surface-950">
-    <div class="max-w-7xl mx-auto px-6 lg:px-8">
-      <div class="text-center mb-16">
-        <div class="text-[11px] font-black uppercase tracking-[0.18em] text-accent mb-4">
-          Real results
-        </div>
-        <h2 class="text-4xl font-black tracking-tight text-surface-900 dark:text-white">
-          Trusted by builders worldwide.
-        </h2>
+  <section class="py-16 sm:py-20">
+    <div class="container-wide">
+      <div class="mb-8 text-center">
+        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-brand-dark">Trusted by teams and freelancers</p>
+        <h2 class="mt-2 text-4xl font-bold tracking-tight text-ink-900">Results people talk about</h2>
       </div>
-
-      <div class="grid lg:grid-cols-3 gap-6">
-        @for (t of testimonials; track t.name) {
-          <figure class="marketplace-card flex flex-col gap-5">
-            <!-- Stars -->
-            <div class="flex gap-1">
-              @for (star of [1,2,3,4,5]; track star) {
-                <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                </svg>
-              }
-            </div>
-
-            <blockquote class="text-surface-700 dark:text-surface-300 text-sm leading-relaxed
-                               font-medium flex-grow italic">
-              "{{ t.quote }}"
-            </blockquote>
-
-            <figcaption class="flex items-center gap-3 pt-4 border-t border-ui-border">
-              <div class="w-10 h-10 rounded-full flex items-center justify-center
-                          font-bold text-sm shrink-0" [class]="t.color">
-                {{ t.initials }}
-              </div>
-              <div>
-                <p class="text-sm font-black text-surface-900 dark:text-white">{{ t.name }}</p>
-                <p class="text-xs text-surface-400 dark:text-surface-500 font-medium">{{ t.role }}</p>
-              </div>
-            </figcaption>
-          </figure>
+      <div class="grid gap-5 lg:grid-cols-3">
+        @for (item of testimonials; track item.name) {
+          <blockquote class="card-panel p-5">
+            <p class="text-sm text-ink-700">"{{ item.quote }}"</p>
+            <footer class="mt-4 border-t border-[var(--ui-border)] pt-3">
+              <p class="text-sm font-semibold text-ink-900">{{ item.name }}</p>
+              <p class="text-xs text-[var(--ui-muted)]">{{ item.role }}</p>
+            </footer>
+          </blockquote>
         }
       </div>
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════
-       CTA BANNER
-  ══════════════════════════════════════════════════════════ -->
-  <section class="py-28 bg-surface-900 dark:bg-surface-950 relative overflow-hidden">
-    <div class="dot-grid absolute inset-0 opacity-[0.07] pointer-events-none"></div>
-    <!-- Glow -->
-    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-                w-[600px] h-[300px] bg-accent/10 blur-[80px] rounded-full pointer-events-none"></div>
-
-    <div class="relative z-10 max-w-3xl mx-auto px-6 text-center">
-      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full
-                  bg-accent/15 border border-accent/30
-                  text-accent text-[11px] font-black uppercase tracking-[0.18em] mb-8">
-        <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span>
-        Join 12,000+ professionals
-      </div>
-
-      <h2 class="text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight mb-6">
-        Ready to build<br/>the future?
-      </h2>
-      <p class="text-surface-400 text-lg font-medium mb-10 leading-relaxed max-w-xl mx-auto">
-        Find your perfect match today. No subscription, no hidden fees —
-        just the talent or opportunity you've been looking for.
+  <section class="bg-ink-900 py-16 text-white sm:py-20">
+    <div class="container-narrow text-center">
+      <h2 class="text-4xl font-bold tracking-tight">Ready to build something exceptional?</h2>
+      <p class="mx-auto mt-3 max-w-2xl text-sm text-white/75 sm:text-base">
+        Create your account and get matched with serious projects or serious talent without clutter.
       </p>
-
-      <div class="flex flex-wrap justify-center gap-4">
-        <a routerLink="/auth/register"
-           class="btn-market-primary !px-10 !py-4 !text-sm uppercase tracking-widest
-                  shadow-xl shadow-accent/20">
-          Start for Free
-        </a>
-        <a routerLink="/auth/login"
-           class="inline-flex items-center justify-center px-10 py-4 rounded-xl
-                  font-black text-sm uppercase tracking-widest
-                  border border-surface-700 text-surface-300
-                  hover:border-surface-500 hover:text-white
-                  transition-all duration-200">
-          Sign In
-        </a>
+      <div class="mt-7 flex flex-wrap justify-center gap-3">
+        <a routerLink="/auth/register" class="btn-primary px-6 py-3">Create Account</a>
+        <a routerLink="/auth/login" class="btn-secondary border-white/30 bg-white/10 text-white hover:bg-white/15">Sign In</a>
       </div>
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════
-       FOOTER
-  ══════════════════════════════════════════════════════════ -->
-  <footer class="bg-surface-950 border-t border-surface-900">
-    <div class="max-w-7xl mx-auto px-6 lg:px-8 pt-20 pb-10">
-      <!-- Top grid -->
-      <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-12 mb-16">
-        <!-- Brand column (2 cols wide) -->
-        <div class="lg:col-span-2">
-          <div class="flex items-center gap-2.5 mb-5">
-            <div class="w-8 h-8 bg-accent rounded-xl flex items-center justify-center">
-              <span class="text-white font-black text-sm">U</span>
-            </div>
-            <span class="text-lg font-black text-white uppercase tracking-tighter">Unikly</span>
-          </div>
-          <p class="text-surface-500 text-sm leading-relaxed font-medium max-w-xs mb-7">
-            The infrastructure layer for the world's most talented digital workforce.
-            AI-native. Escrow-backed. Built for builders.
-          </p>
-          <div class="flex gap-3">
-            @for (social of socials; track social.label) {
-              <a [attr.aria-label]="social.label"
-                 class="w-9 h-9 rounded-full border border-surface-800
-                        flex items-center justify-center
-                        text-surface-500 hover:border-accent hover:text-accent
-                        transition-all duration-200 text-sm font-bold cursor-pointer">
-                {{ social.icon }}
-              </a>
-            }
-          </div>
-        </div>
-
-        <!-- Links columns -->
-        @for (col of footerLinks; track col.heading) {
-          <div>
-            <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-surface-500 mb-5">
-              {{ col.heading }}
-            </h4>
-            <ul class="space-y-3.5">
-              @for (link of col.links; track link) {
-                <li>
-                  <a href="#"
-                     class="text-sm font-medium text-surface-500
-                            hover:text-white transition-colors duration-200">
-                    {{ link }}
-                  </a>
-                </li>
-              }
-            </ul>
-          </div>
-        }
-      </div>
-
-      <!-- Bottom bar -->
-      <div class="pt-8 border-t border-surface-900 flex flex-wrap justify-between items-center gap-4
-                  text-[11px] font-medium text-surface-600 uppercase tracking-widest">
-        <span>© 2026 Unikly Ecosystem · Built for builders</span>
-        <div class="flex gap-6">
-          <a href="#" class="hover:text-surface-400 transition-colors">Privacy</a>
-          <a href="#" class="hover:text-surface-400 transition-colors">Terms</a>
-          <a href="#" class="hover:text-surface-400 transition-colors">Security</a>
-        </div>
+  <footer class="bg-white py-8">
+    <div class="container-wide flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--ui-muted)]">
+      <p>�(c) 2026 Unikly. Built for trusted freelance collaboration.</p>
+      <div class="flex gap-4">
+        <a href="#" class="hover:text-brand-dark">Privacy</a>
+        <a href="#" class="hover:text-brand-dark">Terms</a>
+        <a href="#" class="hover:text-brand-dark">Security</a>
       </div>
     </div>
   </footer>
-
 </div>
+

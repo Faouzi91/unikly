@@ -1,62 +1,38 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { CommonModule, NgClass } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatListModule } from '@angular/material/list';
-
 import Swal from 'sweetalert2';
-
 import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
-import { JobService } from '../services/job.service';
 import { KeycloakService } from '../../../core/auth/keycloak.service';
-import { Job, Proposal, MatchEntry } from '../models/job.models';
-import {
-  ProposalDialogComponent,
-  ProposalDialogData,
-} from '../components/proposal-dialog/proposal-dialog.component';
-import {
-  PaymentDialogComponent,
-  PaymentDialogData,
-} from '../../payments/payment-dialog/payment-dialog.component';
+import { ToastService } from '../../../core/services/toast.service';
+import { PaymentRecord, PaymentService } from '../../../core/services/payment.service';
+import { PaymentDialogComponent, PaymentDialogData } from '../../payments/payment-dialog/payment-dialog.component';
 import { PaymentStatusComponent } from '../../payments/payment-status/payment-status.component';
-import { PaymentService, PaymentRecord } from '../../../core/services/payment.service';
+import { Job, MatchEntry, Proposal, SubmitProposalRequest } from '../models/job.models';
+import { ProposalDialogComponent, ProposalDialogData } from '../components/proposal-dialog/proposal-dialog.component';
+import { JobService } from '../services/job.service';
 
 @Component({
   selector: 'app-job-detail',
   standalone: true,
-  templateUrl: './job-detail.component.html',
-  styleUrl: './job-detail.component.scss',
   imports: [
     CommonModule,
+    NgClass,
     RouterLink,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatChipsModule,
-    MatTabsModule,
-    MatDialogModule,
-    MatSnackBarModule,
-    MatDividerModule,
-    MatListModule,
     TimeAgoPipe,
+    ProposalDialogComponent,
+    PaymentDialogComponent,
     PaymentStatusComponent,
   ],
+  templateUrl: './job-detail.component.html',
+  styleUrl: './job-detail.component.scss',
 })
 export class JobDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly jobService = inject(JobService);
   private readonly keycloak = inject(KeycloakService);
-  private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
   private readonly paymentService = inject(PaymentService);
+  private readonly toast = inject(ToastService);
 
   job: Job | null = null;
   proposals: Proposal[] = [];
@@ -65,16 +41,21 @@ export class JobDetailComponent implements OnInit {
   loading = true;
   matchesLoading = false;
 
+  readonly activeTab = signal<'details' | 'proposals' | 'matches'>('details');
+  readonly showProposalModal = signal(false);
+  readonly proposalSubmitting = signal(false);
+  readonly showPaymentModal = signal(false);
+
   get isJobOwner(): boolean {
     return this.job?.clientId === this.keycloak.getUserId();
   }
 
   get hasAcceptedProposal(): boolean {
-    return this.proposals.some((p) => p.status === 'ACCEPTED');
+    return this.proposals.some((proposal) => proposal.status === 'ACCEPTED');
   }
 
   get acceptedProposal(): Proposal | undefined {
-    return this.proposals.find((p) => p.status === 'ACCEPTED');
+    return this.proposals.find((proposal) => proposal.status === 'ACCEPTED');
   }
 
   get showFundEscrow(): boolean {
@@ -86,21 +67,140 @@ export class JobDetailComponent implements OnInit {
     );
   }
 
-  get showPaymentStatus(): boolean {
-    return this.payment !== null;
-  }
-
   get canSubmitProposal(): boolean {
     return (
       this.job?.status === 'OPEN' &&
-      this.keycloak.hasRole('ROLE_FREELANCER') &&
+      (this.keycloak.hasRole('ROLE_FREELANCER') || this.keycloak.hasRole('FREELANCER')) &&
       !this.isJobOwner
     );
   }
 
+  get proposalDialogData(): ProposalDialogData {
+    return {
+      jobTitle: this.job?.title ?? '',
+      jobBudget: this.job?.budget ?? 0,
+      jobCurrency: this.job?.currency ?? 'USD',
+    };
+  }
+
+  get paymentDialogData(): PaymentDialogData {
+    const accepted = this.acceptedProposal;
+    return {
+      jobId: this.job?.id ?? '',
+      jobTitle: this.job?.title ?? '',
+      budget: accepted?.proposedBudget ?? 0,
+      currency: this.job?.currency ?? 'USD',
+      freelancerId: accepted?.freelancerId ?? '',
+    };
+  }
+
   ngOnInit(): void {
-    const jobId = this.route.snapshot.paramMap.get('id')!;
-    this.loadJob(jobId);
+    const jobId = this.route.snapshot.paramMap.get('id');
+    if (jobId) {
+      this.loadJob(jobId);
+    } else {
+      this.loading = false;
+    }
+  }
+
+  openProposalDialog(): void {
+    this.showProposalModal.set(true);
+  }
+
+  closeProposalDialog(): void {
+    this.showProposalModal.set(false);
+  }
+
+  submitProposal(payload: SubmitProposalRequest): void {
+    if (!this.job) return;
+    this.proposalSubmitting.set(true);
+    this.jobService.submitProposal(this.job.id, payload).subscribe({
+      next: () => {
+        this.proposalSubmitting.set(false);
+        this.showProposalModal.set(false);
+        this.toast.success('Proposal submitted successfully.');
+        this.loadJob(this.job!.id);
+      },
+      error: () => this.proposalSubmitting.set(false),
+    });
+  }
+
+  async acceptProposal(proposal: Proposal): Promise<void> {
+    if (!this.job) return;
+
+    const result = await Swal.fire({
+      title: 'Accept proposal?',
+      text: `Accept ${proposal.freelancerName || 'this freelancer'} for ${proposal.proposedBudget} ${this.job.currency}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Accept',
+      confirmButtonColor: '#14a800',
+    });
+
+    if (!result.isConfirmed) return;
+
+    this.jobService.acceptProposal(this.job.id, proposal.id).subscribe({
+      next: () => {
+        this.toast.success('Proposal accepted.');
+        this.loadJob(this.job!.id);
+      },
+    });
+  }
+
+  async rejectProposal(proposal: Proposal): Promise<void> {
+    if (!this.job) return;
+
+    const result = await Swal.fire({
+      title: 'Reject proposal?',
+      text: 'Are you sure you want to reject this proposal?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Reject',
+      confirmButtonColor: '#dc2626',
+    });
+
+    if (!result.isConfirmed) return;
+
+    this.jobService.rejectProposal(this.job.id, proposal.id).subscribe({
+      next: () => {
+        this.toast.info('Proposal rejected.');
+        this.loadProposals(this.job!.id);
+      },
+    });
+  }
+
+  openPaymentDialog(): void {
+    if (!this.acceptedProposal) return;
+    this.showPaymentModal.set(true);
+  }
+
+  closePaymentDialog(): void {
+    this.showPaymentModal.set(false);
+  }
+
+  onPaymentCompleted(): void {
+    this.showPaymentModal.set(false);
+    if (this.job) {
+      this.loadPayment(this.job.id);
+    }
+  }
+
+  statusClass(status: string): string {
+    if (status === 'OPEN') return 'bg-emerald-100 text-emerald-800';
+    if (status === 'IN_PROGRESS') return 'bg-sky-100 text-sky-800';
+    if (status === 'COMPLETED' || status === 'CLOSED') return 'bg-ink-100 text-ink-600';
+    if (status === 'CANCELLED' || status === 'DISPUTED') return 'bg-rose-100 text-rose-800';
+    if (status === 'DRAFT') return 'bg-amber-100 text-amber-800';
+    if (status === 'REFUNDED') return 'bg-violet-100 text-violet-800';
+    return 'bg-ink-100 text-ink-600';
+  }
+
+  proposalStatusClass(status: string): string {
+    if (status === 'PENDING') return 'bg-amber-100 text-amber-800';
+    if (status === 'ACCEPTED') return 'bg-emerald-100 text-emerald-800';
+    if (status === 'REJECTED') return 'bg-rose-100 text-rose-800';
+    if (status === 'WITHDRAWN') return 'bg-ink-100 text-ink-600';
+    return 'bg-ink-100 text-ink-600';
   }
 
   private loadJob(jobId: string): void {
@@ -116,21 +216,13 @@ export class JobDetailComponent implements OnInit {
           this.loadPayment(jobId);
         }
       },
-      error: () => {
-        this.loading = false;
-      },
+      error: () => (this.loading = false),
     });
   }
 
   private loadProposals(jobId: string): void {
     this.jobService.getProposals(jobId).subscribe({
       next: (proposals) => (this.proposals = proposals),
-    });
-  }
-
-  private loadPayment(jobId: string): void {
-    this.paymentService.getPaymentStatus(jobId).subscribe({
-      next: (records) => (this.payment = records[0] ?? null),
     });
   }
 
@@ -141,127 +233,13 @@ export class JobDetailComponent implements OnInit {
         this.matches = matches;
         this.matchesLoading = false;
       },
-      error: () => {
-        this.matchesLoading = false;
-      },
+      error: () => (this.matchesLoading = false),
     });
   }
 
-  openProposalDialog(): void {
-    if (!this.job) return;
-
-    const dialogRef = this.dialog.open(ProposalDialogComponent, {
-      width: '500px',
-      data: {
-        jobTitle: this.job.title,
-        jobBudget: this.job.budget,
-        jobCurrency: this.job.currency,
-      } as ProposalDialogData,
+  private loadPayment(jobId: string): void {
+    this.paymentService.getPaymentStatus(jobId).subscribe({
+      next: (records) => (this.payment = records[0] ?? null),
     });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result && this.job) {
-        this.jobService.submitProposal(this.job.id, result).subscribe({
-          next: () => {
-            this.snackBar.open('Proposal submitted!', 'Close', {
-              duration: 3000,
-            });
-            this.loadJob(this.job!.id);
-          },
-        });
-      }
-    });
-  }
-
-  async acceptProposal(proposal: Proposal): Promise<void> {
-    const result = await Swal.fire({
-      title: 'Accept Proposal?',
-      text: `Accept proposal from ${proposal.freelancerName || 'this freelancer'} for ${proposal.proposedBudget} ${this.job?.currency}? All other pending proposals will be rejected.`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, Accept',
-      confirmButtonColor: '#4f46e5',
-    });
-
-    if (result.isConfirmed && this.job) {
-      this.jobService
-        .acceptProposal(this.job.id, proposal.id)
-        .subscribe({
-          next: () => {
-            this.snackBar.open('Proposal accepted!', 'Close', {
-              duration: 3000,
-            });
-            this.loadJob(this.job!.id);
-          },
-        });
-    }
-  }
-
-  async rejectProposal(proposal: Proposal): Promise<void> {
-    const result = await Swal.fire({
-      title: 'Reject Proposal?',
-      text: `Are you sure you want to reject this proposal?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, Reject',
-      confirmButtonColor: '#dc2626',
-    });
-
-    if (result.isConfirmed && this.job) {
-      this.jobService
-        .rejectProposal(this.job.id, proposal.id)
-        .subscribe({
-          next: () => {
-            this.snackBar.open('Proposal rejected.', 'Close', {
-              duration: 3000,
-            });
-            this.loadProposals(this.job!.id);
-          },
-        });
-    }
-  }
-
-  openPaymentDialog(): void {
-    if (!this.job) return;
-    const accepted = this.acceptedProposal;
-    if (!accepted) return;
-
-    const dialogRef = this.dialog.open(PaymentDialogComponent, {
-      width: '480px',
-      disableClose: true,
-      data: {
-        jobId: this.job.id,
-        jobTitle: this.job.title,
-        budget: accepted.proposedBudget,
-        currency: this.job.currency,
-        freelancerId: accepted.freelancerId,
-      } as PaymentDialogData,
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result?.success && this.job) {
-        this.loadPayment(this.job.id);
-      }
-    });
-  }
-
-  getStatusClass(status: string): Record<string, boolean> {
-    return {
-      'bg-green-100 text-green-800': status === 'OPEN',
-      'bg-blue-100 text-blue-800': status === 'IN_PROGRESS',
-      'bg-gray-100 text-gray-800': status === 'COMPLETED' || status === 'CLOSED',
-      'bg-red-100 text-red-800': status === 'CANCELLED' || status === 'DISPUTED',
-      'bg-yellow-100 text-yellow-800': status === 'DRAFT',
-      'bg-purple-100 text-purple-800': status === 'REFUNDED',
-    };
-  }
-
-  getProposalStatusClass(status: string): Record<string, boolean> {
-    return {
-      'bg-yellow-100 text-yellow-800': status === 'PENDING',
-      'bg-green-100 text-green-800': status === 'ACCEPTED',
-      'bg-red-100 text-red-800': status === 'REJECTED',
-      'bg-gray-100 text-gray-800': status === 'WITHDRAWN',
-    };
   }
 }

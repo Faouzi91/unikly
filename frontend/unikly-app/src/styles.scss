@@ -1,22 +1,24 @@
 @import "tailwindcss";
 
-/* ══════════════════════════════════════════════════════════════
-   DESIGN TOKENS
-   All colours, fonts, and spacing live here.
-   Components reference these via Tailwind utilities (bg-accent, etc.)
-   or the CSS custom properties in the :root / .dark blocks below.
-══════════════════════════════════════════════════════════════ */
 @theme {
-  /* Typeface */
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Manrope", "Segoe UI", sans-serif;
 
-  /* ── Brand ───────────────────────────────────────────────── */
-  --color-accent:       #10b981;   /* Emerald-500  */
-  --color-accent-dark:  #059669;   /* Emerald-600  */
-  --color-accent-light: #34d399;   /* Emerald-400  */
+  --color-brand: #14a800;
+  --color-brand-dark: #108a00;
+  --color-brand-soft: #dff9d8;
 
-  /* ── Surface palette (Slate scale) ───────────────────────── */
-  --color-surface-50:  #f8fafc;
+  --color-primary-50: #eff7ff;
+  --color-primary-100: #dbeeff;
+  --color-primary-200: #b3dcff;
+  --color-primary-300: #7dc5ff;
+  --color-primary-400: #47aaff;
+  --color-primary-500: #128eff;
+  --color-primary-600: #0070db;
+  --color-primary-700: #0059ad;
+  --color-primary-800: #044b8f;
+  --color-primary-900: #093f75;
+
+  --color-surface-50: #f8fafc;
   --color-surface-100: #f1f5f9;
   --color-surface-200: #e2e8f0;
   --color-surface-300: #cbd5e1;
@@ -28,46 +30,51 @@
   --color-surface-900: #0f172a;
   --color-surface-950: #020617;
 
-  /* ── Semantic UI tokens (light-mode defaults, overridden in .dark) ─ */
-  --color-ui-bg:      #ffffff;
-  --color-ui-surface: #f8fafc;
-  --color-ui-border:  #e2e8f0;
-  --color-ui-text:    #0f172a;
-  --color-ui-muted:   #64748b;
+  --color-ink-50: #f8fafc;
+  --color-ink-100: #eef2f6;
+  --color-ink-200: #d7e0ea;
+  --color-ink-300: #b8c6d6;
+  --color-ink-400: #7f90a5;
+  --color-ink-500: #5f6f82;
+  --color-ink-600: #415165;
+  --color-ink-700: #2d3d52;
+  --color-ink-800: #1e2a3b;
+  --color-ink-900: #101927;
 }
 
-/* ── Dark-mode overrides ────────────────────────────────────── */
-.dark {
-  --color-ui-bg:      #020617;
-  --color-ui-surface: #0f172a;
-  --color-ui-border:  #1e293b;
-  --color-ui-text:    #f8fafc;
-  --color-ui-muted:   #94a3b8;
-}
-
-/* ── CSS custom properties (used in component class rules) ──── */
 :root {
-  --ui-bg:          var(--color-ui-bg);
-  --ui-surface:     var(--color-ui-surface);
-  --ui-border:      var(--color-ui-border);
-  --ui-text-main:   var(--color-ui-text);
-  --ui-text-muted:  var(--color-ui-muted);
-  --ui-glass:       rgba(255, 255, 255, 0.82);
-  --ui-shadow:      0 2px 8px -2px rgb(0 0 0 / 0.06), 0 4px 12px -4px rgb(0 0 0 / 0.06);
+  --ui-bg: #f5f9f6;
+  --ui-surface: #ffffff;
+  --ui-border: #dbe5de;
+  --ui-text: #122018;
+  --ui-muted: #5f6f67;
+  --ui-shadow:
+    0 16px 42px -28px rgb(16 24 39 / 0.32),
+    0 8px 20px -14px rgb(16 24 39 / 0.28);
 }
 
 .dark {
-  --ui-glass:  rgba(15, 23, 42, 0.88);
-  --ui-shadow: 0 8px 24px -4px rgb(0 0 0 / 0.55), 0 4px 8px -4px rgb(0 0 0 / 0.4);
+  --ui-bg: #0f1712;
+  --ui-surface: #121f17;
+  --ui-border: #243428;
+  --ui-text: #f2f6f3;
+  --ui-muted: #b9c6bd;
+  --ui-shadow:
+    0 22px 46px -26px rgb(0 0 0 / 0.58),
+    0 10px 24px -18px rgb(0 0 0 / 0.52);
 }
 
-
-/* ══════════════════════════════════════════════════════════════
-   BASE
-══════════════════════════════════════════════════════════════ */
 @layer base {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
   }
 
   html {
@@ -75,96 +82,143 @@
   }
 
   body {
-    background-color: var(--ui-bg);
-    color: var(--ui-text-main);
-    @apply antialiased transition-colors duration-300 font-sans;
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    @apply font-sans antialiased;
   }
 
-  /* Remove blue outline on Firefox for buttons */
+  a {
+    @apply text-inherit no-underline;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
   button:focus-visible,
-  a:focus-visible {
-    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-white dark:ring-offset-surface-950;
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply outline-none ring-2 ring-brand/40 ring-offset-2 ring-offset-white;
   }
 }
 
-
-/* ══════════════════════════════════════════════════════════════
-   COMPONENT UTILITIES
-   These are class-level utilities used across multiple pages.
-   Page/feature-specific styles live in each component's .scss file.
-══════════════════════════════════════════════════════════════ */
 @layer components {
+  .page-shell {
+    @apply min-h-screen bg-[var(--ui-bg)] text-[var(--ui-text)];
+  }
 
-  /* ── Cards ─────────────────────────────────────────────── */
-  .marketplace-card {
-    background-color: var(--ui-surface);
+  .container-wide {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .container-narrow {
+    @apply mx-auto w-full max-w-3xl px-4 sm:px-6;
+  }
+
+  .card-panel {
+    background: var(--ui-surface);
     border: 1px solid var(--ui-border);
     box-shadow: var(--ui-shadow);
-    @apply rounded-2xl p-6 transition-all duration-300
-           hover:border-accent/30 hover:-translate-y-0.5 hover:shadow-lg;
+    @apply rounded-2xl;
   }
 
-  /* ── Sticky glass navigation ────────────────────────────── */
-  .glass-nav {
-    background-color: var(--ui-glass);
-    border-bottom: 1px solid var(--ui-border);
-    @apply backdrop-blur-xl sticky top-0 z-50 transition-colors duration-300;
+  .marketplace-card,
+  .card-base {
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    box-shadow: var(--ui-shadow);
+    @apply rounded-2xl;
   }
 
-  /* ── Primary CTA button ─────────────────────────────────── */
+  .btn-primary,
   .btn-market-primary {
-    @apply inline-flex items-center justify-center gap-2
-           bg-accent text-white font-bold px-6 py-3 rounded-xl text-sm
-           hover:bg-accent-dark active:scale-95
-           transition-all shadow-lg shadow-accent/15
-           disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
-           select-none;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white transition
+      hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60;
   }
 
-  /* ── Ghost / secondary button ───────────────────────────── */
+  .btn-secondary,
   .btn-market-ghost {
-    color: var(--ui-text-main);
     border: 1px solid var(--ui-border);
-    @apply inline-flex items-center justify-center gap-2
-           px-6 py-3 rounded-xl font-bold text-sm
-           hover:bg-surface-100 dark:hover:bg-surface-800
-           transition-all select-none
-           disabled:opacity-50 disabled:cursor-not-allowed;
+    background: var(--ui-surface);
+    color: var(--ui-text);
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition
+      hover:border-brand/35 hover:bg-brand-soft/35 dark:hover:bg-brand/10 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
-  /* ── Text / form inputs ─────────────────────────────────── */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-[var(--ui-muted)] transition
+      hover:bg-black/5 hover:text-[var(--ui-text)];
+  }
+
+  .input-field,
   .input-base {
-    background-color: var(--ui-bg);
     border: 1px solid var(--ui-border);
-    color: var(--ui-text-main);
-    @apply w-full px-4 py-3 rounded-xl text-sm font-medium
-           placeholder:text-surface-400 dark:placeholder:text-surface-600
-           focus:outline-none focus:ring-2 focus:ring-accent/35 focus:border-accent
-           transition-all duration-200;
+    background: var(--ui-surface);
+    color: var(--ui-text);
+    @apply block w-full rounded-xl px-4 py-2.5 text-sm transition placeholder:text-ink-400
+      focus:border-brand focus:ring-2 focus:ring-brand/25;
   }
 
-  /* ── Auth shared layout (left dark panel) ───────────────── */
+  .field-label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ui-muted)];
+  }
+
+  .field-error {
+    @apply mt-1 text-xs font-medium text-red-600;
+  }
+
+  .section-title {
+    @apply text-2xl font-bold tracking-tight text-[var(--ui-text)];
+  }
+
+  .muted-text {
+    @apply text-sm text-[var(--ui-muted)];
+  }
+
+  .pill {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+
+  .tab-button {
+    border: 1px solid transparent;
+    @apply rounded-xl px-4 py-2 text-sm font-semibold text-[var(--ui-muted)] transition;
+  }
+
+  .tab-button-active {
+    border-color: rgb(20 168 0 / 0.25);
+    background: rgb(20 168 0 / 0.1);
+    color: rgb(16 138 0);
+    @apply shadow-sm;
+  }
+
+  .glass-nav {
+    background: color-mix(in oklab, var(--ui-surface), transparent 18%);
+    border-bottom: 1px solid var(--ui-border);
+    @apply sticky top-0 z-40 backdrop-blur;
+  }
+
   .auth-left-panel {
-    @apply hidden lg:flex flex-col
-           bg-surface-900 dark:bg-surface-950
-           relative overflow-hidden;
+    @apply hidden lg:flex min-h-screen flex-col bg-ink-900 text-white;
   }
 }
 
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
 
-/* ══════════════════════════════════════════════════════════════
-   GLOBAL ANIMATIONS
-══════════════════════════════════════════════════════════════ */
-@keyframes ticker {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.ticker-track {
-  animation: ticker 30s linear infinite;
-  will-change: transform;
-}
-
-.ticker-track:hover {
-  animation-play-state: paused;
+.fade-up {
+  animation: fade-up 320ms ease forwards;
 }

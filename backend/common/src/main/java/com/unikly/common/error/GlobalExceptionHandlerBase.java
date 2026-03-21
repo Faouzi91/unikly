@@ -10,6 +10,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -74,6 +75,18 @@ public abstract class GlobalExceptionHandlerBase {
     public ResponseEntity<ErrorResponse> handleBadRequest(IllegalArgumentException ex) {
         return ResponseEntity.badRequest()
                 .body(ErrorResponse.of(400, "Bad Request", ex.getMessage(), getTraceId()));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatusException(ResponseStatusException ex) {
+        int status = ex.getStatusCode().value();
+        String error = ex.getStatusCode() instanceof HttpStatus httpStatus
+                ? httpStatus.getReasonPhrase()
+                : "Request Failed";
+        String message = ex.getReason() != null ? ex.getReason() : error;
+
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(ErrorResponse.of(status, error, message, getTraceId()));
     }
 
     @ExceptionHandler(Exception.class)

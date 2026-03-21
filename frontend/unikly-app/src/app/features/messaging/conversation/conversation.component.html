@@ -1,99 +1,89 @@
-<div class="flex flex-col h-[calc(100vh-64px)]">
-
-  <!-- Header -->
-  <div class="flex items-center gap-3 px-4 py-3 border-b bg-white shadow-sm">
-    <button mat-icon-button routerLink="/messages">
-      <mat-icon>arrow_back</mat-icon>
-    </button>
-    <div class="flex-1">
-      <p class="font-semibold">{{ otherParticipantLabel() }}</p>
-    </div>
-    @if (otherParticipantId()) {
-      <a mat-button [routerLink]="['/users', otherParticipantId()]" color="primary">
-        View Profile
-      </a>
-    }
-  </div>
-
-  <!-- Top sentinel for infinite scroll -->
-  <div #topSentinel class="h-1"></div>
-
-  <!-- Messages area -->
-  <div
-    #messagesContainer
-    class="flex-1 overflow-y-auto px-4 py-3 space-y-2"
-  >
-    @if (loadingMore()) {
-      <div class="flex justify-center py-2">
-        <mat-spinner diameter="24" />
+<section class="card-panel flex h-[calc(100vh-7.5rem)] flex-col overflow-hidden">
+  <header class="flex items-center justify-between border-b border-[var(--ui-border)] px-4 py-3">
+    <div class="flex items-center gap-2">
+      <a routerLink="/messages" class="btn-ghost px-2 py-1">Back</a>
+      <div>
+        <p class="text-sm font-semibold text-ink-900">{{ otherParticipantLabel() }}</p>
+        <p class="text-xs text-[var(--ui-muted)]">Direct conversation</p>
       </div>
-    }
+    </div>
 
-    @for (msg of messages(); track msg.id) {
-      <div
-        class="flex"
-        [ngClass]="msg.senderId === currentUserId ? 'justify-end' : 'justify-start'"
-      >
-        <div
-          class="max-w-xs lg:max-w-md px-4 py-2 rounded-2xl text-sm"
-          [ngClass]="msg.senderId === currentUserId
-            ? 'bg-indigo-600 text-white rounded-br-sm'
-            : 'bg-gray-100 text-gray-800 rounded-bl-sm'"
-        >
-          <p class="whitespace-pre-wrap break-words">{{ msg.content }}</p>
-          <div
-            class="flex items-center gap-1 mt-1"
-            [ngClass]="msg.senderId === currentUserId ? 'justify-end' : 'justify-start'"
-          >
-            <span class="text-xs opacity-60">{{ msg.createdAt | timeAgo }}</span>
-            @if (msg.senderId === currentUserId && msg.readAt) {
-              <mat-icon
-                class="opacity-70"
-                style="font-size:14px;width:14px;height:14px;line-height:14px"
-              >done_all</mat-icon>
-            }
+    @if (otherParticipantId()) {
+      <a [routerLink]="['/users', otherParticipantId()]" class="btn-secondary px-3 py-1.5">View Profile</a>
+    }
+  </header>
+
+  <div #messagesContainer class="flex-1 overflow-y-auto bg-ink-50/70 px-4 py-3">
+    <div #topSentinel class="h-0.5"></div>
+
+    @if (loading()) {
+      <div class="flex justify-center py-10">
+        <span class="inline-block h-8 w-8 animate-spin rounded-full border-2 border-ink-300 border-t-brand"></span>
+      </div>
+    } @else {
+      @if (loadingMore()) {
+        <div class="mb-2 flex justify-center">
+          <span class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-ink-300 border-t-brand"></span>
+        </div>
+      }
+
+      <div class="space-y-2">
+        @for (msg of messages(); track msg.id) {
+          <div class="flex" [ngClass]="msg.senderId === currentUserId ? 'justify-end' : 'justify-start'">
+            <article
+              class="max-w-xs rounded-2xl px-3 py-2 text-sm shadow-sm sm:max-w-md"
+              [ngClass]="
+                msg.senderId === currentUserId
+                  ? 'rounded-br-md bg-brand text-white'
+                  : 'rounded-bl-md bg-white text-ink-800 border border-[var(--ui-border)]'
+              "
+            >
+              <p class="whitespace-pre-wrap break-words">{{ msg.content }}</p>
+              <div
+                class="mt-1 flex items-center gap-1 text-[11px]"
+                [ngClass]="msg.senderId === currentUserId ? 'justify-end text-white/80' : 'text-ink-400'"
+              >
+                <span>{{ msg.createdAt | timeAgo }}</span>
+                @if (msg.senderId === currentUserId && msg.readAt) {
+                  <span class="font-semibold">Seen</span>
+                }
+              </div>
+            </article>
+          </div>
+        }
+      </div>
+
+      @if (isTyping()) {
+        <div class="mt-2 flex justify-start">
+          <div class="flex items-center gap-1 rounded-2xl rounded-bl-md border border-[var(--ui-border)] bg-white px-3 py-2">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
           </div>
         </div>
-      </div>
-    }
+      }
 
-    <!-- Typing indicator -->
-    @if (isTyping()) {
-      <div class="flex justify-start">
-        <div class="bg-gray-100 px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1">
-          <span class="typing-dot"></span>
-          <span class="typing-dot"></span>
-          <span class="typing-dot"></span>
-        </div>
-      </div>
+      <div #scrollAnchor></div>
     }
-
-    <!-- Scroll anchor -->
-    <div #scrollAnchor></div>
   </div>
 
-  <!-- Input area -->
-  <div class="border-t bg-white px-4 py-3 flex items-end gap-2">
-    <mat-form-field class="flex-1" appearance="outline" subscriptSizing="dynamic">
+  <footer class="border-t border-[var(--ui-border)] bg-white p-3">
+    <div class="flex items-end gap-2">
       <textarea
-        matInput
         [(ngModel)]="newMessage"
-        placeholder="Type a message..."
+        class="input-field min-h-[2.6rem] flex-1 resize-none"
+        placeholder="Type your message..."
         rows="1"
-        cdkTextareaAutosize
         (keydown)="onKeydown($event)"
         (input)="onTyping()"
-        class="resize-none"
       ></textarea>
-    </mat-form-field>
-    <button
-      mat-icon-button
-      color="primary"
-      [disabled]="!newMessage.trim() || sending()"
-      (click)="sendMessage()"
-      class="mb-1"
-    >
-      <mat-icon>send</mat-icon>
-    </button>
-  </div>
-</div>
+      <button type="button" class="btn-primary px-4 py-2.5" [disabled]="!newMessage.trim() || sending()" (click)="sendMessage()">
+        @if (sending()) {
+          <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+        } @else {
+          Send
+        }
+      </button>
+    </div>
+  </footer>
+</section>

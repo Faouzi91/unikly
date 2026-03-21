@@ -1,85 +1,73 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, ElementRef, HostListener, computed, effect, inject, signal } from '@angular/core';
 import { NgClass } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatBadgeModule } from '@angular/material/badge';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatDividerModule } from '@angular/material/divider';
+import { Router } from '@angular/router';
 import { TimeAgoPipe } from '../../pipes/time-ago.pipe';
-import {
-  NotificationService,
-  NotificationItem,
-} from '../../../core/services/notification.service';
+import { NotificationItem, NotificationService } from '../../../core/services/notification.service';
 
-const TYPE_ICONS: Record<string, string> = {
-  JOB_MATCHED: 'work',
-  PROPOSAL_RECEIVED: 'description',
-  PROPOSAL_ACCEPTED: 'check_circle',
-  PAYMENT_FUNDED: 'payments',
-  ESCROW_RELEASED: 'account_balance_wallet',
-  MESSAGE_RECEIVED: 'chat',
-  SYSTEM: 'info',
+const TYPE_LABELS: Record<string, string> = {
+  JOB_MATCHED: 'Job',
+  PROPOSAL_RECEIVED: 'Proposal',
+  PROPOSAL_ACCEPTED: 'Accepted',
+  PAYMENT_FUNDED: 'Escrow',
+  ESCROW_RELEASED: 'Released',
+  MESSAGE_RECEIVED: 'Message',
+  SYSTEM: 'System',
 };
 
 @Component({
   selector: 'app-notification-bell',
   standalone: true,
-  imports: [
-    NgClass,
-    MatIconModule,
-    MatButtonModule,
-    MatBadgeModule,
-    MatMenuModule,
-    MatDividerModule,
-    TimeAgoPipe,
-  ],
+  imports: [NgClass, TimeAgoPipe],
   templateUrl: './notification-bell.component.html',
   styleUrl: './notification-bell.component.scss',
 })
-export class NotificationBellComponent implements OnInit {
+export class NotificationBellComponent {
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
+  private readonly host = inject(ElementRef<HTMLElement>);
 
   readonly unreadCount = this.notificationService.unreadCount;
-  readonly recent = computed(() => this.notificationService.notifications().slice(0, 10));
-
-  readonly isPulsing = signal(false);
+  readonly recent = computed(() => this.notificationService.notifications().slice(0, 8));
+  readonly open = signal(false);
+  readonly pulse = signal(false);
 
   private previousUnread = 0;
 
-  ngOnInit(): void {
+  constructor() {
     this.notificationService.init();
-    this.watchForNewNotifications();
-  }
 
-  private watchForNewNotifications(): void {
-    // Poll the signal for changes — effect() not needed; we track in getter.
-    // We use setInterval as a lightweight change detector for the pulse animation.
-    setInterval(() => {
+    effect(() => {
       const current = this.unreadCount();
       if (current > this.previousUnread) {
         this.triggerPulse();
       }
       this.previousUnread = current;
-    }, 500);
+    });
   }
 
-  private triggerPulse(): void {
-    this.isPulsing.set(true);
-    setTimeout(() => this.isPulsing.set(false), 700);
-  }
-
-  iconFor(type: string): string {
-    return TYPE_ICONS[type] ?? 'notifications';
-  }
-
-  onItemClick(n: NotificationItem): void {
-    if (!n.read) {
-      this.notificationService.markAsRead(n.id).subscribe();
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as Node | null;
+    if (target && !this.host.nativeElement.contains(target)) {
+      this.open.set(false);
     }
-    if (n.actionUrl) {
-      this.router.navigateByUrl(n.actionUrl);
+  }
+
+  toggle(): void {
+    this.open.set(!this.open());
+  }
+
+  labelFor(type: string): string {
+    return TYPE_LABELS[type] ?? 'Alert';
+  }
+
+  onItemClick(item: NotificationItem): void {
+    if (!item.read) {
+      this.notificationService.markAsRead(item.id).subscribe();
+    }
+    this.open.set(false);
+    if (item.actionUrl) {
+      this.router.navigateByUrl(item.actionUrl);
     }
   }
 
@@ -88,6 +76,12 @@ export class NotificationBellComponent implements OnInit {
   }
 
   viewAll(): void {
+    this.open.set(false);
     this.router.navigate(['/notifications']);
+  }
+
+  private triggerPulse(): void {
+    this.pulse.set(true);
+    setTimeout(() => this.pulse.set(false), 600);
   }
 }

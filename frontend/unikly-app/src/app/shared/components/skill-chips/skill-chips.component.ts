@@ -1,11 +1,9 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-skill-chips',
   standalone: true,
-  imports: [MatChipsModule, MatIconModule],
+  imports: [],
   templateUrl: './skill-chips.component.html',
   styleUrl: './skill-chips.component.scss',
 })

@@ -1,30 +1,13 @@
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
-
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatChipsModule } from '@angular/material/chips';
-import {
-  MatAutocompleteModule,
-  MatAutocompleteSelectedEvent,
-} from '@angular/material/autocomplete';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-
 import { StarRatingComponent } from '../../../shared/components/star-rating/star-rating.component';
 import { UserAvatarComponent } from '../../../shared/components/user-avatar/user-avatar.component';
 import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
 import { JobService } from '../../jobs/services/job.service';
-import {
-  JobSearchResult,
-  FreelancerSearchResult,
-} from '../../jobs/models/job.models';
+import { FreelancerSearchResult, JobSearchResult } from '../../jobs/models/job.models';
 
 @Component({
   selector: 'app-search',
@@ -33,15 +16,6 @@ import {
     CommonModule,
     ReactiveFormsModule,
     RouterLink,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatTabsModule,
-    MatChipsModule,
-    MatAutocompleteModule,
-    MatPaginatorModule,
     StarRatingComponent,
     UserAvatarComponent,
     TimeAgoPipe,
@@ -53,20 +27,18 @@ export class SearchComponent implements OnInit, OnDestroy {
   private readonly jobService = inject(JobService);
   private readonly destroy$ = new Subject<void>();
 
-  searchControl = new FormControl('');
-  skillInputControl = new FormControl('');
+  readonly searchControl = new FormControl('');
+  readonly skillInputControl = new FormControl('');
   selectedSkills: string[] = [];
   skillSuggestions: string[] = [];
-  activeTab = 0;
-  pageSize = 10;
+  activeTab: 'jobs' | 'freelancers' = 'jobs';
+  readonly pageSize = 10;
 
-  // Jobs
   jobResults: JobSearchResult[] = [];
   jobsLoading = false;
   jobsPage = 0;
   jobsTotalElements = 0;
 
-  // Freelancers
   freelancerResults: FreelancerSearchResult[] = [];
   freelancersLoading = false;
   freelancersPage = 0;
@@ -86,12 +58,10 @@ export class SearchComponent implements OnInit, OnDestroy {
       });
 
     this.skillInputControl.valueChanges
-      .pipe(debounceTime(200), distinctUntilChanged(), takeUntil(this.destroy$))
+      .pipe(debounceTime(220), distinctUntilChanged(), takeUntil(this.destroy$))
       .subscribe((value) => {
-        if (value && value.length >= 2) {
-          this.jobService
-            .getSuggestions(value)
-            .subscribe((suggestions) => (this.skillSuggestions = suggestions));
+        if (value && value.trim().length >= 2) {
+          this.jobService.getSuggestions(value.trim()).subscribe((suggestions) => (this.skillSuggestions = suggestions));
         } else {
           this.skillSuggestions = [];
         }
@@ -103,68 +73,19 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private searchJobs(): void {
-    this.jobsLoading = true;
-    const params: {
-      q?: string;
-      skills?: string;
-      page: number;
-      size: number;
-    } = {
-      page: this.jobsPage,
-      size: this.pageSize,
-    };
-
-    const q = this.searchControl.value?.trim();
-    if (q) params.q = q;
-    if (this.selectedSkills.length > 0)
-      params.skills = this.selectedSkills.join(',');
-
-    this.jobService.getJobs(params).subscribe({
-      next: (response) => {
-        this.jobResults = response.content;
-        this.jobsTotalElements = response.totalElements;
-        this.jobsLoading = false;
-      },
-      error: () => {
-        this.jobsLoading = false;
-      },
-    });
+  jobsTotalPages(): number {
+    return Math.max(1, Math.ceil(this.jobsTotalElements / this.pageSize));
   }
 
-  private searchFreelancers(): void {
-    this.freelancersLoading = true;
-    const params: {
-      q?: string;
-      skills?: string;
-      page: number;
-      size: number;
-    } = {
-      page: this.freelancersPage,
-      size: this.pageSize,
-    };
-
-    const q = this.searchControl.value?.trim();
-    if (q) params.q = q;
-    if (this.selectedSkills.length > 0)
-      params.skills = this.selectedSkills.join(',');
-
-    this.jobService.searchFreelancers(params).subscribe({
-      next: (response) => {
-        this.freelancerResults = response.content;
-        this.freelancersTotalElements = response.totalElements;
-        this.freelancersLoading = false;
-      },
-      error: () => {
-        this.freelancersLoading = false;
-      },
-    });
+  freelancersTotalPages(): number {
+    return Math.max(1, Math.ceil(this.freelancersTotalElements / this.pageSize));
   }
 
-  addSkill(event: MatAutocompleteSelectedEvent): void {
-    const skill = event.option.value;
-    if (!this.selectedSkills.includes(skill)) {
-      this.selectedSkills.push(skill);
+  addSkill(skillInput?: string): void {
+    const raw = (skillInput ?? this.skillInputControl.value ?? '').trim();
+    if (!raw) return;
+    if (!this.selectedSkills.includes(raw)) {
+      this.selectedSkills.push(raw);
       this.jobsPage = 0;
       this.freelancersPage = 0;
       this.searchJobs();
@@ -174,7 +95,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   removeSkill(skill: string): void {
-    this.selectedSkills = this.selectedSkills.filter((s) => s !== skill);
+    this.selectedSkills = this.selectedSkills.filter((item) => item !== skill);
     this.jobsPage = 0;
     this.freelancersPage = 0;
     this.searchJobs();
@@ -189,19 +110,69 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.searchFreelancers();
   }
 
-  onTabChange(index: number): void {
-    this.activeTab = index;
-  }
-
-  onJobsPageChange(event: PageEvent): void {
-    this.jobsPage = event.pageIndex;
-    this.pageSize = event.pageSize;
+  nextJobsPage(): void {
+    if (this.jobsPage + 1 >= this.jobsTotalPages()) return;
+    this.jobsPage++;
     this.searchJobs();
   }
 
-  onFreelancersPageChange(event: PageEvent): void {
-    this.freelancersPage = event.pageIndex;
-    this.pageSize = event.pageSize;
+  previousJobsPage(): void {
+    if (this.jobsPage === 0) return;
+    this.jobsPage--;
+    this.searchJobs();
+  }
+
+  nextFreelancersPage(): void {
+    if (this.freelancersPage + 1 >= this.freelancersTotalPages()) return;
+    this.freelancersPage++;
     this.searchFreelancers();
+  }
+
+  previousFreelancersPage(): void {
+    if (this.freelancersPage === 0) return;
+    this.freelancersPage--;
+    this.searchFreelancers();
+  }
+
+  private searchJobs(): void {
+    this.jobsLoading = true;
+    const params: { q?: string; skills?: string; page: number; size: number } = {
+      page: this.jobsPage,
+      size: this.pageSize,
+    };
+
+    const query = this.searchControl.value?.trim();
+    if (query) params.q = query;
+    if (this.selectedSkills.length > 0) params.skills = this.selectedSkills.join(',');
+
+    this.jobService.getJobs(params).subscribe({
+      next: (response) => {
+        this.jobResults = response.content;
+        this.jobsTotalElements = response.totalElements;
+        this.jobsLoading = false;
+      },
+      error: () => (this.jobsLoading = false),
+    });
+  }
+
+  private searchFreelancers(): void {
+    this.freelancersLoading = true;
+    const params: { q?: string; skills?: string; page: number; size: number } = {
+      page: this.freelancersPage,
+      size: this.pageSize,
+    };
+
+    const query = this.searchControl.value?.trim();
+    if (query) params.q = query;
+    if (this.selectedSkills.length > 0) params.skills = this.selectedSkills.join(',');
+
+    this.jobService.searchFreelancers(params).subscribe({
+      next: (response) => {
+        this.freelancerResults = response.content;
+        this.freelancersTotalElements = response.totalElements;
+        this.freelancersLoading = false;
+      },
+      error: () => (this.freelancersLoading = false),
+    });
   }
 }

@@ -1,53 +1,59 @@
-import { Component } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatMenuModule } from '@angular/material/menu';
 import { KeycloakService } from '../../core/auth/keycloak.service';
 import { NotificationBellComponent } from '../../shared/components/notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [
-    RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
-    MatIconModule,
-    MatButtonModule,
-    MatMenuModule,
-    NotificationBellComponent,
-  ],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NotificationBellComponent],
   templateUrl: './main-layout.component.html',
   styleUrl: './main-layout.component.scss',
 })
 export class MainLayoutComponent {
-  constructor(
-    private readonly keycloak: KeycloakService,
-    private readonly router: Router
-  ) {}
+  private readonly keycloak = inject(KeycloakService);
+  private readonly router = inject(Router);
+
+  readonly menuOpen = signal(false);
+  readonly mobileNavOpen = signal(false);
+
+  readonly navItems = [
+    { path: '/jobs', label: 'Projects' },
+    { path: '/search', label: 'Talent' },
+    { path: '/payments', label: 'Payments' },
+    { path: '/messages', label: 'Messages' },
+    { path: '/profile', label: 'Profile' },
+  ];
 
   isAdmin(): boolean {
-    return this.keycloak.hasRole('ADMIN');
+    return this.keycloak.hasRole('ROLE_ADMIN') || this.keycloak.hasRole('ADMIN');
   }
 
   getUsername(): string {
-    return this.keycloak.getUsername();
+    return this.keycloak.getUsername() || 'User';
   }
 
   getInitials(): string {
-    const user = this.getUsername();
-    return user ? user.substring(0, 2).toUpperCase() : 'UN';
+    const value = this.getUsername().trim();
+    if (!value) return 'UN';
+    return value.slice(0, 2).toUpperCase();
   }
 
   getActivePage(): string {
     const url = this.router.url;
-    if (url.includes('jobs')) return 'Projects';
-    if (url.includes('search')) return 'Talent Search';
-    if (url.includes('messages')) return 'Collaboration';
-    if (url.includes('profile')) return 'Account';
-    if (url.includes('admin')) return 'System Control';
-    return 'Platform';
+    if (url.includes('/jobs')) return 'Projects';
+    if (url.includes('/search')) return 'Talent Search';
+    if (url.includes('/payments')) return 'Payments';
+    if (url.includes('/messages')) return 'Messages';
+    if (url.includes('/profile')) return 'Profile';
+    if (url.includes('/notifications')) return 'Notifications';
+    if (url.includes('/admin')) return 'Admin';
+    return 'Workspace';
+  }
+
+  closeMenus(): void {
+    this.menuOpen.set(false);
+    this.mobileNavOpen.set(false);
   }
 
   logout(): void {

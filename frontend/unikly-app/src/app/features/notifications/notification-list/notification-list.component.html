@@ -1,145 +1,123 @@
-<div class="max-w-3xl mx-auto p-6">
-
-  <!-- Page header -->
-  <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold">Notifications</h1>
-    <button
-      mat-stroked-button
-      color="primary"
-      [disabled]="unreadCount() === 0"
-      (click)="markAllRead()"
-    >
-      <mat-icon>done_all</mat-icon>
+<section class="container-narrow space-y-6">
+  <header class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="section-title">Notifications</h1>
+      <p class="muted-text">Track proposals, messages, payments, and system updates.</p>
+    </div>
+    <button type="button" class="btn-secondary" [disabled]="unreadCount() === 0" (click)="markAllRead()">
       Mark all read
     </button>
+  </header>
+
+  <div class="card-panel p-2">
+    <div class="flex gap-2">
+      <button type="button" class="tab-button" [class.tab-button-active]="filter === 'all'" (click)="onFilterChange('all')">
+        All
+      </button>
+      <button type="button" class="tab-button" [class.tab-button-active]="filter === 'unread'" (click)="onFilterChange('unread')">
+        Unread
+        @if (unreadCount() > 0) {
+          <span class="ml-1 rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-semibold text-white">{{ unreadCount() }}</span>
+        }
+      </button>
+    </div>
   </div>
 
-  <!-- Filter toggle -->
-  <mat-button-toggle-group
-    [(ngModel)]="filter"
-    (change)="onFilterChange()"
-    class="mb-4"
-    aria-label="Notification filter"
-  >
-    <mat-button-toggle value="all">All</mat-button-toggle>
-    <mat-button-toggle value="unread">
-      Unread
-      @if (unreadCount() > 0) {
-        <span class="ml-1 bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5">
-          {{ unreadCount() }}
-        </span>
-      }
-    </mat-button-toggle>
-  </mat-button-toggle-group>
-
-  <!-- Loading spinner -->
-  @if (loading()) {
-    <div class="flex justify-center py-12">
-      <mat-spinner diameter="40" />
-    </div>
-  }
-
-  <!-- Empty state -->
-  @if (!loading() && items().length === 0) {
-    <div class="text-center py-12 text-gray-400">
-      <mat-icon class="!text-6xl text-gray-300 block mb-3">notifications_none</mat-icon>
-      <p class="text-lg">{{ filter === 'unread' ? 'No unread notifications' : 'No notifications yet' }}</p>
-    </div>
-  }
-
-  <!-- Notification list -->
-  @if (!loading()) {
-    <div class="space-y-1">
-      @for (n of items(); track n.id) {
-        <div
-          class="flex items-start gap-4 p-4 rounded-lg cursor-pointer transition-colors hover:bg-gray-50"
-          [ngClass]="{ 'bg-blue-50 hover:bg-blue-100': !n.read }"
-          (click)="onItemClick(n)"
-          role="button"
-          tabindex="0"
-          (keydown.enter)="onItemClick(n)"
-        >
-          <div class="shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-            <mat-icon class="text-blue-600 !text-xl">{{ iconFor(n.type) }}</mat-icon>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-start justify-between gap-2">
-              <span class="font-medium text-sm" [ngClass]="{ 'font-semibold': !n.read }">
-                {{ n.title }}
-              </span>
-              <span class="text-xs text-gray-400 shrink-0">{{ n.createdAt | timeAgo }}</span>
-            </div>
-            <p class="text-sm text-gray-600 mt-0.5">{{ n.body }}</p>
-          </div>
-          @if (!n.read) {
-            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0 mt-1.5"></span>
-          }
-        </div>
-      }
-    </div>
-
-    <!-- Paginator -->
-    @if (totalItems() > pageSize) {
-      <mat-paginator
-        [length]="totalItems()"
-        [pageSize]="pageSize"
-        [pageIndex]="pageIndex()"
-        [pageSizeOptions]="[10, 20, 50]"
-        (page)="onPageChange($event)"
-        class="mt-4"
-      />
+  <div class="card-panel">
+    @if (loading()) {
+      <div class="flex justify-center py-10">
+        <span class="inline-block h-8 w-8 animate-spin rounded-full border-2 border-ink-300 border-t-brand"></span>
+      </div>
+    } @else if (items().length === 0) {
+      <div class="px-4 py-12 text-center">
+        <p class="text-lg font-semibold text-ink-900">{{ filter === 'unread' ? 'No unread notifications' : 'No notifications yet' }}</p>
+        <p class="mt-1 text-sm text-[var(--ui-muted)]">New updates will appear here.</p>
+      </div>
+    } @else {
+      <div class="divide-y divide-[var(--ui-border)]">
+        @for (item of items(); track item.id) {
+          <button
+            type="button"
+            class="flex w-full items-start gap-4 px-4 py-4 text-left transition hover:bg-ink-50"
+            [ngClass]="{ 'bg-brand-soft/35': !item.read }"
+            (click)="onItemClick(item)"
+          >
+            <span class="inline-flex rounded-md bg-ink-100 px-2 py-1 text-[10px] font-semibold uppercase text-ink-600">
+              {{ labelFor(item.type) }}
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block text-sm font-semibold text-ink-900">{{ item.title }}</span>
+              <span class="mt-0.5 block text-sm text-[var(--ui-muted)]">{{ item.body }}</span>
+              <span class="mt-1 block text-xs text-ink-400">{{ item.createdAt | timeAgo }}</span>
+            </span>
+            @if (!item.read) {
+              <span class="mt-1 h-2.5 w-2.5 rounded-full bg-brand"></span>
+            }
+          </button>
+        }
+      </div>
     }
+  </div>
+
+  @if (!loading() && totalItems() > pageSize) {
+    <div class="flex items-center justify-center gap-3">
+      <button type="button" class="btn-secondary px-3 py-2" [disabled]="pageIndex() === 0" (click)="previousPage()">
+        Previous
+      </button>
+      <span class="text-sm text-[var(--ui-muted)]">Page {{ pageIndex() + 1 }} of {{ totalPages() }}</span>
+      <button type="button" class="btn-secondary px-3 py-2" [disabled]="pageIndex() + 1 >= totalPages()" (click)="nextPage()">
+        Next
+      </button>
+    </div>
   }
 
-  <!-- Preferences section -->
-  <mat-divider class="my-8" />
+  <section class="card-panel p-5">
+    <h2 class="text-lg font-semibold text-ink-900">Notification Preferences</h2>
+    @if (prefs()) {
+      <div class="mt-4 space-y-4">
+        <label class="flex items-center justify-between gap-4 rounded-xl border border-[var(--ui-border)] px-4 py-3">
+          <span>
+            <span class="block text-sm font-semibold text-ink-900">Email notifications</span>
+            <span class="block text-xs text-[var(--ui-muted)]">Receive updates in your inbox.</span>
+          </span>
+          <input
+            type="checkbox"
+            class="h-4 w-4 accent-brand"
+            [ngModel]="prefs()!.emailEnabled"
+            (ngModelChange)="updatePref('emailEnabled', $event)"
+          />
+        </label>
 
-  <mat-card>
-    <mat-card-header>
-      <mat-card-title class="!text-lg">Notification preferences</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      @if (prefs()) {
-        <div class="space-y-4 mt-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="font-medium text-sm">Email notifications</p>
-              <p class="text-xs text-gray-500">Receive notifications via email</p>
-            </div>
-            <mat-slide-toggle
-              [(ngModel)]="prefs()!.emailEnabled"
-              (change)="savePrefs()"
-            />
-          </div>
-          <mat-divider />
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="font-medium text-sm">Push notifications</p>
-              <p class="text-xs text-gray-500">Receive push notifications on your device</p>
-            </div>
-            <mat-slide-toggle
-              [(ngModel)]="prefs()!.pushEnabled"
-              (change)="savePrefs()"
-            />
-          </div>
-          <mat-divider />
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="font-medium text-sm">Real-time notifications</p>
-              <p class="text-xs text-gray-500">Show in-app notifications instantly</p>
-            </div>
-            <mat-slide-toggle
-              [(ngModel)]="prefs()!.realtimeEnabled"
-              (change)="savePrefs()"
-            />
-          </div>
-        </div>
-      } @else {
-        <div class="flex justify-center py-6">
-          <mat-spinner diameter="32" />
-        </div>
-      }
-    </mat-card-content>
-  </mat-card>
+        <label class="flex items-center justify-between gap-4 rounded-xl border border-[var(--ui-border)] px-4 py-3">
+          <span>
+            <span class="block text-sm font-semibold text-ink-900">Push notifications</span>
+            <span class="block text-xs text-[var(--ui-muted)]">Receive updates on supported devices.</span>
+          </span>
+          <input
+            type="checkbox"
+            class="h-4 w-4 accent-brand"
+            [ngModel]="prefs()!.pushEnabled"
+            (ngModelChange)="updatePref('pushEnabled', $event)"
+          />
+        </label>
 
-</div>
+        <label class="flex items-center justify-between gap-4 rounded-xl border border-[var(--ui-border)] px-4 py-3">
+          <span>
+            <span class="block text-sm font-semibold text-ink-900">Real-time in-app alerts</span>
+            <span class="block text-xs text-[var(--ui-muted)]">Show updates instantly while browsing.</span>
+          </span>
+          <input
+            type="checkbox"
+            class="h-4 w-4 accent-brand"
+            [ngModel]="prefs()!.realtimeEnabled"
+            (ngModelChange)="updatePref('realtimeEnabled', $event)"
+          />
+        </label>
+      </div>
+    } @else {
+      <div class="py-8 text-center">
+        <span class="inline-block h-7 w-7 animate-spin rounded-full border-2 border-ink-300 border-t-brand"></span>
+      </div>
+    }
+  </section>
+</section>

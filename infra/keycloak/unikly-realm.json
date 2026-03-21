@@ -37,10 +37,14 @@
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": false,
       "redirectUris": [
-        "http://localhost:4200/*"
+        "http://localhost:4200/*",
+        "http://localhost/*",
+        "http://localhost:80/*"
       ],
       "webOrigins": [
-        "http://localhost:4200"
+        "http://localhost:4200",
+        "http://localhost",
+        "http://localhost:80"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256"
@@ -70,6 +74,56 @@
         "ROLE_CLIENT",
         "ROLE_FREELANCER",
         "ROLE_ADMIN"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "testclient@unikly.com",
+      "email": "testclient@unikly.com",
+      "firstName": "Test",
+      "lastName": "Client",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["ROLE_CLIENT"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Test1234!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "testfreelancer@unikly.com",
+      "email": "testfreelancer@unikly.com",
+      "firstName": "Test",
+      "lastName": "Freelancer",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["ROLE_FREELANCER"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Test1234!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "admin@unikly.com",
+      "email": "admin@unikly.com",
+      "firstName": "Platform",
+      "lastName": "Admin",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["ROLE_ADMIN"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin1234!",
+          "temporary": false
+        }
       ]
     }
   ]

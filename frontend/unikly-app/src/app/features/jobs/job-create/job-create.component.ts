@@ -1,46 +1,15 @@
-import { Component, inject, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
-
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatChipsModule } from '@angular/material/chips';
-import {
-  MatAutocompleteModule,
-  MatAutocompleteSelectedEvent,
-} from '@angular/material/autocomplete';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-
+import { ToastService } from '../../../core/services/toast.service';
 import { JobService } from '../services/job.service';
 
 @Component({
   selector: 'app-job-create',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatChipsModule,
-    MatAutocompleteModule,
-    MatSnackBarModule,
-  ],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './job-create.component.html',
   styleUrl: './job-create.component.scss',
 })
@@ -48,19 +17,18 @@ export class JobCreateComponent implements OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly jobService = inject(JobService);
   private readonly router = inject(Router);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly toast = inject(ToastService);
   private readonly destroy$ = new Subject<void>();
 
-  currencies = ['USD', 'EUR', 'XAF', 'GBP'];
+  readonly currencies = ['USD', 'EUR', 'XAF', 'GBP'];
   skills: string[] = [];
   skillSuggestions: string[] = [];
   submitting = false;
 
-  skillInputControl = new FormControl('');
-
-  form: FormGroup = this.fb.group({
+  readonly skillInputControl = new FormControl('');
+  readonly form: FormGroup = this.fb.group({
     title: ['', [Validators.required, Validators.maxLength(200)]],
-    description: ['', [Validators.required]],
+    description: ['', [Validators.required, Validators.minLength(40)]],
     budget: [null, [Validators.required, Validators.min(1)]],
     currency: ['USD', [Validators.required]],
   });
@@ -69,10 +37,8 @@ export class JobCreateComponent implements OnDestroy {
     this.skillInputControl.valueChanges
       .pipe(debounceTime(200), distinctUntilChanged(), takeUntil(this.destroy$))
       .subscribe((value) => {
-        if (value && value.length >= 2) {
-          this.jobService
-            .getSuggestions(value)
-            .subscribe((suggestions) => (this.skillSuggestions = suggestions));
+        if (value && value.trim().length >= 2) {
+          this.jobService.getSuggestions(value.trim()).subscribe((suggestions) => (this.skillSuggestions = suggestions));
         } else {
           this.skillSuggestions = [];
         }
@@ -84,8 +50,9 @@ export class JobCreateComponent implements OnDestroy {
     this.destroy$.complete();
   }
 
-  addSkill(event: MatAutocompleteSelectedEvent): void {
-    const skill = event.option.value;
+  addSkill(skillInput?: string): void {
+    const skill = (skillInput ?? this.skillInputControl.value ?? '').trim();
+    if (!skill) return;
     if (!this.skills.includes(skill)) {
       this.skills.push(skill);
     }
@@ -93,7 +60,7 @@ export class JobCreateComponent implements OnDestroy {
   }
 
   removeSkill(skill: string): void {
-    this.skills = this.skills.filter((s) => s !== skill);
+    this.skills = this.skills.filter((item) => item !== skill);
   }
 
   cancel(): void {
@@ -101,16 +68,16 @@ export class JobCreateComponent implements OnDestroy {
   }
 
   onSubmit(): void {
-    if (this.form.invalid || this.skills.length === 0) return;
+    if (this.form.invalid || this.skills.length === 0) {
+      this.form.markAllAsTouched();
+      return;
+    }
 
     this.submitting = true;
-    const data = { ...this.form.value, skills: this.skills };
-
-    this.jobService.createJob(data).subscribe({
+    const payload = { ...this.form.value, skills: this.skills };
+    this.jobService.createJob(payload).subscribe({
       next: (job) => {
-        this.snackBar.open('Job posted successfully!', 'Close', {
-          duration: 3000,
-        });
+        this.toast.success('Project posted successfully.');
         this.router.navigate(['/jobs', job.id]);
       },
       error: () => {

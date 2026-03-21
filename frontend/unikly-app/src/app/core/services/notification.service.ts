@@ -1,8 +1,8 @@
-import { Injectable, OnDestroy, signal, inject } from '@angular/core';
+import { Injectable, OnDestroy, inject, signal } from '@angular/core';
 import { Observable, Subscription, tap } from 'rxjs';
-import { ApiService } from './api.service';
-import { WebSocketService, NotificationPayload } from './websocket.service';
 import { KeycloakService } from '../auth/keycloak.service';
+import { ApiService } from './api.service';
+import { NotificationPayload, WebSocketService } from './websocket.service';
 
 export interface NotificationItem {
   id: string;
@@ -31,7 +31,7 @@ export interface NotificationPreferences {
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService implements OnDestroy {
-  readonly unreadCount = signal<number>(0);
+  readonly unreadCount = signal(0);
   readonly notifications = signal<NotificationItem[]>([]);
 
   private readonly api = inject(ApiService);
@@ -47,31 +47,6 @@ export class NotificationService implements OnDestroy {
     this.ws.activate();
   }
 
-  private loadInitialNotifications(): void {
-    this.api
-      .get<NotificationPage>('/v1/notifications', { unread: true, page: 0, size: 20 })
-      .subscribe({
-        next: (page) => {
-          this.notifications.set(page.content);
-          this.unreadCount.set(page.content.filter((n) => !n.read).length);
-        },
-        error: () => { /* silently ignore — WS stream will update when ready */ },
-      });
-  }
-
-  private subscribeToWebSocket(): void {
-    if (this.wsSub) return;
-    this.wsSub = this.ws.notifications$.subscribe((incoming: NotificationPayload) => {
-      this.notifications.update((current) => {
-        const exists = current.some((n) => n.id === incoming.id);
-        return exists ? current : [incoming, ...current];
-      });
-      if (!incoming.read) {
-        this.unreadCount.update((c) => c + 1);
-      }
-    });
-  }
-
   getNotifications(page = 0, size = 20, unreadOnly = false): Observable<NotificationPage> {
     return this.api.get<NotificationPage>('/v1/notifications', {
       page,
@@ -83,10 +58,10 @@ export class NotificationService implements OnDestroy {
   markAsRead(id: string): Observable<void> {
     return this.api.patch<void>(`/v1/notifications/${id}/read`).pipe(
       tap(() => {
-        this.notifications.update((list) =>
-          list.map((n) => (n.id === id ? { ...n, read: true } : n)),
+        this.notifications.update((current) =>
+          current.map((item) => (item.id === id ? { ...item, read: true } : item)),
         );
-        this.unreadCount.update((c) => Math.max(0, c - 1));
+        this.unreadCount.update((count) => Math.max(0, count - 1));
       }),
     );
   }
@@ -94,7 +69,7 @@ export class NotificationService implements OnDestroy {
   markAllRead(): Observable<void> {
     return this.api.patch<void>('/v1/notifications/read-all').pipe(
       tap(() => {
-        this.notifications.update((list) => list.map((n) => ({ ...n, read: true })));
+        this.notifications.update((current) => current.map((item) => ({ ...item, read: true })));
         this.unreadCount.set(0);
       }),
     );
@@ -111,5 +86,30 @@ export class NotificationService implements OnDestroy {
   ngOnDestroy(): void {
     this.wsSub?.unsubscribe();
     this.ws.deactivate();
+  }
+
+  private loadInitialNotifications(): void {
+    this.api.get<NotificationPage>('/v1/notifications', { unread: true, page: 0, size: 20 }).subscribe({
+      next: (page) => {
+        this.notifications.set(page.content);
+        this.unreadCount.set(page.content.filter((item) => !item.read).length);
+      },
+      error: () => {
+        // Ignore boot-time failures; websocket updates will still hydrate the list.
+      },
+    });
+  }
+
+  private subscribeToWebSocket(): void {
+    if (this.wsSub) return;
+    this.wsSub = this.ws.notifications$.subscribe((incoming: NotificationPayload) => {
+      this.notifications.update((current) => {
+        const exists = current.some((item) => item.id === incoming.id);
+        return exists ? current : [incoming, ...current];
+      });
+      if (!incoming.read) {
+        this.unreadCount.update((count) => count + 1);
+      }
+    });
   }
 }

@@ -1,11 +1,10 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-star-rating',
   standalone: true,
-  imports: [DecimalPipe, MatIconModule],
+  imports: [DecimalPipe],
   templateUrl: './star-rating.component.html',
   styleUrl: './star-rating.component.scss',
 })
@@ -18,17 +17,17 @@ export class StarRatingComponent {
   stars = [1, 2, 3, 4, 5];
   hoveredStar = 0;
 
-  getStarIcon(star: number): string {
+  getStarState(star: number): 'full' | 'half' | 'empty' {
     const value = this.hoveredStar || this.rating;
-    if (star <= Math.floor(value)) return 'star';
-    if (star - 0.5 <= value) return 'star_half';
-    return 'star_border';
+    if (star <= Math.floor(value)) return 'full';
+    if (star - 0.5 <= value) return 'half';
+    return 'empty';
   }
 
   getStarClass(star: number): string {
-    const value = this.hoveredStar || this.rating;
-    if (star <= Math.floor(value)) return 'star-filled';
-    if (star - 0.5 <= value) return 'star-half';
+    const state = this.getStarState(star);
+    if (state === 'full') return 'star-filled';
+    if (state === 'half') return 'star-half';
     return 'star-empty';
   }
 

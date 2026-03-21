@@ -1,160 +1,91 @@
-<div class="p-6">
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold">Jobs</h1>
-    @if (keycloak.hasRole('ROLE_CLIENT')) {
-      <button mat-flat-button color="primary" routerLink="/jobs/create">
-        <mat-icon>add</mat-icon> Post a Job
-      </button>
+<section class="space-y-6">
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="section-title">Projects</h1>
+      <p class="muted-text">Browse active contracts, budgets, and skills.</p>
+    </div>
+    @if (canCreateJob()) {
+      <a routerLink="/jobs/create" class="btn-primary">Post a Project</a>
     }
-  </div>
+  </header>
 
-  <!-- Filter Panel -->
-  <mat-expansion-panel class="mb-6" [expanded]="true">
-    <mat-expansion-panel-header>
-      <mat-panel-title>
-        <mat-icon class="mr-2">filter_list</mat-icon> Filters
-      </mat-panel-title>
-    </mat-expansion-panel-header>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-      <mat-form-field appearance="outline">
-        <mat-label>Search</mat-label>
+  <div class="card-panel p-4">
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <input class="input-field lg:col-span-2" [formControl]="searchControl" placeholder="Search projects..." />
+      <div>
         <input
-          matInput
-          [formControl]="searchControl"
-          placeholder="Search jobs..."
-        />
-        <mat-icon matSuffix>search</mat-icon>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Skills</mat-label>
-        <input
-          matInput
+          class="input-field"
           [formControl]="skillInputControl"
-          [matAutocomplete]="skillAuto"
-          placeholder="Type a skill..."
+          list="jobSkillSuggestions"
+          placeholder="Add skill"
+          (keydown.enter)="$event.preventDefault(); addSkill()"
         />
-        <mat-autocomplete
-          #skillAuto="matAutocomplete"
-          (optionSelected)="addSkill($event)"
-        >
+        <datalist id="jobSkillSuggestions">
           @for (suggestion of skillSuggestions; track suggestion) {
-            <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
+            <option [value]="suggestion"></option>
           }
-        </mat-autocomplete>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Min Budget</mat-label>
-        <input
-          matInput
-          type="number"
-          [formControl]="minBudgetControl"
-          min="0"
-        />
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Max Budget</mat-label>
-        <input
-          matInput
-          type="number"
-          [formControl]="maxBudgetControl"
-          min="0"
-        />
-      </mat-form-field>
-    </div>
-
-    @if (selectedSkills.length > 0) {
-      <div class="flex flex-wrap gap-2 mb-4">
-        @for (skill of selectedSkills; track skill) {
-          <mat-chip-row (removed)="removeSkill(skill)">
-            {{ skill }}
-            <button matChipRemove>
-              <mat-icon>cancel</mat-icon>
-            </button>
-          </mat-chip-row>
-        }
+        </datalist>
       </div>
-    }
-  </mat-expansion-panel>
-
-  <!-- Job Cards Grid -->
-  @if (loading) {
-    <div class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+      <input class="input-field" type="number" min="0" [formControl]="minBudgetControl" placeholder="Min budget" />
+      <input class="input-field" type="number" min="0" [formControl]="maxBudgetControl" placeholder="Max budget" />
     </div>
-  } @else if (jobs.length === 0) {
-    <div class="text-center py-12">
-      <mat-icon class="text-6xl text-gray-300 mb-4">work_off</mat-icon>
-      <p class="text-gray-500 text-lg">No jobs found. Try adjusting your filters.</p>
-    </div>
-  } @else {
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      @for (job of jobs; track job.jobId) {
-        <mat-card class="hover:shadow-lg transition-shadow cursor-pointer">
-          <mat-card-header>
-            <mat-card-title class="text-lg">{{ job.title }}</mat-card-title>
-            <mat-card-subtitle>
-              {{ job.createdAt | timeAgo }}
-            </mat-card-subtitle>
-          </mat-card-header>
 
-          <mat-card-content class="mt-3">
-            <p class="text-gray-600 text-sm line-clamp-2 mb-3">
-              {{ job.description }}
-            </p>
-
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-lg font-semibold text-indigo-600">
-                {{ job.budget | number: '1.0-0' }} {{ job.currency }}
-              </span>
-              <span
-                class="px-2 py-1 rounded-full text-xs font-medium"
-                [ngClass]="getStatusClass(job.status)"
-              >
-                {{ job.status }}
-              </span>
-            </div>
-
-            <div class="flex flex-wrap gap-1">
-              @for (skill of job.skills | slice: 0 : 4; track skill) {
-                <span
-                  class="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full"
-                >
-                  {{ skill }}
-                </span>
-              }
-              @if (job.skills.length > 4) {
-                <span class="text-xs text-gray-400">
-                  +{{ job.skills.length - 4 }} more
-                </span>
-              }
-            </div>
-          </mat-card-content>
-
-          <mat-card-actions align="end">
-            <a
-              mat-button
-              color="primary"
-              [routerLink]="['/jobs', job.jobId]"
-            >
-              View Details
-            </a>
-          </mat-card-actions>
-        </mat-card>
+    <div class="mt-3 flex flex-wrap items-center gap-2">
+      <button type="button" class="btn-secondary px-3 py-2 text-xs" (click)="addSkill()">Add Skill</button>
+      <button type="button" class="btn-ghost text-xs" (click)="clearFilters()">Reset Filters</button>
+      @for (skill of selectedSkills; track skill) {
+        <span class="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2.5 py-1 text-xs font-semibold text-brand-dark">
+          {{ skill }}
+          <button type="button" class="rounded-full p-0.5 hover:bg-white" (click)="removeSkill(skill)">
+            <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"></path>
+            </svg>
+          </button>
+        </span>
       }
     </div>
+  </div>
 
-    <mat-paginator
-      class="mt-6"
-      [length]="totalElements"
-      [pageSize]="pageSize"
-      [pageIndex]="currentPage"
-      [pageSizeOptions]="[9, 18, 36]"
-      (page)="onPageChange($event)"
-      showFirstLastButtons
-    ></mat-paginator>
+  @if (loading) {
+    <div class="card-panel flex justify-center py-12">
+      <span class="inline-block h-8 w-8 animate-spin rounded-full border-2 border-ink-300 border-t-brand"></span>
+    </div>
+  } @else if (jobs.length === 0) {
+    <div class="card-panel px-4 py-12 text-center">
+      <p class="text-lg font-semibold text-ink-900">No projects found</p>
+      <p class="mt-1 text-sm text-[var(--ui-muted)]">Try adjusting filters or search text.</p>
+    </div>
+  } @else {
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      @for (job of jobs; track job.jobId) {
+        <article class="card-panel flex flex-col p-4">
+          <div class="mb-2 flex items-start justify-between gap-3">
+            <h2 class="line-clamp-2 text-base font-semibold text-ink-900">{{ job.title }}</h2>
+            <span class="pill whitespace-nowrap" [ngClass]="getStatusClass(job.status)">{{ job.status }}</span>
+          </div>
+          <p class="line-clamp-2 text-sm text-[var(--ui-muted)]">{{ job.description }}</p>
+          <div class="mt-3 flex flex-wrap gap-1.5">
+            @for (skill of job.skills | slice: 0 : 4; track skill) {
+              <span class="pill bg-ink-100 text-ink-600">{{ skill }}</span>
+            }
+          </div>
+          <div class="mt-4 flex items-center justify-between border-t border-[var(--ui-border)] pt-3">
+            <div>
+              <p class="text-sm font-semibold text-brand-dark">{{ job.budget | number: '1.0-0' }} {{ job.currency }}</p>
+              <p class="text-xs text-ink-400">{{ job.createdAt | timeAgo }}</p>
+            </div>
+            <a [routerLink]="['/jobs', job.jobId]" class="btn-secondary px-3 py-2 text-xs">View</a>
+          </div>
+        </article>
+      }
+    </div>
   }
-</div>
+
+  @if (!loading && totalElements > pageSize) {
+    <div class="flex items-center justify-center gap-3">
+      <button type="button" class="btn-secondary px-3 py-2" [disabled]="currentPage === 0" (click)="previousPage()">Previous</button>
+      <span class="text-sm text-[var(--ui-muted)]">Page {{ currentPage + 1 }} of {{ totalPages() }}</span>
+      <button type="button" class="btn-secondary px-3 py-2" [disabled]="currentPage + 1 >= totalPages()" (click)="nextPage()">Next</button>
+    </div>
+  }
+</section>

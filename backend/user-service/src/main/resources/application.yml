@@ -42,6 +42,11 @@ keycloak:
     client-id: admin-cli
     username: ${KEYCLOAK_ADMIN_USERNAME:admin}
     password: ${KEYCLOAK_ADMIN_PASSWORD:admin}
+  auth:
+    url: ${KEYCLOAK_URL:http://localhost:8180}
+    realm: unikly
+    client-id: unikly-frontend
+    client-secret: ${KEYCLOAK_AUTH_CLIENT_SECRET:}
 
 springdoc:
   api-docs:

@@ -2,6 +2,7 @@
 .gitignore
 **/*.md
 backend/.gradle/
+.gradle/
 backend/build/
 backend/*/build/
 backend/*/bin/

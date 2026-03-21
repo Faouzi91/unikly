@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
 
 @Configuration
-@EnableConfigurationProperties(KeycloakAdminProperties.class)
+@EnableConfigurationProperties({KeycloakAdminProperties.class, KeycloakAuthProperties.class})
 public class WebClientConfig {
 
     @Bean

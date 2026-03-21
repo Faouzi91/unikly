@@ -1,49 +1,28 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { PageEvent } from '@angular/material/paginator';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
-import { MatPaginatorModule } from '@angular/material/paginator';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatCardModule } from '@angular/material/card';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
 import {
-  NotificationService,
   NotificationItem,
   NotificationPreferences,
+  NotificationService,
 } from '../../../core/services/notification.service';
 
-const TYPE_ICONS: Record<string, string> = {
-  JOB_MATCHED: 'work',
-  PROPOSAL_RECEIVED: 'description',
-  PROPOSAL_ACCEPTED: 'check_circle',
-  PAYMENT_FUNDED: 'payments',
-  ESCROW_RELEASED: 'account_balance_wallet',
-  MESSAGE_RECEIVED: 'chat',
-  SYSTEM: 'info',
+const TYPE_LABELS: Record<string, string> = {
+  JOB_MATCHED: 'Job',
+  PROPOSAL_RECEIVED: 'Proposal',
+  PROPOSAL_ACCEPTED: 'Accepted',
+  PAYMENT_FUNDED: 'Escrow',
+  ESCROW_RELEASED: 'Released',
+  MESSAGE_RECEIVED: 'Message',
+  SYSTEM: 'System',
 };
 
 @Component({
   selector: 'app-notification-list',
   standalone: true,
-  imports: [
-    NgClass,
-    FormsModule,
-    MatIconModule,
-    MatButtonModule,
-    MatButtonToggleModule,
-    MatPaginatorModule,
-    MatDividerModule,
-    MatSlideToggleModule,
-    MatCardModule,
-    MatProgressSpinnerModule,
-    TimeAgoPipe,
-  ],
+  imports: [NgClass, FormsModule, TimeAgoPipe],
   templateUrl: './notification-list.component.html',
   styleUrl: './notification-list.component.scss',
 })
@@ -57,9 +36,9 @@ export class NotificationListComponent implements OnInit {
   readonly pageSize = 20;
 
   readonly items = signal<NotificationItem[]>([]);
-  readonly totalItems = signal<number>(0);
-  readonly pageIndex = signal<number>(0);
-  readonly loading = signal<boolean>(false);
+  readonly totalItems = signal(0);
+  readonly pageIndex = signal(0);
+  readonly loading = signal(false);
   readonly prefs = signal<NotificationPreferences | null>(null);
 
   ngOnInit(): void {
@@ -68,15 +47,68 @@ export class NotificationListComponent implements OnInit {
     this.loadPreferences();
   }
 
+  labelFor(type: string): string {
+    return TYPE_LABELS[type] ?? 'Alert';
+  }
+
+  onFilterChange(nextFilter: 'all' | 'unread'): void {
+    if (this.filter === nextFilter) return;
+    this.filter = nextFilter;
+    this.loadPage(0);
+  }
+
+  previousPage(): void {
+    if (this.pageIndex() === 0) return;
+    this.loadPage(this.pageIndex() - 1);
+  }
+
+  nextPage(): void {
+    const next = this.pageIndex() + 1;
+    if (next >= this.totalPages()) return;
+    this.loadPage(next);
+  }
+
+  totalPages(): number {
+    return Math.max(1, Math.ceil(this.totalItems() / this.pageSize));
+  }
+
+  onItemClick(item: NotificationItem): void {
+    if (!item.read) {
+      this.notificationService.markAsRead(item.id).subscribe(() => {
+        this.items.update((current) =>
+          current.map((value) => (value.id === item.id ? { ...value, read: true } : value)),
+        );
+      });
+    }
+
+    if (item.actionUrl) {
+      this.router.navigateByUrl(item.actionUrl);
+    }
+  }
+
+  markAllRead(): void {
+    this.notificationService.markAllRead().subscribe(() => {
+      this.items.update((current) => current.map((item) => ({ ...item, read: true })));
+    });
+  }
+
+  updatePref<K extends keyof NotificationPreferences>(key: K, value: NotificationPreferences[K]): void {
+    const current = this.prefs();
+    if (!current) return;
+    const next = { ...current, [key]: value };
+    this.prefs.set(next);
+    this.notificationService.updatePreferences(next).subscribe();
+  }
+
   private loadPage(page: number): void {
     this.loading.set(true);
     this.notificationService
       .getNotifications(page, this.pageSize, this.filter === 'unread')
       .subscribe({
-        next: (data) => {
-          this.items.set(data.content);
-          this.totalItems.set(data.totalElements);
-          this.pageIndex.set(data.number);
+        next: (response) => {
+          this.items.set(response.content);
+          this.totalItems.set(response.totalElements);
+          this.pageIndex.set(response.number);
           this.loading.set(false);
         },
         error: () => this.loading.set(false),
@@ -85,44 +117,7 @@ export class NotificationListComponent implements OnInit {
 
   private loadPreferences(): void {
     this.notificationService.getPreferences().subscribe({
-      next: (p) => this.prefs.set(p),
+      next: (prefs) => this.prefs.set(prefs),
     });
-  }
-
-  onFilterChange(): void {
-    this.loadPage(0);
-  }
-
-  onPageChange(event: PageEvent): void {
-    this.loadPage(event.pageIndex);
-  }
-
-  onItemClick(n: NotificationItem): void {
-    if (!n.read) {
-      this.notificationService.markAsRead(n.id).subscribe(() => {
-        this.items.update((list) =>
-          list.map((item) => (item.id === n.id ? { ...item, read: true } : item)),
-        );
-      });
-    }
-    if (n.actionUrl) {
-      this.router.navigateByUrl(n.actionUrl);
-    }
-  }
-
-  markAllRead(): void {
-    this.notificationService.markAllRead().subscribe(() => {
-      this.items.update((list) => list.map((n) => ({ ...n, read: true })));
-    });
-  }
-
-  savePrefs(): void {
-    const p = this.prefs();
-    if (!p) return;
-    this.notificationService.updatePreferences(p).subscribe();
-  }
-
-  iconFor(type: string): string {
-    return TYPE_ICONS[type] ?? 'notifications';
   }
 }

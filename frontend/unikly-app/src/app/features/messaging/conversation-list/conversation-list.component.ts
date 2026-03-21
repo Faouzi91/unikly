@@ -1,35 +1,15 @@
-import {
-  Component,
-  OnInit,
-  OnDestroy,
-  inject,
-  signal,
-  computed,
-} from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-
-import { MatListModule } from '@angular/material/list';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatDividerModule } from '@angular/material/divider';
-
 import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
-import { MessagingService, ConversationSummary } from '../services/messaging.service';
-import { MessageWebSocketService, IncomingMessage } from '../../../core/services/message-websocket.service';
 import { KeycloakService } from '../../../core/auth/keycloak.service';
+import { IncomingMessage, MessageWebSocketService } from '../../../core/services/message-websocket.service';
+import { ConversationSummary, MessagingService } from '../services/messaging.service';
 
 @Component({
   selector: 'app-conversation-list',
   standalone: true,
-  imports: [
-    RouterLink,
-    MatListModule,
-    MatIconModule,
-    MatButtonModule,
-    MatDividerModule,
-    TimeAgoPipe,
-  ],
+  imports: [RouterLink, TimeAgoPipe],
   templateUrl: './conversation-list.component.html',
   styleUrl: './conversation-list.component.scss',
 })
@@ -48,16 +28,16 @@ export class ConversationListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.currentUserId = this.keycloak.getUserId() ?? '';
     this.loadConversations();
-    this.subscribeToWs();
+    this.subscribeToWebSocket();
   }
 
   ngOnDestroy(): void {
     this.wsSub?.unsubscribe();
   }
 
-  getOtherParticipantLabel(conv: ConversationSummary): string {
-    const other = conv.participantIds.find((id) => id !== this.currentUserId);
-    return other ? `User ${other.slice(0, 8)}…` : 'Unknown';
+  getOtherParticipantLabel(conversation: ConversationSummary): string {
+    const otherId = conversation.participantIds.find((id) => id !== this.currentUserId);
+    return otherId ? `User ${otherId.slice(0, 8)}` : 'Conversation';
   }
 
   private loadConversations(): void {
@@ -71,20 +51,20 @@ export class ConversationListComponent implements OnInit, OnDestroy {
     });
   }
 
-  private subscribeToWs(): void {
-    this.wsSub = this.wsService.messages$.subscribe((msg: IncomingMessage) => {
-      this.conversations.update((list) => {
-        const idx = list.findIndex((c) => c.id === msg.conversationId);
-        if (idx === -1) return list;
+  private subscribeToWebSocket(): void {
+    this.wsSub = this.wsService.messages$.subscribe((message: IncomingMessage) => {
+      this.conversations.update((current) => {
+        const index = current.findIndex((item) => item.id === message.conversationId);
+        if (index < 0) return current;
 
-        const updated = { ...list[idx], lastMessageAt: msg.createdAt };
-        const rest = list.filter((_, i) => i !== idx);
+        const updated = { ...current[index], lastMessageAt: message.createdAt };
+        const rest = current.filter((_, itemIndex) => itemIndex !== index);
         return [updated, ...rest];
       });
 
       this.lastPreviewMap.update((map) => ({
         ...map,
-        [msg.conversationId]: msg.content.slice(0, 50),
+        [message.conversationId]: message.content.slice(0, 80),
       }));
     });
   }

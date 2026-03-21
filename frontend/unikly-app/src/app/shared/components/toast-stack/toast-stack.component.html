@@ -1,0 +1,22 @@
+<div class="fixed right-4 top-4 z-[120] flex w-[min(92vw,26rem)] flex-col gap-2">
+  @for (toast of toastService.toasts(); track toast.id) {
+    <div
+      class="rounded-xl border p-3 shadow-md backdrop-blur-sm transition-all duration-200"
+      [ngClass]="classesFor(toast.variant)"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="flex items-start gap-3">
+        <p class="flex-1 text-sm font-semibold leading-relaxed">{{ toast.message }}</p>
+        <button
+          type="button"
+          class="rounded-md px-2 py-1 text-xs font-bold transition hover:bg-black/5"
+          (click)="dismiss(toast.id)"
+          aria-label="Dismiss message"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  }
+</div>

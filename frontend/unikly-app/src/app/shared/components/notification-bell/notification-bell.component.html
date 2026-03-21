@@ -1,67 +1,75 @@
-<button
-  mat-icon-button
-  [matMenuTriggerFor]="notifMenu"
-  [ngClass]="{ 'bell-pulse': isPulsing() }"
-  aria-label="Notifications"
->
-  <mat-icon
-    [matBadge]="unreadCount() || null"
-    matBadgeColor="warn"
-    [matBadgeHidden]="unreadCount() === 0"
-  >notifications</mat-icon>
-</button>
+<div class="relative">
+  <button
+    type="button"
+    class="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] transition hover:border-brand/35"
+    (click)="toggle()"
+    aria-label="Notifications"
+  >
+    <svg
+      class="h-5 w-5 text-ink-600"
+      [ngClass]="{ 'bell-pulse': pulse() }"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+    >
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 17H5.8a1 1 0 01-.8-1.6L6 14V10a6 6 0 0112 0v4l1 1.4a1 1 0 01-.8 1.6H15m0 0a3 3 0 11-6 0"></path>
+    </svg>
 
-<mat-menu #notifMenu="matMenu" class="notif-menu-panel" xPosition="before">
-  <!-- Header -->
-  <div class="flex items-center justify-between px-4 py-2" (click)="$event.stopPropagation()">
-    <span class="font-semibold text-base">Notifications</span>
-    <button
-      mat-button
-      color="primary"
-      class="text-xs"
-      [disabled]="unreadCount() === 0"
-      (click)="onMarkAllRead()"
-    >Mark all read</button>
-  </div>
+    @if (unreadCount() > 0) {
+      <span class="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+        {{ unreadCount() > 99 ? '99+' : unreadCount() }}
+      </span>
+    }
+  </button>
 
-  <mat-divider />
+  @if (open()) {
+    <div class="card-panel absolute right-0 z-50 mt-2 w-[22rem] overflow-hidden">
+      <div class="flex items-center justify-between border-b border-[var(--ui-border)] px-4 py-3">
+        <p class="text-sm font-semibold text-ink-900">Notifications</p>
+        <button
+          type="button"
+          class="text-xs font-semibold text-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="unreadCount() === 0"
+          (click)="onMarkAllRead()"
+        >
+          Mark all read
+        </button>
+      </div>
 
-  <!-- Empty state -->
-  @if (recent().length === 0) {
-    <div class="px-4 py-6 text-center text-gray-400 text-sm">
-      <mat-icon class="text-gray-300 !text-4xl block mb-2">notifications_none</mat-icon>
-      No notifications yet
+      @if (recent().length === 0) {
+        <div class="px-4 py-8 text-center">
+          <p class="text-sm font-semibold text-ink-700">No notifications yet</p>
+          <p class="mt-1 text-xs text-[var(--ui-muted)]">You will see updates here in real time.</p>
+        </div>
+      } @else {
+        <div class="max-h-96 overflow-y-auto px-1 py-1">
+          @for (item of recent(); track item.id) {
+            <button
+              type="button"
+              class="flex w-full items-start gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-ink-50"
+              [ngClass]="{ 'bg-brand-soft/35': !item.read }"
+              (click)="onItemClick(item)"
+            >
+              <span class="mt-0.5 inline-flex rounded-md bg-ink-100 px-2 py-1 text-[10px] font-semibold uppercase text-ink-600">
+                {{ labelFor(item.type) }}
+              </span>
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-sm font-semibold text-ink-900">{{ item.title }}</span>
+                <span class="block text-xs text-[var(--ui-muted)]">{{ item.body }}</span>
+                <span class="mt-1 block text-[11px] text-ink-400">{{ item.createdAt | timeAgo }}</span>
+              </span>
+              @if (!item.read) {
+                <span class="mt-1 h-2.5 w-2.5 rounded-full bg-brand"></span>
+              }
+            </button>
+          }
+        </div>
+      }
+
+      <div class="border-t border-[var(--ui-border)] p-2">
+        <button type="button" class="btn-secondary w-full justify-center" (click)="viewAll()">View all notifications</button>
+      </div>
     </div>
   }
-
-  <!-- Notification items -->
-  @for (n of recent(); track n.id) {
-    <button
-      mat-menu-item
-      class="notif-item"
-      [ngClass]="{ 'bg-blue-50': !n.read }"
-      (click)="onItemClick(n)"
-    >
-      <div class="flex items-start gap-3 py-1 w-full">
-        <mat-icon class="text-blue-500 shrink-0 mt-0.5">{{ iconFor(n.type) }}</mat-icon>
-        <div class="flex flex-col min-w-0">
-          <span class="font-medium text-sm leading-tight truncate max-w-56">{{ n.title }}</span>
-          <span class="text-xs text-gray-500 leading-snug line-clamp-2">{{ n.body }}</span>
-          <span class="text-xs text-gray-400 mt-0.5">{{ n.createdAt | timeAgo }}</span>
-        </div>
-        @if (!n.read) {
-          <span class="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-1.5 ml-auto"></span>
-        }
-      </div>
-    </button>
-  }
-
-  <mat-divider />
-
-  <!-- Footer -->
-  <div class="px-4 py-2" (click)="$event.stopPropagation()">
-    <button mat-button color="primary" class="w-full text-sm" (click)="viewAll()">
-      View all notifications
-    </button>
-  </div>
-</mat-menu>
+</div>

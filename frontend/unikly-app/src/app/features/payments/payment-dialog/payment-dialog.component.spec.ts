@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { PaymentDialogComponent } from './payment-dialog.component';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { PaymentService } from '../../../core/services/payment.service';
+import { of } from 'rxjs';
 
 describe('PaymentDialogComponent', () => {
   let component: PaymentDialogComponent;
@@ -11,13 +11,18 @@ describe('PaymentDialogComponent', () => {
     await TestBed.configureTestingModule({
       imports: [PaymentDialogComponent],
       providers: [
-        { provide: MatDialogRef, useValue: { close: () => {} } },
-        { provide: MAT_DIALOG_DATA, useValue: { jobId: '1', jobTitle: 'Test', budget: 100, currency: 'USD', freelancerId: 'f1' } },
-        { provide: PaymentService, useValue: { loadStripe: () => Promise.resolve(null), createPaymentIntent: () => {} } },
+        {
+          provide: PaymentService,
+          useValue: {
+            loadStripe: () => Promise.resolve(null),
+            createPaymentIntent: () => of({ paymentId: 'p1', clientSecret: 'secret' }),
+          },
+        },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(PaymentDialogComponent);
     component = fixture.componentInstance;
+    component.data = { jobId: '1', jobTitle: 'Test', budget: 100, currency: 'USD', freelancerId: 'f1' };
     fixture.detectChanges();
   });
 

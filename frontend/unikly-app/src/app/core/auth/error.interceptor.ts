@@ -1,14 +1,14 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { catchError, throwError } from 'rxjs';
+import { ToastService } from '../services/toast.service';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
-  const snackBar = inject(MatSnackBar);
+  const toast = inject(ToastService);
 
   return next(req).pipe(
     catchError((error) => {
-      // Skip 401 — handled by auth interceptor
+      // Skip 401 - handled by auth interceptor
       if (error.status === 401) {
         return throwError(() => error);
       }
@@ -53,12 +53,13 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           }
       }
 
-      snackBar.open(message, 'Close', {
-        duration: 5000,
-        horizontalPosition: 'end',
-        verticalPosition: 'top',
-        panelClass: error.status >= 500 ? 'error-snackbar' : 'warning-snackbar',
-      });
+      if (error.status >= 500) {
+        toast.error(message);
+      } else if (error.status >= 400) {
+        toast.warning(message);
+      } else {
+        toast.info(message);
+      }
 
       return throwError(() => error);
     })

@@ -1,20 +1,8 @@
-import {
-  Component,
-  Inject,
-  OnDestroy,
-  OnInit,
-  signal,
-  inject,
-} from '@angular/core';
-import { DecimalPipe } from '@angular/common';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDividerModule } from '@angular/material/divider';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, inject, signal } from '@angular/core';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { Stripe, StripeElements } from '@stripe/stripe-js';
 import { PaymentService } from '../../../core/services/payment.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 export interface PaymentDialogData {
   jobId: string;
@@ -29,21 +17,17 @@ type DialogStep = 'summary' | 'card' | 'processing';
 @Component({
   selector: 'app-payment-dialog',
   standalone: true,
-  imports: [
-    DecimalPipe,
-    MatDialogModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-    MatSnackBarModule,
-    MatDividerModule,
-  ],
+  imports: [CommonModule, DecimalPipe],
   templateUrl: './payment-dialog.component.html',
   styleUrl: './payment-dialog.component.scss',
 })
 export class PaymentDialogComponent implements OnInit, OnDestroy {
   private readonly paymentService = inject(PaymentService);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly toast = inject(ToastService);
+
+  @Input({ required: true }) data!: PaymentDialogData;
+  @Output() close = new EventEmitter<void>();
+  @Output() paid = new EventEmitter<{ paymentId: string | null }>();
 
   readonly step = signal<DialogStep>('summary');
   readonly mountingStripe = signal(false);
@@ -53,51 +37,39 @@ export class PaymentDialogComponent implements OnInit, OnDestroy {
   private elements: StripeElements | null = null;
   private paymentId: string | null = null;
 
-  constructor(
-    public readonly dialogRef: MatDialogRef<PaymentDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public readonly data: PaymentDialogData,
-  ) {}
-
   ngOnInit(): void {
-    // Pre-load Stripe.js in the background while the user reads the summary
-    this.paymentService.loadStripe().then((s) => (this.stripe = s));
+    this.paymentService.loadStripe().then((instance) => (this.stripe = instance));
   }
 
   async onContinue(): Promise<void> {
     this.step.set('card');
     this.mountingStripe.set(true);
+    this.stripeError.set(null);
 
     try {
       const idempotencyKey = crypto.randomUUID();
-      const result = await new Promise<{ paymentId: string; clientSecret: string }>(
-        (resolve, reject) => {
-          this.paymentService
-            .createPaymentIntent(
-              this.data.jobId,
-              this.data.freelancerId,
-              this.data.budget,
-              this.data.currency,
-              idempotencyKey,
-            )
-            .subscribe({ next: resolve, error: reject });
-        },
-      );
+      const payload = await new Promise<{ paymentId: string; clientSecret: string }>((resolve, reject) => {
+        this.paymentService
+          .createPaymentIntent(this.data.jobId, this.data.freelancerId, this.data.budget, this.data.currency, idempotencyKey)
+          .subscribe({ next: resolve, error: reject });
+      });
 
-      this.paymentId = result.paymentId;
+      this.paymentId = payload.paymentId;
 
       if (!this.stripe) {
         this.stripe = await this.paymentService.loadStripe();
       }
       if (!this.stripe) {
-        throw new Error('Stripe.js failed to load');
+        throw new Error('Stripe could not be loaded.');
       }
 
-      this.elements = this.stripe.elements({ clientSecret: result.clientSecret });
+      this.elements?.getElement('payment')?.destroy();
+      this.elements = this.stripe.elements({ clientSecret: payload.clientSecret });
       const paymentElement = this.elements.create('payment');
       paymentElement.mount('#stripe-payment-element');
       this.mountingStripe.set(false);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to initialize payment';
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to initialize payment.';
       this.stripeError.set(message);
       this.mountingStripe.set(false);
     }
@@ -120,12 +92,16 @@ export class PaymentDialogComponent implements OnInit, OnDestroy {
     if (error) {
       this.step.set('card');
       this.stripeError.set(error.message ?? 'Payment failed. Please try again.');
-    } else {
-      this.snackBar.open('Payment processing — escrow will be funded shortly.', 'OK', {
-        duration: 5000,
-      });
-      this.dialogRef.close({ success: true, paymentId: this.paymentId });
+      return;
     }
+
+    this.toast.success('Payment processing. Escrow funding will be confirmed shortly.');
+    this.paid.emit({ paymentId: this.paymentId });
+  }
+
+  onClose(): void {
+    if (this.step() === 'processing') return;
+    this.close.emit();
   }
 
   ngOnDestroy(): void {

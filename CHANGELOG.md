@@ -5,6 +5,43 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [6.5.0] - 2026-03-21
+
+### Step 6.5 - Tailwind Frontend Refactor + Keycloak First-Party Auth Flow
+
+#### Added
+
+- **`backend/user-service/src/main/java/com/unikly/userservice/api/AuthenticationController.java`** - public auth APIs:
+  - `POST /api/users/login` (direct credentials sign-in)
+  - `POST /api/users/refresh` (refresh token exchange)
+  - `POST /api/users/social/authorization-url` (provider authorization URL generation)
+  - `POST /api/users/social/exchange` (OAuth code exchange with PKCE verifier)
+- **`backend/user-service/src/main/java/com/unikly/userservice/application/AuthenticationService.java`** - server-side token exchange with Keycloak (`password`, `refresh_token`, `authorization_code`) and provider normalization (`google`, `facebook`, `microsoft`)
+- **`backend/user-service/src/main/java/com/unikly/userservice/config/KeycloakAuthProperties.java`** and request DTOs (`LoginRequest`, `RefreshTokenRequest`, `SocialAuthorizationRequest`, `SocialCodeExchangeRequest`) with input validation
+- **`frontend/unikly-app/src/app/core/services/toast.service.ts`** and **`frontend/unikly-app/src/app/shared/components/toast-stack/*`** - lightweight in-app toast notifications replacing Angular Material snackbar dependency
+- **`frontend/unikly-app/proxy.conf.json`** - local dev proxy for `/api` and `/ws` through the gateway
+
+#### Changed
+
+- **Frontend UX/UI (Tailwind-first redesign)** - major visual and interaction refactor across landing, auth, jobs, search, profile, messaging, notifications, payments, and layout components for a cleaner marketplace-style light theme
+- **Auth screens** (`login.component.*`, `register.component.*`) - improved field validation feedback, clearer error states, and social sign-in/sign-up entry points (Google, Facebook, Microsoft)
+- **`frontend/unikly-app/src/styles.scss`** - rebuilt design tokens, component utility classes, and animation primitives to standardize visual language without Angular Material
+- **`frontend/unikly-app/package.json`** - removed Angular Material/CDK/animation dependencies; app now relies on custom Tailwind components
+- **`frontend/unikly-app/src/app/core/auth/keycloak.service.ts`** - moved to backend-mediated auth requests, token persistence/refresh handling, and PKCE social flow state management
+- **`frontend/unikly-app/src/app/core/auth/auth.interceptor.ts`** - excludes `/api/users/login`, `/api/users/refresh`, and `/api/users/social/**` from bearer token attachment
+- **`frontend/unikly-app/src/app/core/auth/error.interceptor.ts`** - centralized toast-based API error surfacing by status tier
+- **`frontend/unikly-app/src/environments/environment.ts`** and `npm start` script - switched API/WS URLs to relative paths (`/api`, `/ws`) for proxy and nginx compatibility
+- **`infra/keycloak/unikly-realm.json`** - expanded frontend redirect/web origins and seeded test users for `ROLE_CLIENT`, `ROLE_FREELANCER`, and `ROLE_ADMIN`
+
+#### Fixed
+
+- **403 on sign-in requests** - gateway and user-service security configs now permit unauthenticated access to login, refresh, and social auth endpoints
+- **Auth API error propagation** - global exception handling now maps `ResponseStatusException` to structured client-readable error payloads
+- **Cross-origin/login compatibility** - gateway CORS now supports configurable allowed-origin patterns instead of a single hardcoded origin
+- **Container health check reliability** - gateway and user-service runtime images include `curl` for health probe commands
+
+---
+
 ## [6.4.0] - 2026-03-21
 
 ### Step 6.4 — Docker Build Optimization: Shared Java Builder Base Image

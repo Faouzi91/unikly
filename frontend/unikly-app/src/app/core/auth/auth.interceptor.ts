@@ -9,7 +9,13 @@ export const authInterceptor: HttpInterceptorFn = (
 ) => {
   const keycloak = inject(KeycloakService);
 
-  if (!req.url.includes('/api/') || req.url.includes('/api/users/register')) {
+  if (
+    !req.url.includes('/api/') ||
+    req.url.includes('/api/users/register') ||
+    req.url.includes('/api/users/login') ||
+    req.url.includes('/api/users/refresh') ||
+    req.url.includes('/api/users/social/')
+  ) {
     return next(req);
   }
 

@@ -1,55 +1,17 @@
-import {
-  Component,
-  inject,
-  OnInit,
-  OnDestroy,
-  ViewChild,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { CommonModule, NgClass } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
-
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import {
-  MatAutocompleteModule,
-  MatAutocompleteSelectedEvent,
-} from '@angular/material/autocomplete';
-import { MatBadgeModule } from '@angular/material/badge';
-import { MatExpansionModule } from '@angular/material/expansion';
-
-import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
-import { JobService } from '../services/job.service';
-import { JobSearchResult } from '../models/job.models';
 import { KeycloakService } from '../../../core/auth/keycloak.service';
+import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
+import { JobSearchResult } from '../models/job.models';
+import { JobService } from '../services/job.service';
 
 @Component({
   selector: 'app-job-list',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterLink,
-    ReactiveFormsModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatChipsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatPaginatorModule,
-    MatAutocompleteModule,
-    MatBadgeModule,
-    MatExpansionModule,
-    TimeAgoPipe,
-  ],
+  imports: [CommonModule, NgClass, ReactiveFormsModule, RouterLink, TimeAgoPipe],
   templateUrl: './job-list.component.html',
   styleUrl: './job-list.component.scss',
 })
@@ -62,17 +24,15 @@ export class JobListComponent implements OnInit, OnDestroy {
   loading = false;
   totalElements = 0;
   currentPage = 0;
-  pageSize = 9;
+  readonly pageSize = 9;
 
-  searchControl = new FormControl('');
-  skillInputControl = new FormControl('');
-  minBudgetControl = new FormControl<number | null>(null);
-  maxBudgetControl = new FormControl<number | null>(null);
+  readonly searchControl = new FormControl('');
+  readonly skillInputControl = new FormControl('');
+  readonly minBudgetControl = new FormControl<number | null>(null);
+  readonly maxBudgetControl = new FormControl<number | null>(null);
 
   selectedSkills: string[] = [];
   skillSuggestions: string[] = [];
-
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   ngOnInit(): void {
     this.loadJobs();
@@ -84,27 +44,21 @@ export class JobListComponent implements OnInit, OnDestroy {
         this.loadJobs();
       });
 
-    this.minBudgetControl.valueChanges
-      .pipe(debounceTime(300), takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.currentPage = 0;
-        this.loadJobs();
-      });
+    this.minBudgetControl.valueChanges.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(() => {
+      this.currentPage = 0;
+      this.loadJobs();
+    });
 
-    this.maxBudgetControl.valueChanges
-      .pipe(debounceTime(300), takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.currentPage = 0;
-        this.loadJobs();
-      });
+    this.maxBudgetControl.valueChanges.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(() => {
+      this.currentPage = 0;
+      this.loadJobs();
+    });
 
     this.skillInputControl.valueChanges
       .pipe(debounceTime(200), distinctUntilChanged(), takeUntil(this.destroy$))
       .subscribe((value) => {
-        if (value && value.length >= 2) {
-          this.jobService
-            .getSuggestions(value)
-            .subscribe((suggestions) => (this.skillSuggestions = suggestions));
+        if (value && value.trim().length >= 2) {
+          this.jobService.getSuggestions(value.trim()).subscribe((suggestions) => (this.skillSuggestions = suggestions));
         } else {
           this.skillSuggestions = [];
         }
@@ -116,43 +70,17 @@ export class JobListComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  loadJobs(): void {
-    this.loading = true;
-    const params: {
-      q?: string;
-      skills?: string;
-      minBudget?: number;
-      maxBudget?: number;
-      page: number;
-      size: number;
-    } = {
-      page: this.currentPage,
-      size: this.pageSize,
-    };
-
-    const q = this.searchControl.value?.trim();
-    if (q) params.q = q;
-    if (this.selectedSkills.length > 0)
-      params.skills = this.selectedSkills.join(',');
-    if (this.minBudgetControl.value != null)
-      params.minBudget = this.minBudgetControl.value;
-    if (this.maxBudgetControl.value != null)
-      params.maxBudget = this.maxBudgetControl.value;
-
-    this.jobService.getJobs(params).subscribe({
-      next: (response) => {
-        this.jobs = response.content;
-        this.totalElements = response.totalElements;
-        this.loading = false;
-      },
-      error: () => {
-        this.loading = false;
-      },
-    });
+  canCreateJob(): boolean {
+    return this.keycloak.hasRole('ROLE_CLIENT') || this.keycloak.hasRole('CLIENT');
   }
 
-  addSkill(event: MatAutocompleteSelectedEvent): void {
-    const skill = event.option.value;
+  totalPages(): number {
+    return Math.max(1, Math.ceil(this.totalElements / this.pageSize));
+  }
+
+  addSkill(skillInput?: string): void {
+    const skill = (skillInput ?? this.skillInputControl.value ?? '').trim();
+    if (!skill) return;
     if (!this.selectedSkills.includes(skill)) {
       this.selectedSkills.push(skill);
       this.currentPage = 0;
@@ -162,26 +90,63 @@ export class JobListComponent implements OnInit, OnDestroy {
   }
 
   removeSkill(skill: string): void {
-    this.selectedSkills = this.selectedSkills.filter((s) => s !== skill);
+    this.selectedSkills = this.selectedSkills.filter((item) => item !== skill);
     this.currentPage = 0;
     this.loadJobs();
   }
 
-  onPageChange(event: PageEvent): void {
-    this.currentPage = event.pageIndex;
-    this.pageSize = event.pageSize;
+  clearFilters(): void {
+    this.searchControl.setValue('');
+    this.skillInputControl.setValue('');
+    this.minBudgetControl.setValue(null);
+    this.maxBudgetControl.setValue(null);
+    this.selectedSkills = [];
+    this.currentPage = 0;
     this.loadJobs();
   }
 
-  getStatusClass(status: string): Record<string, boolean> {
-    return {
-      'bg-green-100 text-green-800': status === 'OPEN',
-      'bg-blue-100 text-blue-800': status === 'IN_PROGRESS',
-      'bg-gray-100 text-gray-800': status === 'COMPLETED' || status === 'CLOSED',
-      'bg-red-100 text-red-800':
-        status === 'CANCELLED' || status === 'DISPUTED',
-      'bg-yellow-100 text-yellow-800': status === 'DRAFT',
-      'bg-purple-100 text-purple-800': status === 'REFUNDED',
+  previousPage(): void {
+    if (this.currentPage === 0) return;
+    this.currentPage--;
+    this.loadJobs();
+  }
+
+  nextPage(): void {
+    if (this.currentPage + 1 >= this.totalPages()) return;
+    this.currentPage++;
+    this.loadJobs();
+  }
+
+  getStatusClass(status: string): string {
+    if (status === 'OPEN') return 'bg-emerald-100 text-emerald-800';
+    if (status === 'IN_PROGRESS') return 'bg-sky-100 text-sky-800';
+    if (status === 'COMPLETED' || status === 'CLOSED') return 'bg-ink-100 text-ink-600';
+    if (status === 'CANCELLED' || status === 'DISPUTED') return 'bg-rose-100 text-rose-800';
+    if (status === 'DRAFT') return 'bg-amber-100 text-amber-800';
+    if (status === 'REFUNDED') return 'bg-violet-100 text-violet-800';
+    return 'bg-ink-100 text-ink-600';
+  }
+
+  private loadJobs(): void {
+    this.loading = true;
+    const params: { q?: string; skills?: string; minBudget?: number; maxBudget?: number; page: number; size: number } = {
+      page: this.currentPage,
+      size: this.pageSize,
     };
+
+    const query = this.searchControl.value?.trim();
+    if (query) params.q = query;
+    if (this.selectedSkills.length > 0) params.skills = this.selectedSkills.join(',');
+    if (this.minBudgetControl.value != null) params.minBudget = this.minBudgetControl.value;
+    if (this.maxBudgetControl.value != null) params.maxBudget = this.maxBudgetControl.value;
+
+    this.jobService.getJobs(params).subscribe({
+      next: (response) => {
+        this.jobs = response.content;
+        this.totalElements = response.totalElements;
+        this.loading = false;
+      },
+      error: () => (this.loading = false),
+    });
   }
 }

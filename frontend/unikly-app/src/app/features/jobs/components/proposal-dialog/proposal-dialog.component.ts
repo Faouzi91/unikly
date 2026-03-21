@@ -1,19 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  FormBuilder,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-import {
-  MAT_DIALOG_DATA,
-  MatDialogModule,
-  MatDialogRef,
-} from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SubmitProposalRequest } from '../../models/job.models';
 
 export interface ProposalDialogData {
@@ -25,30 +12,36 @@ export interface ProposalDialogData {
 @Component({
   selector: 'app-proposal-dialog',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-  ],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './proposal-dialog.component.html',
   styleUrl: './proposal-dialog.component.scss',
 })
-export class ProposalDialogComponent {
+export class ProposalDialogComponent implements OnChanges {
   private readonly fb = inject(FormBuilder);
-  private readonly dialogRef = inject(MatDialogRef<ProposalDialogComponent>);
-  readonly data = inject<ProposalDialogData>(MAT_DIALOG_DATA);
 
-  form: FormGroup = this.fb.group({
-    proposedBudget: [this.data.jobBudget, [Validators.required, Validators.min(1)]],
+  @Input({ required: true }) data!: ProposalDialogData;
+  @Input() submitting = false;
+  @Output() cancel = new EventEmitter<void>();
+  @Output() submitProposal = new EventEmitter<SubmitProposalRequest>();
+
+  readonly form: FormGroup = this.fb.group({
+    proposedBudget: [null, [Validators.required, Validators.min(1)]],
     coverLetter: ['', [Validators.required, Validators.minLength(50)]],
   });
 
-  submit(): void {
-    if (this.form.valid) {
-      this.dialogRef.close(this.form.value as SubmitProposalRequest);
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['data']?.currentValue) {
+      this.form.patchValue({
+        proposedBudget: this.data.jobBudget,
+      });
     }
+  }
+
+  onSubmit(): void {
+    if (this.form.invalid || this.submitting) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    this.submitProposal.emit(this.form.value as SubmitProposalRequest);
   }
 }
