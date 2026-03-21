@@ -18,6 +18,7 @@ public class SecurityConfig {
                         .pathMatchers("/webhooks/**").permitAll()
                         .pathMatchers("/actuator/**").permitAll()
                         .pathMatchers("/fallback/**").permitAll()
+                        .pathMatchers("/api/users/register").permitAll()
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}))

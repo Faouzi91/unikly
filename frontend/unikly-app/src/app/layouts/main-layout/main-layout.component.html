@@ -1,0 +1,89 @@
+<div class="flex h-screen bg-[#f5f5f7] overflow-hidden font-sans">
+
+  <!-- Minimal Apple Sidebar -->
+  <aside class="w-64 flex flex-col bg-white/80 backdrop-blur-xl border-r border-gray-200/50 z-20">
+    <div class="p-6 mb-4 flex items-center gap-3">
+      <div class="w-9 h-9 bg-apple-dark rounded-[10px] flex items-center justify-center shadow-lg text-white font-bold text-lg">U</div>
+      <span class="text-xl font-bold tracking-tight text-apple-dark">Unikly</span>
+    </div>
+
+    <nav class="flex-grow px-4 space-y-1.5">
+      <a routerLink="/jobs" routerLinkActive="bg-apple-blue !text-white shadow-md shadow-apple-blue/20"
+         class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-500 font-medium hover:bg-gray-100 transition-all group">
+        <mat-icon class="!w-5 !h-5 !text-[20px]">work_outline</mat-icon>
+        <span>Projects</span>
+      </a>
+      <a routerLink="/search" routerLinkActive="bg-apple-blue !text-white shadow-md shadow-apple-blue/20"
+         class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-500 font-medium hover:bg-gray-100 transition-all group">
+        <mat-icon class="!w-5 !h-5 !text-[20px]">search</mat-icon>
+        <span>Talent</span>
+      </a>
+      <a routerLink="/messages" routerLinkActive="bg-apple-blue !text-white shadow-md shadow-apple-blue/20"
+         class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-500 font-medium hover:bg-gray-100 transition-all group">
+        <mat-icon class="!w-5 !h-5 !text-[20px]">chat_bubble_outline</mat-icon>
+        <span>Messages</span>
+      </a>
+      <a routerLink="/profile" routerLinkActive="bg-apple-blue !text-white shadow-md shadow-apple-blue/20"
+         class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-500 font-medium hover:bg-gray-100 transition-all group">
+        <mat-icon class="!w-5 !h-5 !text-[20px]">person_outline</mat-icon>
+        <span>Profile</span>
+      </a>
+
+      <!-- Admin Section -->
+      @if (isAdmin()) {
+        <div class="pt-6 mt-6 border-t border-gray-100">
+          <p class="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Management</p>
+          <a routerLink="/admin" routerLinkActive="bg-apple-blue !text-white shadow-md shadow-apple-blue/20"
+             class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-500 font-medium hover:bg-gray-100 transition-all group">
+            <mat-icon class="!w-5 !h-5 !text-[20px]">insert_chart_outlined</mat-icon>
+            <span>System</span>
+          </a>
+        </div>
+      }
+    </nav>
+
+    <div class="p-4 border-t border-gray-100">
+      <button (click)="logout()" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-red-500 font-medium hover:bg-red-50 transition-all">
+        <mat-icon class="!w-5 !h-5 !text-[20px]">logout</mat-icon>
+        <span>Sign Out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <div class="flex-grow flex flex-col relative overflow-hidden">
+
+    <!-- Frosted Glass Header -->
+    <header class="h-16 flex items-center justify-between px-8 bg-white/70 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-10">
+      <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest">{{ getActivePage() }}</h2>
+
+      <div class="flex items-center gap-4">
+        <app-notification-bell />
+        <div class="h-6 w-[1px] bg-gray-200"></div>
+        <button [matMenuTriggerFor]="userMenu" class="flex items-center gap-2 group outline-none">
+          <div class="w-8 h-8 rounded-full bg-apple-gray flex items-center justify-center text-apple-dark font-bold text-xs border border-gray-200 group-hover:border-apple-blue transition-colors">
+            {{ getInitials() }}
+          </div>
+          <span class="font-semibold text-apple-dark text-sm">{{ getUsername() }}</span>
+        </button>
+        <mat-menu #userMenu="matMenu" class="!rounded-[20px] !shadow-2xl !border-0 !mt-2 overflow-hidden">
+          <button mat-menu-item routerLink="/profile" class="!py-3">
+            <mat-icon>account_circle</mat-icon>
+            <span class="font-medium">My Profile</span>
+          </button>
+          <div class="h-[1px] bg-gray-50"></div>
+          <button mat-menu-item (click)="logout()" class="!py-3 !text-red-500">
+            <mat-icon class="!text-red-500">logout</mat-icon>
+            <span class="font-medium">Sign Out</span>
+          </button>
+        </mat-menu>
+      </div>
+    </header>
+
+    <main class="flex-grow overflow-y-auto p-8 lg:p-12">
+      <div class="max-w-6xl mx-auto animate-apple-fade">
+        <router-outlet />
+      </div>
+    </main>
+  </div>
+</div>

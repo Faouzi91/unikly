@@ -1,0 +1,16 @@
+<div class="inline-flex items-center gap-0.5">
+  @for (star of stars; track star) {
+    <mat-icon
+      [class]="getStarClass(star)"
+      [class.cursor-pointer]="interactive"
+      (click)="interactive && onStarClick(star)"
+      (mouseenter)="interactive && onStarHover(star)"
+      (mouseleave)="interactive && onStarLeave()"
+    >
+      {{ getStarIcon(star) }}
+    </mat-icon>
+  }
+  @if (showValue) {
+    <span class="ml-1 text-sm text-gray-600">{{ rating | number: '1.1-1' }}</span>
+  }
+</div>

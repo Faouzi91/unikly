@@ -1,0 +1,39 @@
+@if (loading()) {
+  <div class="flex justify-center py-4">
+    <mat-spinner diameter="32" />
+  </div>
+} @else if (payment()) {
+  <div class="space-y-3">
+    <!-- Status badge -->
+    <div class="flex items-center gap-2">
+      <span
+        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium"
+        [ngClass]="statusDisplay().classes"
+      >
+        <mat-icon class="!text-base !w-4 !h-4">{{ statusDisplay().icon }}</mat-icon>
+        {{ statusDisplay().label }}
+      </span>
+      <span class="text-gray-500 text-sm">
+        {{ payment()!.amount | number: '1.2-2' }} {{ payment()!.currency }}
+      </span>
+    </div>
+
+    <!-- Actions — shown only to the client when FUNDED -->
+    @if (payment()!.status === 'FUNDED' && isClient()) {
+      <div class="flex items-center gap-3 mt-2">
+        <button
+          mat-flat-button
+          color="primary"
+          class="bg-green-600 hover:bg-green-700"
+          (click)="onRelease()"
+        >
+          <mat-icon>send</mat-icon>
+          Release Payment
+        </button>
+        <button mat-button color="warn" (click)="onRefund()">
+          Request Refund
+        </button>
+      </div>
+    }
+  </div>
+}

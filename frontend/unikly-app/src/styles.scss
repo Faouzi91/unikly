@@ -1,41 +1,170 @@
-// Include theming for Angular Material with `mat.theme()`.
-// This Sass mixin will define CSS variables that are used for styling Angular Material
-// components according to the Material 3 design spec.
-// Learn more about theming and how to use it for your application's
-// custom components at https://material.angular.dev/guide/theming
-@use '@angular/material' as mat;
-
-html {
-  height: 100%;
-  @include mat.theme(
-    (
-      color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
-      ),
-      typography: Roboto,
-      density: 0,
-    )
-  );
-}
-
-body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
-  color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
-  font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
-  margin: 0;
-  height: 100%;
-}
 @import "tailwindcss";
 
-/* You can add global styles to this file, and also import other style files */
+/* ══════════════════════════════════════════════════════════════
+   DESIGN TOKENS
+   All colours, fonts, and spacing live here.
+   Components reference these via Tailwind utilities (bg-accent, etc.)
+   or the CSS custom properties in the :root / .dark blocks below.
+══════════════════════════════════════════════════════════════ */
+@theme {
+  /* Typeface */
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  /* ── Brand ───────────────────────────────────────────────── */
+  --color-accent:       #10b981;   /* Emerald-500  */
+  --color-accent-dark:  #059669;   /* Emerald-600  */
+  --color-accent-light: #34d399;   /* Emerald-400  */
+
+  /* ── Surface palette (Slate scale) ───────────────────────── */
+  --color-surface-50:  #f8fafc;
+  --color-surface-100: #f1f5f9;
+  --color-surface-200: #e2e8f0;
+  --color-surface-300: #cbd5e1;
+  --color-surface-400: #94a3b8;
+  --color-surface-500: #64748b;
+  --color-surface-600: #475569;
+  --color-surface-700: #334155;
+  --color-surface-800: #1e293b;
+  --color-surface-900: #0f172a;
+  --color-surface-950: #020617;
+
+  /* ── Semantic UI tokens (light-mode defaults, overridden in .dark) ─ */
+  --color-ui-bg:      #ffffff;
+  --color-ui-surface: #f8fafc;
+  --color-ui-border:  #e2e8f0;
+  --color-ui-text:    #0f172a;
+  --color-ui-muted:   #64748b;
+}
+
+/* ── Dark-mode overrides ────────────────────────────────────── */
+.dark {
+  --color-ui-bg:      #020617;
+  --color-ui-surface: #0f172a;
+  --color-ui-border:  #1e293b;
+  --color-ui-text:    #f8fafc;
+  --color-ui-muted:   #94a3b8;
+}
+
+/* ── CSS custom properties (used in component class rules) ──── */
+:root {
+  --ui-bg:          var(--color-ui-bg);
+  --ui-surface:     var(--color-ui-surface);
+  --ui-border:      var(--color-ui-border);
+  --ui-text-main:   var(--color-ui-text);
+  --ui-text-muted:  var(--color-ui-muted);
+  --ui-glass:       rgba(255, 255, 255, 0.82);
+  --ui-shadow:      0 2px 8px -2px rgb(0 0 0 / 0.06), 0 4px 12px -4px rgb(0 0 0 / 0.06);
+}
+
+.dark {
+  --ui-glass:  rgba(15, 23, 42, 0.88);
+  --ui-shadow: 0 8px 24px -4px rgb(0 0 0 / 0.55), 0 4px 8px -4px rgb(0 0 0 / 0.4);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   BASE
+══════════════════════════════════════════════════════════════ */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--ui-bg);
+    color: var(--ui-text-main);
+    @apply antialiased transition-colors duration-300 font-sans;
+  }
+
+  /* Remove blue outline on Firefox for buttons */
+  button:focus-visible,
+  a:focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-white dark:ring-offset-surface-950;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   COMPONENT UTILITIES
+   These are class-level utilities used across multiple pages.
+   Page/feature-specific styles live in each component's .scss file.
+══════════════════════════════════════════════════════════════ */
+@layer components {
+
+  /* ── Cards ─────────────────────────────────────────────── */
+  .marketplace-card {
+    background-color: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    box-shadow: var(--ui-shadow);
+    @apply rounded-2xl p-6 transition-all duration-300
+           hover:border-accent/30 hover:-translate-y-0.5 hover:shadow-lg;
+  }
+
+  /* ── Sticky glass navigation ────────────────────────────── */
+  .glass-nav {
+    background-color: var(--ui-glass);
+    border-bottom: 1px solid var(--ui-border);
+    @apply backdrop-blur-xl sticky top-0 z-50 transition-colors duration-300;
+  }
+
+  /* ── Primary CTA button ─────────────────────────────────── */
+  .btn-market-primary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-accent text-white font-bold px-6 py-3 rounded-xl text-sm
+           hover:bg-accent-dark active:scale-95
+           transition-all shadow-lg shadow-accent/15
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
+           select-none;
+  }
+
+  /* ── Ghost / secondary button ───────────────────────────── */
+  .btn-market-ghost {
+    color: var(--ui-text-main);
+    border: 1px solid var(--ui-border);
+    @apply inline-flex items-center justify-center gap-2
+           px-6 py-3 rounded-xl font-bold text-sm
+           hover:bg-surface-100 dark:hover:bg-surface-800
+           transition-all select-none
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* ── Text / form inputs ─────────────────────────────────── */
+  .input-base {
+    background-color: var(--ui-bg);
+    border: 1px solid var(--ui-border);
+    color: var(--ui-text-main);
+    @apply w-full px-4 py-3 rounded-xl text-sm font-medium
+           placeholder:text-surface-400 dark:placeholder:text-surface-600
+           focus:outline-none focus:ring-2 focus:ring-accent/35 focus:border-accent
+           transition-all duration-200;
+  }
+
+  /* ── Auth shared layout (left dark panel) ───────────────── */
+  .auth-left-panel {
+    @apply hidden lg:flex flex-col
+           bg-surface-900 dark:bg-surface-950
+           relative overflow-hidden;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   GLOBAL ANIMATIONS
+══════════════════════════════════════════════════════════════ */
+@keyframes ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  animation: ticker 30s linear infinite;
+  will-change: transform;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}

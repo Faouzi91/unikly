@@ -1,31 +1,11 @@
 import { Component, Input, OnChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-user-avatar',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    @if (avatarUrl) {
-      <img
-        [src]="avatarUrl"
-        [alt]="displayName"
-        class="rounded-full object-cover"
-        [style.width.px]="size"
-        [style.height.px]="size"
-      />
-    } @else {
-      <div
-        class="rounded-full flex items-center justify-center text-white font-semibold"
-        [style.width.px]="size"
-        [style.height.px]="size"
-        [style.fontSize.px]="size * 0.4"
-        [style.backgroundColor]="bgColor"
-      >
-        {{ initial }}
-      </div>
-    }
-  `,
+  imports: [],
+  templateUrl: './user-avatar.component.html',
+  styleUrl: './user-avatar.component.scss',
 })
 export class UserAvatarComponent implements OnChanges {
   @Input() avatarUrl: string | null = null;

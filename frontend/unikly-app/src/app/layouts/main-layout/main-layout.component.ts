@@ -1,8 +1,5 @@
 import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatListModule } from '@angular/material/list';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
@@ -16,68 +13,42 @@ import { NotificationBellComponent } from '../../shared/components/notification-
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
-    MatSidenavModule,
-    MatToolbarModule,
-    MatListModule,
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
     NotificationBellComponent,
   ],
-  template: `
-    <mat-sidenav-container class="h-screen">
-      <mat-sidenav mode="side" opened class="w-64 p-4">
-        <div class="mb-6 text-xl font-bold text-blue-600">Unikly</div>
-        <mat-nav-list>
-          <a mat-list-item routerLink="/jobs" routerLinkActive="!bg-blue-50">
-            <mat-icon matListItemIcon>work</mat-icon>
-            <span matListItemTitle>Jobs</span>
-          </a>
-          <a mat-list-item routerLink="/search" routerLinkActive="!bg-blue-50">
-            <mat-icon matListItemIcon>search</mat-icon>
-            <span matListItemTitle>Search</span>
-          </a>
-          <a mat-list-item routerLink="/messages" routerLinkActive="!bg-blue-50">
-            <mat-icon matListItemIcon>chat</mat-icon>
-            <span matListItemTitle>Messages</span>
-          </a>
-          <a mat-list-item routerLink="/profile" routerLinkActive="!bg-blue-50">
-            <mat-icon matListItemIcon>person</mat-icon>
-            <span matListItemTitle>Profile</span>
-          </a>
-        </mat-nav-list>
-      </mat-sidenav>
-
-      <mat-sidenav-content>
-        <mat-toolbar color="primary" class="flex justify-between">
-          <span>Unikly</span>
-          <div class="flex items-center gap-1">
-            <app-notification-bell />
-            <button mat-icon-button [matMenuTriggerFor]="userMenu">
-              <mat-icon>account_circle</mat-icon>
-            </button>
-            <mat-menu #userMenu="matMenu">
-              <button mat-menu-item routerLink="/profile">
-                <mat-icon>person</mat-icon>
-                <span>Profile</span>
-              </button>
-              <button mat-menu-item (click)="logout()">
-                <mat-icon>logout</mat-icon>
-                <span>Logout</span>
-              </button>
-            </mat-menu>
-          </div>
-        </mat-toolbar>
-
-        <main class="p-0">
-          <router-outlet />
-        </main>
-      </mat-sidenav-content>
-    </mat-sidenav-container>
-  `,
+  templateUrl: './main-layout.component.html',
+  styleUrl: './main-layout.component.scss',
 })
 export class MainLayoutComponent {
-  constructor(private readonly keycloak: KeycloakService) {}
+  constructor(
+    private readonly keycloak: KeycloakService,
+    private readonly router: Router
+  ) {}
+
+  isAdmin(): boolean {
+    return this.keycloak.hasRole('ADMIN');
+  }
+
+  getUsername(): string {
+    return this.keycloak.getUsername();
+  }
+
+  getInitials(): string {
+    const user = this.getUsername();
+    return user ? user.substring(0, 2).toUpperCase() : 'UN';
+  }
+
+  getActivePage(): string {
+    const url = this.router.url;
+    if (url.includes('jobs')) return 'Projects';
+    if (url.includes('search')) return 'Talent Search';
+    if (url.includes('messages')) return 'Collaboration';
+    if (url.includes('profile')) return 'Account';
+    if (url.includes('admin')) return 'System Control';
+    return 'Platform';
+  }
 
   logout(): void {
     this.keycloak.logout();

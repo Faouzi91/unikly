@@ -74,7 +74,7 @@ public class UserProfileService {
     public PageResponse<UserProfileResponse> searchFreelancers(String skill, int page, int size) {
         var pageable = PageRequest.of(page, size);
         var result = (skill != null && !skill.isBlank())
-                ? profileRepository.findByRoleAndSkill(UserRole.FREELANCER, skill, pageable)
+                ? profileRepository.findByRoleAndSkill(UserRole.FREELANCER.name(), skill, pageable)
                 : profileRepository.findByRole(UserRole.FREELANCER, pageable);
 
         var content = result.getContent().stream()

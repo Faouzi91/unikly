@@ -1,0 +1,14 @@
+# syntax=docker/dockerfile:1
+# Shared build base for all Java microservices.
+# Downloads the Gradle wrapper distribution once — baked into this layer.
+# Rebuild only when gradle-wrapper.properties changes (i.e. Gradle version bump).
+FROM eclipse-temurin:25-jdk
+WORKDIR /app
+
+COPY backend/gradlew ./
+COPY backend/gradle/ gradle/
+COPY backend/settings.gradle.kts backend/build.gradle.kts backend/gradle.properties ./
+RUN tr -d '\r' < gradlew > gradlew.unix && mv gradlew.unix gradlew && chmod +x gradlew
+
+# Download the Gradle wrapper distribution once — shared by all service images via layer cache.
+RUN ./gradlew --version --no-daemon

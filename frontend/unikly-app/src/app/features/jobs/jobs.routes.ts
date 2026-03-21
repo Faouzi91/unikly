@@ -6,19 +6,19 @@ export const JOBS_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./job-list.component').then((m) => m.JobListComponent),
+      import('./job-list/job-list.component').then((m) => m.JobListComponent),
     canActivate: [authGuard],
   },
   {
     path: 'create',
     loadComponent: () =>
-      import('./job-create.component').then((m) => m.JobCreateComponent),
+      import('./job-create/job-create.component').then((m) => m.JobCreateComponent),
     canActivate: [authGuard, roleGuard('ROLE_CLIENT')],
   },
   {
     path: ':id',
     loadComponent: () =>
-      import('./job-detail.component').then((m) => m.JobDetailComponent),
+      import('./job-detail/job-detail.component').then((m) => m.JobDetailComponent),
     canActivate: [authGuard],
   },
 ];

@@ -27,6 +27,7 @@ public class PaymentEventConsumer {
 
     private final JobRepository jobRepository;
     private final ProposalRepository proposalRepository;
+    private final ContractRepository contractRepository;
     private final ProcessedEventRepository processedEventRepository;
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
@@ -65,6 +66,7 @@ public class PaymentEventConsumer {
         var acceptedProposals = proposalRepository.findByJobIdAndStatus(event.jobId(), ProposalStatus.ACCEPTED);
 
         if (job.getStatus() == JobStatus.OPEN && !acceptedProposals.isEmpty()) {
+            var acceptedProposal = acceptedProposals.get(0);
             var previousStatus = job.getStatus();
             JobStatusMachine.validateTransition(previousStatus, JobStatus.IN_PROGRESS);
 
@@ -72,9 +74,20 @@ public class PaymentEventConsumer {
             job.setUpdatedAt(Instant.now());
             jobRepository.save(job);
 
+            // Create and activate the contract now that payment is confirmed
+            var contract = com.unikly.jobservice.domain.Contract.builder()
+                    .jobId(job.getId())
+                    .clientId(job.getClientId())
+                    .freelancerId(acceptedProposal.getFreelancerId())
+                    .agreedBudget(acceptedProposal.getProposedBudget())
+                    .status(com.unikly.jobservice.domain.ContractStatus.ACTIVE)
+                    .startedAt(Instant.now())
+                    .build();
+            contractRepository.save(contract);
+
             publishStatusChangedEvent(job, previousStatus);
 
-            log.info("Job transitioned to IN_PROGRESS via PaymentCompletedEvent: jobId={}, paymentId={}",
+            log.info("Job transitioned to IN_PROGRESS and contract created via PaymentCompletedEvent: jobId={}, paymentId={}",
                     event.jobId(), event.paymentId());
         } else {
             log.info("Job not eligible for transition: jobId={}, status={}, acceptedProposals={}",

@@ -4,6 +4,12 @@ server:
 spring:
   application:
     name: search-service
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+      - org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration
   elasticsearch:
     uris: ${ELASTICSEARCH_URL:http://localhost:9200}
   kafka:

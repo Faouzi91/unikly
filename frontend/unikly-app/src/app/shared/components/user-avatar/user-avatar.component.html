@@ -1,0 +1,19 @@
+@if (avatarUrl) {
+  <img
+    [src]="avatarUrl"
+    [alt]="displayName"
+    class="rounded-full object-cover"
+    [style.width.px]="size"
+    [style.height.px]="size"
+  />
+} @else {
+  <div
+    class="rounded-full flex items-center justify-center text-white font-semibold"
+    [style.width.px]="size"
+    [style.height.px]="size"
+    [style.fontSize.px]="size * 0.4"
+    [style.backgroundColor]="bgColor"
+  >
+    {{ initial }}
+  </div>
+}

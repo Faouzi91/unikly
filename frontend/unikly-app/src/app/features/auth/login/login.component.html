@@ -1,0 +1,196 @@
+<div class="min-h-screen grid lg:grid-cols-2 font-sans bg-ui-bg transition-colors duration-300">
+
+  <!-- ── Left branding panel ──────────────────────────────────────────────── -->
+  <div class="auth-left-panel bg-surface-900 dark:bg-surface-950 relative overflow-hidden">
+    <!-- Dot-grid texture -->
+    <div class="absolute inset-0 z-0 opacity-[0.15]"
+         style="background-image: radial-gradient(#10b981 1px, transparent 0); background-size: 36px 36px;"></div>
+    <!-- Accent glow -->
+    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-96
+                bg-accent/10 blur-[100px] rounded-full pointer-events-none"></div>
+
+    <!-- Logo -->
+    <a routerLink="/" class="relative z-10 flex items-center gap-2.5 w-fit p-10 lg:p-12">
+      <div class="w-9 h-9 bg-accent rounded-xl flex items-center justify-center shadow-lg shadow-accent/30">
+        <span class="text-white font-black text-base">U</span>
+      </div>
+      <span class="text-xl font-black text-white uppercase tracking-tighter">Unikly</span>
+    </a>
+
+    <!-- Headline (vertically centred in the available space) -->
+    <div class="relative z-10 flex-grow flex flex-col justify-center px-10 lg:px-14 pb-16">
+      <h2 class="text-4xl lg:text-5xl font-black text-white leading-tight tracking-tight mb-6">
+        Connect with the<br/>
+        <span class="text-accent italic">top 1%</span><br/>
+        of digital talent.
+      </h2>
+      <p class="text-surface-400 text-base font-medium leading-relaxed max-w-sm">
+        Join the ecosystem where technical precision meets real-time AI orchestration.
+      </p>
+
+      <!-- Trust metrics -->
+      <div class="flex flex-wrap gap-6 mt-10">
+        @for (metric of metrics; track metric.label) {
+          <div>
+            <p class="text-2xl font-black text-white">{{ metric.value }}</p>
+            <p class="text-xs text-surface-500 font-medium uppercase tracking-widest">{{ metric.label }}</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Client logos -->
+    <div class="relative z-10 flex items-center gap-8 opacity-20 px-10 lg:px-14 pb-12">
+      <span class="text-white font-black text-base italic uppercase tracking-tighter">Nexus</span>
+      <span class="text-white font-black text-base italic uppercase tracking-tighter">Quantum</span>
+      <span class="text-white font-black text-base italic uppercase tracking-tighter">Vertex</span>
+    </div>
+  </div>
+
+  <!-- ── Right form panel ─────────────────────────────────────────────────── -->
+  <div class="flex flex-col items-center justify-center
+              bg-white dark:bg-surface-950
+              p-8 sm:p-12 relative">
+
+    <!-- Theme toggle -->
+    <div class="absolute top-6 right-6">
+      <button (click)="theme.toggleTheme()" aria-label="Toggle theme"
+              class="p-2 rounded-xl border border-ui-border
+                     bg-white dark:bg-surface-900
+                     hover:border-accent/40 transition-all">
+        @if (!theme.isDarkMode()) {
+          <svg class="w-4 h-4 text-surface-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+        }
+        @if (theme.isDarkMode()) {
+          <svg class="w-4 h-4 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M16.071 16.071l.707.707M7.757 7.757l.707-.707"/>
+          </svg>
+        }
+      </button>
+    </div>
+
+    <!-- Form -->
+    <div class="w-full max-w-md">
+      <!-- Heading -->
+      <div class="mb-10">
+        <h1 class="text-4xl font-black tracking-tight text-surface-900 dark:text-white mb-2">
+          Sign In
+        </h1>
+        <p class="text-surface-500 dark:text-surface-400 font-medium italic">
+          Welcome back to the marketplace.
+        </p>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="space-y-5">
+
+        <!-- Username / Email -->
+        <div class="space-y-2">
+          <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">
+            Identity
+          </label>
+          <input type="text"
+                 formControlName="username"
+                 placeholder="Email or username"
+                 autocomplete="username"
+                 class="input-base"
+                 [class.!border-red-400]="submitted && form.controls['username'].invalid">
+          @if (submitted && form.controls['username'].errors?.['required']) {
+            <p class="text-[11px] text-red-500 font-bold mt-1">Identity is required.</p>
+          }
+        </div>
+
+        <!-- Password -->
+        <div class="space-y-2">
+          <div class="flex justify-between items-center">
+            <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-surface-400">
+              Password
+            </label>
+            <button type="button"
+                    class="text-[10px] font-black text-accent uppercase tracking-widest hover:underline">
+              Forgot?
+            </button>
+          </div>
+          <div class="relative">
+            <input [type]="showPassword() ? 'text' : 'password'"
+                   formControlName="password"
+                   placeholder="Your password"
+                   autocomplete="current-password"
+                   class="input-base pr-12"
+                   [class.!border-red-400]="submitted && form.controls['password'].invalid">
+            <button type="button"
+                    (click)="showPassword.set(!showPassword())"
+                    aria-label="Toggle password visibility"
+                    class="absolute right-3.5 top-1/2 -translate-y-1/2
+                           text-surface-400 hover:text-accent transition-colors">
+              @if (showPassword()) {
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88L4.22 4.22m13.89 13.89l5.657 5.657"/>
+                </svg>
+              }
+              @if (!showPassword()) {
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              }
+            </button>
+          </div>
+          @if (submitted && form.controls['password'].errors?.['required']) {
+            <p class="text-[11px] text-red-500 font-bold mt-1">Password is required.</p>
+          }
+          @if (submitted && form.controls['password'].errors?.['minlength']) {
+            <p class="text-[11px] text-red-500 font-bold mt-1">Minimum 6 characters.</p>
+          }
+        </div>
+
+        <!-- Error banner -->
+        @if (error()) {
+          <div class="flex items-center gap-3 p-4 rounded-xl
+                      bg-red-50 dark:bg-red-950/40
+                      border border-red-200 dark:border-red-900
+                      text-red-600 dark:text-red-400 text-xs font-bold">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            {{ error() }}
+          </div>
+        }
+
+        <!-- Submit -->
+        <button type="submit"
+                [disabled]="loading()"
+                class="w-full btn-market-primary !py-4 !text-xs uppercase tracking-widest mt-2">
+          @if (loading()) {
+            <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            Authenticating…
+          }
+          @if (!loading()) {
+            Authenticate
+          }
+        </button>
+      </form>
+
+      <!-- Register link -->
+      <div class="mt-10 text-center">
+        <p class="text-surface-500 dark:text-surface-400 text-sm font-medium">
+          Not a member?
+          <a routerLink="/auth/register"
+             class="text-accent font-black hover:underline ml-1">
+            Create an account
+          </a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

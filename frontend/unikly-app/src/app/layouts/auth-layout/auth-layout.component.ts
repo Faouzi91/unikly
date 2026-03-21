@@ -6,12 +6,7 @@ import { MatCardModule } from '@angular/material/card';
   selector: 'app-auth-layout',
   standalone: true,
   imports: [RouterOutlet, MatCardModule],
-  template: `
-    <div class="flex min-h-screen items-center justify-center bg-gray-100">
-      <mat-card class="w-full max-w-md p-8">
-        <router-outlet />
-      </mat-card>
-    </div>
-  `,
+  templateUrl: './auth-layout.component.html',
+  styleUrl: './auth-layout.component.scss',
 })
 export class AuthLayoutComponent {}

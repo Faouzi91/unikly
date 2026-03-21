@@ -1,5 +1,13 @@
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-sentence-transformers==3.4.1
-numpy==2.2.3
-pydantic==2.10.6
+# Core API
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+pydantic>=2.10.0
+
+# AI/ML - Explicitly use CPU-only versions to avoid 3GB+ CUDA downloads
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.4.1+cpu
+sentence-transformers>=3.4.0
+
+# Utilities
+numpy>=2.1.0
+packaging>=24.0

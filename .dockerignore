@@ -4,6 +4,7 @@
 backend/.gradle/
 backend/build/
 backend/*/build/
+backend/*/bin/
 frontend/unikly-app/node_modules/
 frontend/unikly-app/dist/
 frontend/unikly-app/.angular/

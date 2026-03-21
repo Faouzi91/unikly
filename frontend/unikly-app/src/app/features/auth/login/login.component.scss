@@ -1,0 +1,12 @@
+/* Login page layout styles.
+   Tailwind utilities handle most of the design;
+   this file covers only what utilities cannot express. */
+
+:host {
+  display: block;
+}
+
+/* Ensure the left panel fills the full viewport height on large screens */
+.auth-left-panel {
+  min-height: 100vh;
+}

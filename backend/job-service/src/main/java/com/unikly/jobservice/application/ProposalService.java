@@ -88,26 +88,15 @@ public class ProposalService {
         proposal.setStatus(ProposalStatus.ACCEPTED);
         proposalRepository.save(proposal);
 
+        // Reject all other pending proposals
         proposalRepository.rejectOtherPendingProposals(jobId, proposalId, ProposalStatus.REJECTED);
 
-        JobStatusMachine.validateTransition(job.getStatus(), JobStatus.IN_PROGRESS);
-        job.setStatus(JobStatus.IN_PROGRESS);
-        job.setUpdatedAt(Instant.now());
-        jobRepository.save(job);
-
-        var contract = Contract.builder()
-                .jobId(jobId)
-                .clientId(clientId)
-                .freelancerId(proposal.getFreelancerId())
-                .agreedBudget(proposal.getProposedBudget())
-                .status(com.unikly.jobservice.domain.ContractStatus.ACTIVE)
-                .startedAt(Instant.now())
-                .build();
-        contractRepository.save(contract);
+        // We DO NOT transition the job to IN_PROGRESS here.
+        // The Job remains OPEN until the PaymentCompletedEvent is received.
 
         publishProposalAcceptedEvent(job, proposal);
 
-        log.info("Proposal accepted: id={}, jobId={}, contract created", proposalId, jobId);
+        log.info("Proposal accepted: id={}, jobId={}, awaiting payment", proposalId, jobId);
         return proposalMapper.toResponse(proposal);
     }
 

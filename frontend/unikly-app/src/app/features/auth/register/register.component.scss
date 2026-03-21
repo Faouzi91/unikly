@@ -1,0 +1,16 @@
+/* Register page styles.
+   Extends the shared auth panel classes from styles.scss. */
+
+:host {
+  display: block;
+}
+
+.auth-left-panel {
+  min-height: 100vh;
+}
+
+/* Password strength bar transition */
+.strength-bar {
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.3s ease;
+}

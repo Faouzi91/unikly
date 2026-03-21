@@ -5,6 +5,38 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [6.4.0] - 2026-03-21
+
+### Step 6.4 — Docker Build Optimization: Shared Java Builder Base Image
+
+#### Added
+
+- **`infra/docker/Dockerfile.java-builder`** — shared multi-stage build base for all 8 Java
+  microservices; downloads the Gradle wrapper distribution once and bakes it into a single
+  `localhost/unikly/java-builder:latest` image layer reused by every service build
+
+#### Changed
+
+- **All 8 Java service Dockerfiles** (`Dockerfile.gateway`, `Dockerfile.job-service`,
+  `Dockerfile.user-service`, `Dockerfile.payment-service`, `Dockerfile.matching-service`,
+  `Dockerfile.messaging-service`, `Dockerfile.notification-service`, `Dockerfile.search-service`) —
+  removed duplicated Layers 1–2 (gradlew setup + wrapper download); now `FROM localhost/unikly/java-builder:latest AS build`
+- **`build.sh`** — added `docker build … -t localhost/unikly/java-builder:latest` step before
+  `docker compose build` so the base image is always present before services are built
+- **`backend/build.gradle.kts`** — updated Gradle Java toolchain from `languageVersion=21` to
+  `languageVersion=25` to match the `eclipse-temurin:25-jdk` Docker base image
+- **`.dockerignore`** — added `backend/*/bin/` to exclude compiled class files from build context
+
+#### Fixed
+
+- **BuildKit registry resolution** — base image tagged with `localhost/` prefix so Docker does not
+  attempt to pull it from Docker Hub registry during `docker compose build`
+- **Gradle toolchain mismatch** — services were failing with
+  `Cannot find a Java installation matching languageVersion=21` because the container only has JDK 25;
+  aligning the toolchain declaration with the actual JDK eliminates the error
+
+---
+
 ## [6.3.0] - 2026-03-19
 
 ### Step 6.3 — Integration Testing with Testcontainers

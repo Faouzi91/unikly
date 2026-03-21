@@ -1,34 +1,13 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-star-rating',
   standalone: true,
-  imports: [CommonModule, MatIconModule],
-  template: `
-    <div class="inline-flex items-center gap-0.5">
-      @for (star of stars; track star) {
-        <mat-icon
-          [class]="getStarClass(star)"
-          [class.cursor-pointer]="interactive"
-          (click)="interactive && onStarClick(star)"
-          (mouseenter)="interactive && onStarHover(star)"
-          (mouseleave)="interactive && onStarLeave()"
-        >
-          {{ getStarIcon(star) }}
-        </mat-icon>
-      }
-      @if (showValue) {
-        <span class="ml-1 text-sm text-gray-600">{{ rating | number: '1.1-1' }}</span>
-      }
-    </div>
-  `,
-  styles: `
-    .star-filled { color: #f59e0b; }
-    .star-half { color: #f59e0b; }
-    .star-empty { color: #d1d5db; }
-  `,
+  imports: [DecimalPipe, MatIconModule],
+  templateUrl: './star-rating.component.html',
+  styleUrl: './star-rating.component.scss',
 })
 export class StarRatingComponent {
   @Input() rating = 0;

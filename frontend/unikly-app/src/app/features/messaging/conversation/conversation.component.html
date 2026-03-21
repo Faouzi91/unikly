@@ -1,0 +1,99 @@
+<div class="flex flex-col h-[calc(100vh-64px)]">
+
+  <!-- Header -->
+  <div class="flex items-center gap-3 px-4 py-3 border-b bg-white shadow-sm">
+    <button mat-icon-button routerLink="/messages">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="flex-1">
+      <p class="font-semibold">{{ otherParticipantLabel() }}</p>
+    </div>
+    @if (otherParticipantId()) {
+      <a mat-button [routerLink]="['/users', otherParticipantId()]" color="primary">
+        View Profile
+      </a>
+    }
+  </div>
+
+  <!-- Top sentinel for infinite scroll -->
+  <div #topSentinel class="h-1"></div>
+
+  <!-- Messages area -->
+  <div
+    #messagesContainer
+    class="flex-1 overflow-y-auto px-4 py-3 space-y-2"
+  >
+    @if (loadingMore()) {
+      <div class="flex justify-center py-2">
+        <mat-spinner diameter="24" />
+      </div>
+    }
+
+    @for (msg of messages(); track msg.id) {
+      <div
+        class="flex"
+        [ngClass]="msg.senderId === currentUserId ? 'justify-end' : 'justify-start'"
+      >
+        <div
+          class="max-w-xs lg:max-w-md px-4 py-2 rounded-2xl text-sm"
+          [ngClass]="msg.senderId === currentUserId
+            ? 'bg-indigo-600 text-white rounded-br-sm'
+            : 'bg-gray-100 text-gray-800 rounded-bl-sm'"
+        >
+          <p class="whitespace-pre-wrap break-words">{{ msg.content }}</p>
+          <div
+            class="flex items-center gap-1 mt-1"
+            [ngClass]="msg.senderId === currentUserId ? 'justify-end' : 'justify-start'"
+          >
+            <span class="text-xs opacity-60">{{ msg.createdAt | timeAgo }}</span>
+            @if (msg.senderId === currentUserId && msg.readAt) {
+              <mat-icon
+                class="opacity-70"
+                style="font-size:14px;width:14px;height:14px;line-height:14px"
+              >done_all</mat-icon>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Typing indicator -->
+    @if (isTyping()) {
+      <div class="flex justify-start">
+        <div class="bg-gray-100 px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
+      </div>
+    }
+
+    <!-- Scroll anchor -->
+    <div #scrollAnchor></div>
+  </div>
+
+  <!-- Input area -->
+  <div class="border-t bg-white px-4 py-3 flex items-end gap-2">
+    <mat-form-field class="flex-1" appearance="outline" subscriptSizing="dynamic">
+      <textarea
+        matInput
+        [(ngModel)]="newMessage"
+        placeholder="Type a message..."
+        rows="1"
+        cdkTextareaAutosize
+        (keydown)="onKeydown($event)"
+        (input)="onTyping()"
+        class="resize-none"
+      ></textarea>
+    </mat-form-field>
+    <button
+      mat-icon-button
+      color="primary"
+      [disabled]="!newMessage.trim() || sending()"
+      (click)="sendMessage()"
+      class="mb-1"
+    >
+      <mat-icon>send</mat-icon>
+    </button>
+  </div>
+</div>
