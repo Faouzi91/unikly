@@ -1,0 +1,25 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9999/realms/test   # overridden — JwtDecoder is mocked in tests
+  flyway:
+    locations: classpath:db/migration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+stripe:
+  secret-key: sk_test_placeholder
+  webhook-secret: whsec_placeholder
+
+management:
+  tracing:
+    enabled: false
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces

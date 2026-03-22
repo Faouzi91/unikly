@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DecimalPipe, LowerCasePipe } from '@angular/common';
 import {
   FormArray,
   FormBuilder,
@@ -22,7 +22,8 @@ import { UserService } from '../services/user.service';
   selector: 'app-profile',
   standalone: true,
   imports: [
-    CommonModule,
+    DecimalPipe,
+    LowerCasePipe,
     ReactiveFormsModule,
     StarRatingComponent,
     SkillChipsComponent,
@@ -39,21 +40,21 @@ export class ProfileComponent implements OnInit, OnDestroy {
   private readonly toast = inject(ToastService);
   private readonly destroy$ = new Subject<void>();
 
-  profile: UserProfile | null = null;
-  loading = true;
-  editMode = false;
-  saving = false;
-  currencies = ['USD', 'EUR', 'XAF', 'GBP'];
-  activeTab: 'profile' | 'reviews' = 'profile';
+  readonly profile = signal<UserProfile | null>(null);
+  readonly loading = signal(true);
+  readonly loadError = signal(false);
+  readonly editMode = signal(false);
+  readonly saving = signal(false);
+  readonly activeTab = signal<'profile' | 'reviews'>('profile');
+  readonly skillSuggestions = signal<string[]>([]);
+  readonly reviews = signal<Review[]>([]);
 
   editSkills: string[] = [];
-  readonly skillInputControl = new FormControl('');
-  skillSuggestions: string[] = [];
-
-  reviews: Review[] = [];
   reviewsPage = 0;
-  readonly reviewsPageSize = 5;
   reviewsTotalElements = 0;
+  readonly reviewsPageSize = 5;
+  readonly currencies = ['USD', 'EUR', 'XAF', 'GBP'];
+  readonly skillInputControl = new FormControl('');
 
   readonly form: FormGroup = this.fb.group({
     displayName: ['', [Validators.required, Validators.maxLength(100)]],
@@ -83,9 +84,11 @@ export class ProfileComponent implements OnInit, OnDestroy {
       .pipe(debounceTime(200), distinctUntilChanged(), takeUntil(this.destroy$))
       .subscribe((value) => {
         if (value && value.trim().length >= 2) {
-          this.jobService.getSuggestions(value.trim()).subscribe((suggestions) => (this.skillSuggestions = suggestions));
+          this.jobService
+            .getSuggestions(value.trim())
+            .subscribe((suggestions) => this.skillSuggestions.set(suggestions));
         } else {
-          this.skillSuggestions = [];
+          this.skillSuggestions.set([]);
         }
       });
   }
@@ -96,20 +99,21 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   toggleEditMode(): void {
-    this.editMode = !this.editMode;
-    if (!this.editMode || !this.profile) return;
+    this.editMode.set(!this.editMode());
+    const p = this.profile();
+    if (!this.editMode() || !p) return;
 
     this.form.patchValue({
-      displayName: this.profile.displayName,
-      bio: this.profile.bio,
-      hourlyRate: this.profile.hourlyRate,
-      currency: this.profile.currency || 'USD',
-      location: this.profile.location,
+      displayName: p.displayName,
+      bio: p.bio,
+      hourlyRate: p.hourlyRate,
+      currency: p.currency || 'USD',
+      location: p.location,
     });
-    this.editSkills = [...this.profile.skills];
+    this.editSkills = [...p.skills];
 
     this.portfolioLinks.clear();
-    for (const link of this.profile.portfolioLinks) {
+    for (const link of p.portfolioLinks) {
       this.portfolioLinks.push(this.fb.control(link));
     }
   }
@@ -141,7 +145,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.saving = true;
+    this.saving.set(true);
     const payload = {
       ...this.form.value,
       skills: this.editSkills,
@@ -150,12 +154,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
     this.userService.updateMyProfile(payload).subscribe({
       next: (profile) => {
-        this.profile = profile;
-        this.editMode = false;
-        this.saving = false;
+        this.profile.set(profile);
+        this.editMode.set(false);
+        this.saving.set(false);
         this.toast.success('Profile updated successfully.');
       },
-      error: () => (this.saving = false),
+      error: () => this.saving.set(false),
     });
   }
 
@@ -172,22 +176,26 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   private loadProfile(): void {
-    this.loading = true;
+    this.loading.set(true);
     this.userService.getMyProfile().subscribe({
       next: (profile) => {
-        this.profile = profile;
-        this.loading = false;
+        this.profile.set(profile);
+        this.loading.set(false);
         this.loadReviews();
       },
-      error: () => (this.loading = false),
+      error: () => {
+        this.loading.set(false);
+        this.loadError.set(true);
+      },
     });
   }
 
   private loadReviews(): void {
-    if (!this.profile) return;
-    this.userService.getReviews(this.profile.id, this.reviewsPage, this.reviewsPageSize).subscribe({
+    const p = this.profile();
+    if (!p) return;
+    this.userService.getReviews(p.id, this.reviewsPage, this.reviewsPageSize).subscribe({
       next: (response) => {
-        this.reviews = response.content;
+        this.reviews.set(response.content);
         this.reviewsTotalElements = response.totalElements;
       },
     });

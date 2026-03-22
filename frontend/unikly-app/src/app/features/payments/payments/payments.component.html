@@ -1,6 +1,156 @@
-<section class="container-narrow">
-  <div class="card-panel p-6">
-    <h1 class="section-title">Payments</h1>
-    <p class="mt-2 text-sm text-[var(--ui-muted)]">Payment history, escrow lifecycle, and refunds will appear here.</p>
+<section class="page-shell">
+  <div class="container-wide space-y-6">
+
+    <!-- Header -->
+    <header>
+      <h1 class="section-title">Payments</h1>
+      <p class="muted-text">Manage your escrow, track payments, and request refunds.</p>
+    </header>
+
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div class="card-panel p-5">
+        <p class="text-xs font-medium uppercase tracking-wide text-[var(--ui-muted)]">Total Volume</p>
+        <p class="mt-2 text-2xl font-bold text-ink-900">{{ statTotal() | number: '1.2-2' }}</p>
+        <p class="mt-0.5 text-xs text-[var(--ui-muted)]">All time</p>
+      </div>
+      <div class="card-panel p-5">
+        <p class="text-xs font-medium uppercase tracking-wide text-[var(--ui-muted)]">Active Escrow</p>
+        <p class="mt-2 text-2xl font-bold text-emerald-600">{{ statFunded() | number: '1.2-2' }}</p>
+        <p class="mt-0.5 text-xs text-[var(--ui-muted)]">Held in escrow</p>
+      </div>
+      <div class="card-panel p-5">
+        <p class="text-xs font-medium uppercase tracking-wide text-[var(--ui-muted)]">Released</p>
+        <p class="mt-2 text-2xl font-bold text-sky-600">{{ statReleased() | number: '1.2-2' }}</p>
+        <p class="mt-0.5 text-xs text-[var(--ui-muted)]">Paid out</p>
+      </div>
+      <div class="card-panel p-5">
+        <p class="text-xs font-medium uppercase tracking-wide text-[var(--ui-muted)]">Refunded</p>
+        <p class="mt-2 text-2xl font-bold text-ink-600">{{ statRefunded() | number: '1.2-2' }}</p>
+        <p class="mt-0.5 text-xs text-[var(--ui-muted)]">Returned</p>
+      </div>
+    </div>
+
+    <!-- Payments List -->
+    <div class="card-panel overflow-hidden">
+
+      <!-- Filter Tabs -->
+      <div class="flex gap-1 overflow-x-auto border-b border-[var(--ui-border)] px-4 pt-3 pb-0">
+        @for (f of filters; track f.value) {
+          <button
+            type="button"
+            class="tab-button shrink-0"
+            [class.tab-button-active]="filterStatus() === f.value"
+            (click)="setFilter(f.value)"
+          >{{ f.label }}</button>
+        }
+      </div>
+
+      @if (loading()) {
+        <div class="flex justify-center py-16">
+          <span class="inline-block h-8 w-8 animate-spin rounded-full border-2 border-ink-300 border-t-brand"></span>
+        </div>
+
+      } @else if (filteredPayments().length === 0) {
+        <div class="px-6 py-16 text-center">
+          <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-ink-100">
+            <svg class="h-6 w-6 text-ink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+          </div>
+          <p class="text-sm font-semibold text-ink-900">No payments found</p>
+          <p class="mt-1 text-sm text-[var(--ui-muted)]">
+            @if (filterStatus() === 'ALL') {
+              Payments will appear here once you fund a project.
+            } @else {
+              No payments match this filter.
+            }
+          </p>
+        </div>
+
+      } @else {
+        <!-- Table header (desktop) -->
+        <div class="hidden border-b border-[var(--ui-border)] bg-ink-50/50 px-6 py-2.5 text-xs font-semibold uppercase tracking-wide text-[var(--ui-muted)] sm:grid sm:grid-cols-[1fr_auto_auto_auto_auto]">
+          <span>Job</span>
+          <span class="text-right">Amount</span>
+          <span class="px-6 text-center">Status</span>
+          <span class="text-right">Date</span>
+          @if (isClient()) {
+            <span class="pl-4">Actions</span>
+          }
+        </div>
+
+        <div class="divide-y divide-[var(--ui-border)]">
+          @for (payment of filteredPayments(); track payment.id) {
+            <div class="px-6 py-4 sm:grid sm:grid-cols-[1fr_auto_auto_auto_auto] sm:items-center sm:gap-4">
+
+              <!-- Job ID -->
+              <div>
+                <p class="text-sm font-semibold text-ink-900 sm:hidden">Job</p>
+                <p class="font-mono text-xs text-ink-700">{{ payment.jobId }}</p>
+                <p class="mt-0.5 text-xs text-[var(--ui-muted)]">ID: {{ payment.id.slice(0, 8) }}…</p>
+              </div>
+
+              <!-- Amount -->
+              <div class="mt-2 text-right sm:mt-0">
+                <p class="text-sm font-semibold text-ink-900">
+                  {{ payment.amount | number: '1.2-2' }}
+                  <span class="text-xs font-normal text-[var(--ui-muted)]">{{ payment.currency }}</span>
+                </p>
+              </div>
+
+              <!-- Status Badge -->
+              <div class="mt-2 px-0 text-left sm:mt-0 sm:px-6 sm:text-center">
+                <span
+                  class="pill text-xs"
+                  [ngClass]="statusClasses(payment.status)"
+                >{{ statusLabel(payment.status) }}</span>
+              </div>
+
+              <!-- Date -->
+              <div class="mt-2 text-left sm:mt-0 sm:text-right">
+                <p class="text-xs text-[var(--ui-muted)]">
+                  {{ payment.createdAt | date: 'MMM d, y' }}
+                </p>
+              </div>
+
+              <!-- Actions -->
+              @if (isClient()) {
+                <div class="mt-3 flex gap-2 sm:mt-0 sm:justify-end sm:pl-4">
+                  @if (payment.status === 'FUNDED') {
+                    <button
+                      type="button"
+                      class="btn-primary px-3 py-1.5 text-xs"
+                      [disabled]="releasing() === payment.id || refunding() === payment.id"
+                      (click)="release(payment)"
+                    >
+                      @if (releasing() === payment.id) {
+                        <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+                      } @else {
+                        Release
+                      }
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-secondary px-3 py-1.5 text-xs text-rose-700 hover:border-rose-300 hover:bg-rose-50"
+                      [disabled]="releasing() === payment.id || refunding() === payment.id"
+                      (click)="refund(payment)"
+                    >
+                      @if (refunding() === payment.id) {
+                        <span class="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-rose-300 border-t-rose-700"></span>
+                      } @else {
+                        Refund
+                      }
+                    </button>
+                  }
+                </div>
+              }
+
+            </div>
+          }
+        </div>
+      }
+    </div>
   </div>
 </section>

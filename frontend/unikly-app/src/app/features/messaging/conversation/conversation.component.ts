@@ -17,6 +17,7 @@ import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
 import { KeycloakService } from '../../../core/auth/keycloak.service';
 import { MessageWebSocketService } from '../../../core/services/message-websocket.service';
 import { MessageItem, MessagingService } from '../services/messaging.service';
+import { UserService } from '../../profile/services/user.service';
 
 @Component({
   selector: 'app-conversation',
@@ -34,6 +35,7 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewChecke
   private readonly messagingService = inject(MessagingService);
   private readonly wsService = inject(MessageWebSocketService);
   private readonly keycloak = inject(KeycloakService);
+  private readonly userService = inject(UserService);
   private readonly zone = inject(NgZone);
 
   readonly messages = signal<MessageItem[]>([]);
@@ -42,6 +44,7 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewChecke
   readonly sending = signal(false);
   readonly isTyping = signal(false);
   readonly otherParticipantLabel = signal('Conversation');
+  readonly otherParticipantInitials = signal('?');
   readonly otherParticipantId = signal<string | null>(null);
 
   currentUserId = '';
@@ -135,7 +138,16 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewChecke
             const ids = new Set(page.content.map((item) => item.senderId).filter((id) => id !== this.currentUserId));
             const otherId = [...ids][0] ?? null;
             this.otherParticipantId.set(otherId);
-            this.otherParticipantLabel.set(otherId ? `User ${otherId.slice(0, 8)}` : 'Conversation');
+            if (otherId) {
+              this.userService.getProfile(otherId).subscribe({
+                next: (profile) => {
+                  this.otherParticipantLabel.set(profile.displayName);
+                  const initials = profile.displayName.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+                  this.otherParticipantInitials.set(initials || '?');
+                },
+                error: () => this.otherParticipantLabel.set(`User ${otherId.slice(0, 8)}`),
+              });
+            }
           }
 
           this.messages.set(page.content);

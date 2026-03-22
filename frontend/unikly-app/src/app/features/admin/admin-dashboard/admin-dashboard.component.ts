@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { NgClass } from '@angular/common';
+import { NgClass, DecimalPipe, CurrencyPipe, DatePipe } from '@angular/common';
 import { ThemeService } from '../../../core/services/theme.service';
+import { AdminService, AdminStats, UserProfileResponse } from '../../../core/services/admin.service';
 
 interface ServiceHealth {
   name: string;
@@ -12,23 +13,29 @@ interface ServiceHealth {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [NgClass],
+  imports: [NgClass, DecimalPipe, CurrencyPipe, DatePipe],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.scss',
 })
 export class AdminDashboardComponent implements OnInit {
   themeService = inject(ThemeService);
+  adminService = inject(AdminService);
+  stats: AdminStats | null = null;
+  users: UserProfileResponse[] = [];
+  totalUsersInDirectory: number = 0;
 
-  services: ServiceHealth[] = [
-    { name: 'API Gateway', status: 'UP', latency: 4, lastSync: 'Now' },
-    { name: 'Auth Server', status: 'UP', latency: 8, lastSync: 'Now' },
-    { name: 'User Service', status: 'UP', latency: 12, lastSync: 'Now' },
-    { name: 'Job Service', status: 'UP', latency: 15, lastSync: 'Now' },
-    { name: 'Payment Flow', status: 'UP', latency: 22, lastSync: 'Now' },
-    { name: 'Matching Engine', status: 'DEGRADED', latency: 450, lastSync: 'Now' },
-    { name: 'Real-time Messaging', status: 'UP', latency: 8, lastSync: 'Now' },
-    { name: 'Search Index', status: 'UP', latency: 18, lastSync: 'Now' }
-  ];
+  ngOnInit(): void {
+    this.adminService.getDashboardStats().subscribe({
+      next: (res) => this.stats = res,
+      error: (err) => console.error('Failed to load admin stats', err)
+    });
 
-  ngOnInit(): void {}
+    this.adminService.getUserDirectory(0, 50).subscribe({
+      next: (res) => {
+        this.users = res.content;
+        this.totalUsersInDirectory = res.totalElements;
+      },
+      error: (err) => console.error('Failed to load user directory', err)
+    });
+  }
 }

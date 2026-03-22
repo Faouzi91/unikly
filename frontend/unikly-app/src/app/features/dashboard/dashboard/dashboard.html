@@ -1,0 +1,119 @@
+<section class="space-y-8">
+
+  <!-- Hero -->
+  <div class="card-panel px-6 py-8 sm:py-10">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p class="muted-text mb-1">Welcome back</p>
+        <h1 class="text-2xl font-bold tracking-tight text-ink-900 sm:text-3xl">
+          {{ username() }}@if (isClient()) {, ready to hire?} @else {, good to see you.}
+        </h1>
+        <p class="muted-text mt-1 max-w-lg">
+          @if (isClient()) { Post a project and get matched with top freelancers in minutes. }
+          @else { Browse open projects matched to your skills and start earning. }
+        </p>
+      </div>
+      @if (isClient()) {
+        <a routerLink="/jobs/create" class="btn-primary shrink-0">Post a Project</a>
+      } @else {
+        <a routerLink="/jobs" class="btn-primary shrink-0">Browse Opportunities</a>
+      }
+    </div>
+  </div>
+
+  <!-- Quick actions -->
+  <div>
+    <h2 class="section-title mb-4">Quick actions</h2>
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      @for (action of quickActions; track action.route) {
+        <a [routerLink]="action.route"
+           class="card-panel group flex items-center justify-between gap-3 px-4 py-4 transition hover:border-brand/35 hover:bg-brand-soft/10">
+          <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-dark">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path [attr.d]="action.d"/>
+              </svg>
+            </span>
+            <span class="text-sm font-semibold text-ink-900">{{ action.label }}</span>
+          </div>
+          <svg class="h-4 w-4 shrink-0 text-[var(--ui-muted)] transition group-hover:translate-x-0.5 group-hover:text-brand-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/>
+          </svg>
+        </a>
+      }
+    </div>
+  </div>
+
+  <!-- Job feed -->
+  <div>
+    <h2 class="section-title mb-4">
+      @if (isClient()) { Latest on the board } @else { Fresh opportunities }
+    </h2>
+
+    @if (loading()) {
+      <div class="card-panel flex justify-center py-12">
+        <span class="inline-block h-8 w-8 animate-spin rounded-full border-2 border-ink-300 border-t-brand"></span>
+      </div>
+    } @else if (loadError()) {
+      <div class="card-panel px-4 py-10 text-center">
+        <p class="text-sm font-semibold text-ink-900">Could not load jobs right now.</p>
+        <p class="muted-text mt-1">Check your connection or try again.</p>
+      </div>
+    } @else if (jobs().length === 0) {
+      <div class="card-panel px-4 py-10 text-center">
+        <p class="text-sm font-semibold text-ink-900">No projects yet.</p>
+        @if (isClient()) {
+          <a routerLink="/jobs/create" class="btn-primary mt-4 inline-flex">Be the first to post</a>
+        }
+      </div>
+    } @else {
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        @for (job of jobs(); track job.jobId) {
+          <article class="card-panel flex flex-col p-4 transition hover:border-brand/25">
+            <div class="mb-2 flex items-start justify-between gap-3">
+              <h3 class="line-clamp-2 text-sm font-semibold text-ink-900">{{ job.title }}</h3>
+              <span class="pill shrink-0 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">{{ job.status }}</span>
+            </div>
+            <p class="line-clamp-2 text-xs text-[var(--ui-muted)]">{{ job.description }}</p>
+            <div class="mt-2 flex flex-wrap gap-1">
+              @for (skill of (job.skills | slice: 0 : 3); track skill) {
+                <span class="pill bg-ink-100 text-ink-600">{{ skill }}</span>
+              }
+            </div>
+            <div class="mt-auto flex items-center justify-between border-t border-[var(--ui-border)] pt-3 mt-4">
+              <div>
+                <p class="text-sm font-semibold text-brand-dark">{{ job.budget | number: '1.0-0' }} {{ job.currency }}</p>
+                <p class="text-xs text-[var(--ui-muted)]">{{ job.createdAt | timeAgo }}</p>
+              </div>
+              <a [routerLink]="['/jobs', job.jobId]" class="btn-secondary px-3 py-1.5 text-xs">View</a>
+            </div>
+          </article>
+        }
+      </div>
+      <div class="mt-4 text-right">
+        <a routerLink="/jobs" class="btn-ghost text-sm">See all projects →</a>
+      </div>
+    }
+  </div>
+
+  <!-- Profile nudge -->
+  <div class="card-panel flex flex-col gap-3 border-brand/20 bg-brand-soft/20 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-start gap-3">
+      <svg class="mt-0.5 h-5 w-5 shrink-0 text-brand-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div>
+        <p class="text-sm font-semibold text-ink-900">
+          @if (isClient()) { Complete your client profile to build trust }
+          @else { Add skills and portfolio to get better AI matches }
+        </p>
+        <p class="muted-text mt-0.5 text-xs">
+          @if (isClient()) { A filled profile increases the quality of proposals you receive. }
+          @else { Detailed profiles receive 3× more relevant job recommendations. }
+        </p>
+      </div>
+    </div>
+    <a routerLink="/profile" class="btn-secondary shrink-0 text-xs">Update Profile</a>
+  </div>
+
+</section>

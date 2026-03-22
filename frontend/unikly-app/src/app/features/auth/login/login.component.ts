@@ -71,7 +71,7 @@ export class LoginComponent implements OnInit {
       const username = String(this.form.controls['username'].value ?? '').trim();
       const password = String(this.form.controls['password'].value ?? '');
       await this.keycloak.authenticate(username, password);
-      await this.router.navigate(['/jobs']);
+      await this.router.navigate([this.getPostLoginRoute()]);
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
       if (message.toLowerCase().includes('invalid credentials')) {
@@ -96,13 +96,18 @@ export class LoginComponent implements OnInit {
     }
   }
 
+  private getPostLoginRoute(): string {
+    if (this.keycloak.hasRole('ROLE_ADMIN') || this.keycloak.hasRole('ADMIN')) return '/admin';
+    return '/dashboard';
+  }
+
   private async completeSocialSignIn(code: string, state: string): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
     try {
       await this.keycloak.completeSocialLogin(code, state);
-      await this.router.navigate(['/jobs']);
+      await this.router.navigate([this.getPostLoginRoute()]);
     } catch (err) {
       const message = err instanceof Error ? err.message : '';
       this.error.set(message || 'Social sign-in failed. Please try again.');

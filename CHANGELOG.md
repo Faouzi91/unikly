@@ -5,6 +5,29 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [6.6.0] - 2026-03-22
+
+### Step 6.6 - Admin Dashboard & Auth Stability
+
+#### Added
+
+- **Backend Admin REST API** — new cross-service endpoints secured with `@PreAuthorize("hasRole('ROLE_ADMIN')")`:
+  - `GET /api/users/admin/stats` and `GET /api/users/admin/directory` in `user-service`
+  - `GET /api/jobs/admin/stats` and `PATCH /api/jobs/admin/{id}/close` in `job-service`
+  - `GET /api/v1/payments/admin/stats` evaluating JPQL total escrow volume in `payment-service`
+- **Frontend `AdminService`** (`core/services/admin.service.ts`) — connects to backend utilizing `rxjs/forkJoin` for aggregate dashboard metrics visualization
+- **Frontend `AdminDashboardComponent`** (`features/admin/`) — live UI rendering `totalUsers`, `totalActiveJobs`, `totalEscrowVolume`, and a paginated "User Directory" table displaying user roles with badges
+
+#### Changed
+
+- **Frontend `auth.interceptor.ts`** — converted the 401 retry interceptor to use a `BehaviorSubject<boolean>` to queue all outgoing requests when a token refresh is active, effectively mitigating "logout storms" during simultaneous requests
+
+#### Fixed
+
+- **Angular Compilation Failure** — fixed `TS2305` error for incorrect `HttpClient` import inside `AdminService` enabling successful `docker-compose` builds
+- **Integration Stability** — manually verified correct routing, existing Stripe.js UI integration, and `NotificationPreferences` toggle behaviors
+
+
 ## [6.5.0] - 2026-03-21
 
 ### Step 6.5 - Tailwind Frontend Refactor + Keycloak First-Party Auth Flow

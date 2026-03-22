@@ -10,6 +10,9 @@ import { PaymentDialogComponent, PaymentDialogData } from '../../payments/paymen
 import { PaymentStatusComponent } from '../../payments/payment-status/payment-status.component';
 import { Job, MatchEntry, Proposal, SubmitProposalRequest } from '../models/job.models';
 import { ProposalDialogComponent, ProposalDialogData } from '../components/proposal-dialog/proposal-dialog.component';
+import { ReviewDialog, ReviewDialogData } from '../components/review-dialog/review-dialog';
+import { UserService } from '../../profile/services/user.service';
+import { ReviewRequest } from '../../profile/models/user.models';
 import { JobService } from '../services/job.service';
 
 @Component({
@@ -23,6 +26,7 @@ import { JobService } from '../services/job.service';
     ProposalDialogComponent,
     PaymentDialogComponent,
     PaymentStatusComponent,
+    ReviewDialog,
   ],
   templateUrl: './job-detail.component.html',
   styleUrl: './job-detail.component.scss',
@@ -32,6 +36,7 @@ export class JobDetailComponent implements OnInit {
   private readonly jobService = inject(JobService);
   private readonly keycloak = inject(KeycloakService);
   private readonly paymentService = inject(PaymentService);
+  private readonly userService = inject(UserService);
   private readonly toast = inject(ToastService);
 
   job: Job | null = null;
@@ -45,6 +50,8 @@ export class JobDetailComponent implements OnInit {
   readonly showProposalModal = signal(false);
   readonly proposalSubmitting = signal(false);
   readonly showPaymentModal = signal(false);
+  readonly showReviewModal = signal(false);
+  readonly reviewSubmitting = signal(false);
 
   get isJobOwner(): boolean {
     return this.job?.clientId === this.keycloak.getUserId();
@@ -56,6 +63,24 @@ export class JobDetailComponent implements OnInit {
 
   get acceptedProposal(): Proposal | undefined {
     return this.proposals.find((proposal) => proposal.status === 'ACCEPTED');
+  }
+
+  get canLeaveReview(): boolean {
+    return (
+      this.job?.status === 'COMPLETED' &&
+      this.isJobOwner &&
+      !!this.acceptedProposal
+    );
+  }
+
+  get reviewDialogData(): ReviewDialogData {
+    const accepted = this.acceptedProposal;
+    return {
+      jobId: this.job?.id ?? '',
+      jobTitle: this.job?.title ?? '',
+      revieweeId: accepted?.freelancerId ?? '',
+      revieweeName: accepted?.freelancerName || 'Freelancer',
+    };
   }
 
   get showFundEscrow(): boolean {
@@ -183,6 +208,28 @@ export class JobDetailComponent implements OnInit {
     if (this.job) {
       this.loadPayment(this.job.id);
     }
+  }
+
+  openReviewDialog(): void {
+    this.showReviewModal.set(true);
+  }
+
+  closeReviewDialog(): void {
+    this.showReviewModal.set(false);
+  }
+
+  submitReviewForm(payload: ReviewRequest): void {
+    const data = this.reviewDialogData;
+    if (!data.revieweeId) return;
+    this.reviewSubmitting.set(true);
+    this.userService.createReview(data.revieweeId, data.jobId, payload.rating, payload.comment).subscribe({
+      next: () => {
+        this.reviewSubmitting.set(false);
+        this.showReviewModal.set(false);
+        this.toast.success('Review submitted successfully.');
+      },
+      error: () => this.reviewSubmitting.set(false),
+    });
   }
 
   statusClass(status: string): string {

@@ -194,8 +194,19 @@ public class PaymentService {
         log.info("Refund issued for payment {}", paymentId);
     }
 
+    @Transactional(readOnly = true)
+    public BigDecimal getTotalEscrowVolume() {
+        return paymentRepository.sumVolumeByStatuses(List.of(
+                PaymentStatus.FUNDED, PaymentStatus.RELEASED, PaymentStatus.COMPLETED
+        ));
+    }
+
     public List<Payment> getPaymentsByJob(UUID jobId) {
         return paymentRepository.findByJobId(jobId);
+    }
+
+    public List<Payment> getMyPayments(UUID userId) {
+        return paymentRepository.findByClientIdOrFreelancerId(userId, userId);
     }
 
     // -------------------------------------------------------------------------

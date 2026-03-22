@@ -310,6 +310,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      keycloak:
+        condition: service_healthy
     environment:
       DB_HOST: postgres-users
       DB_PORT: 5432
@@ -343,6 +345,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      keycloak:
+        condition: service_healthy
     environment:
       DB_HOST: postgres-jobs
       DB_PORT: 5432
@@ -373,6 +377,8 @@ services:
       postgres-payments:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      keycloak:
         condition: service_healthy
     environment:
       DB_HOST: postgres-payments
@@ -407,6 +413,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      keycloak:
+        condition: service_healthy
     environment:
       DB_HOST: postgres-matching
       DB_PORT: 5432
@@ -439,6 +447,8 @@ services:
       kafka:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      keycloak:
         condition: service_healthy
     environment:
       DB_HOST: postgres-messaging
@@ -502,6 +512,8 @@ services:
       kafka:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      keycloak:
         condition: service_healthy
     environment:
       DB_HOST: postgres-notifications

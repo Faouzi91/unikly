@@ -1,5 +1,4 @@
-# syntax=docker/dockerfile:1
-FROM unikly/java-builder:latest AS build
+FROM localhost/unikly/java-builder:latest AS build
 
 # Layer 1: All build.gradle.kts files — Gradle needs all project directories during configuration.
 COPY backend/common/build.gradle.kts common/

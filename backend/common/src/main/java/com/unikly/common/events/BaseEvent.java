@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.time.Instant;
 import java.util.UUID;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "eventType")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "eventType", visible = true)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = JobCreatedEvent.class, name = "JobCreated"),
         @JsonSubTypes.Type(value = JobStatusChangedEvent.class, name = "JobStatusChanged"),

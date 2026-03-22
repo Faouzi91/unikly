@@ -1,5 +1,9 @@
 package com.unikly.userservice.application;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.unikly.common.events.UserProfileUpdatedEvent;
+import com.unikly.common.outbox.OutboxEvent;
+import com.unikly.common.outbox.OutboxRepository;
 import com.unikly.userservice.api.dto.RegistrationRequest;
 import com.unikly.userservice.config.KeycloakAdminProperties;
 import com.unikly.userservice.domain.UserProfile;
@@ -30,6 +34,8 @@ public class RegistrationService {
     private final RestClient keycloakRestClient;
     private final KeycloakAdminProperties keycloakProps;
     private final UserProfileRepository profileRepository;
+    private final OutboxRepository outboxRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public void register(RegistrationRequest request) {
@@ -39,8 +45,14 @@ public class RegistrationService {
         // 2. Create user in Keycloak — returns Location header with the new user ID
         String userId = createKeycloakUser(adminToken, request);
 
-        // 3. Create initial profile in DB
-        createUserProfile(UUID.fromString(userId), request);
+        // 3. Assign realm role in Keycloak so the JWT token carries the role
+        assignRealmRole(adminToken, userId, "ROLE_" + request.role().name());
+
+        // 4. Create initial profile in DB
+        UserProfile profile = createUserProfile(UUID.fromString(userId), request);
+
+        // 5. Publish outbox event so search-service indexes this profile
+        publishProfileCreatedEvent(profile);
 
         log.info("Registered new user: email={}, role={}", request.email(), request.role());
     }
@@ -116,9 +128,50 @@ public class RegistrationService {
         }
     }
 
-    private void createUserProfile(UUID userId, RegistrationRequest request) {
+    /**
+     * Assigns a Keycloak realm role (e.g. "ROLE_CLIENT") to the newly created user.
+     * Fetches the role representation first, then posts it to the role-mappings endpoint.
+     */
+    private void assignRealmRole(String adminToken, String userId, String roleName) {
+        try {
+            // 1. Fetch the role representation by name
+            String roleUrl = "%s/admin/realms/%s/roles/%s"
+                    .formatted(keycloakProps.url(), keycloakProps.realm(), roleName);
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> roleRep = keycloakRestClient.get()
+                    .uri(roleUrl)
+                    .header("Authorization", "Bearer " + adminToken)
+                    .retrieve()
+                    .body(Map.class);
+
+            if (roleRep == null) {
+                log.warn("Role '{}' not found in Keycloak — skipping role assignment", roleName);
+                return;
+            }
+
+            // 2. Assign the role to the user
+            String roleMappingsUrl = "%s/admin/realms/%s/users/%s/role-mappings/realm"
+                    .formatted(keycloakProps.url(), keycloakProps.realm(), userId);
+
+            keycloakRestClient.post()
+                    .uri(roleMappingsUrl)
+                    .header("Authorization", "Bearer " + adminToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(List.of(roleRep))
+                    .retrieve()
+                    .toBodilessEntity();
+
+            log.info("Assigned role '{}' to Keycloak user {}", roleName, userId);
+        } catch (Exception ex) {
+            // Non-fatal: user is created, role assignment failure is logged
+            log.error("Failed to assign role '{}' to Keycloak user {}: {}", roleName, userId, ex.getMessage());
+        }
+    }
+
+    private UserProfile createUserProfile(UUID userId, RegistrationRequest request) {
         if (profileRepository.existsById(userId)) {
-            return; // idempotent
+            return profileRepository.findById(userId).orElseThrow();
         }
         var profile = UserProfile.builder()
                 .id(userId)
@@ -129,6 +182,23 @@ public class RegistrationService {
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
-        profileRepository.save(profile);
+        return profileRepository.save(profile);
+    }
+
+    private void publishProfileCreatedEvent(UserProfile profile) {
+        try {
+            var event = new UserProfileUpdatedEvent(
+                    UUID.randomUUID(),
+                    null,
+                    Instant.now(),
+                    profile.getId(),
+                    List.of("displayName", "skills", "bio"),
+                    profile.getSkills() != null ? profile.getSkills() : List.of()
+            );
+            String payload = objectMapper.writeValueAsString(event);
+            outboxRepository.save(new OutboxEvent(event.eventType(), payload));
+        } catch (Exception e) {
+            log.error("Failed to publish profile created event for userId={}", profile.getId(), e);
+        }
     }
 }

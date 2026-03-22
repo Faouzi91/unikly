@@ -1,7 +1,10 @@
-import { HttpHandlerFn, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
+import { HttpErrorResponse, HttpHandlerFn, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { from, switchMap, catchError, throwError } from 'rxjs';
+import { from, switchMap, catchError, throwError, BehaviorSubject, filter, take } from 'rxjs';
 import { KeycloakService } from './keycloak.service';
+
+let isRefreshing = false;
+const refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
 export const authInterceptor: HttpInterceptorFn = (
   req: HttpRequest<unknown>,
@@ -26,26 +29,66 @@ export const authInterceptor: HttpInterceptorFn = (
           Authorization: `Bearer ${token}`,
         },
       });
-      return next(authReq);
-    }),
-    catchError((error) => {
-      if (error.status === 401) {
-        return from(keycloak.getToken()).pipe(
-          switchMap((newToken) => {
-            const retryReq = req.clone({
+      return next(authReq).pipe(
+        catchError((error) => {
+          if (error instanceof HttpErrorResponse && error.status === 401) {
+            return handle401Error(req, next, keycloak, error);
+          }
+          return throwError(() => error);
+        })
+      );
+    })
+  );
+};
+
+const handle401Error = (
+  req: HttpRequest<unknown>,
+  next: HttpHandlerFn,
+  keycloak: KeycloakService,
+  fallbackError: unknown
+) => {
+  if (!isRefreshing) {
+    isRefreshing = true;
+    refreshTokenSubject.next(null);
+
+    return from(keycloak.refreshTokens()).pipe(
+      switchMap((newToken) => {
+        isRefreshing = false;
+        if (newToken) {
+          refreshTokenSubject.next(newToken);
+          return next(
+            req.clone({
               setHeaders: {
                 Authorization: `Bearer ${newToken}`,
               },
-            });
-            return next(retryReq);
-          }),
-          catchError(() => {
-            keycloak.login();
-            return throwError(() => error);
+            })
+          );
+        }
+        keycloak.login();
+        return throwError(() => fallbackError);
+      }),
+      catchError((err) => {
+        isRefreshing = false;
+        keycloak.login();
+        return throwError(() => err);
+      })
+    );
+  } else {
+    return refreshTokenSubject.pipe(
+      filter((token) => token !== null),
+      take(1),
+      switchMap((token) => {
+        if (!token) {
+          return throwError(() => fallbackError);
+        }
+        return next(
+          req.clone({
+            setHeaders: {
+              Authorization: `Bearer ${token}`,
+            },
           })
         );
-      }
-      return throwError(() => error);
-    })
-  );
+      })
+    );
+  }
 };

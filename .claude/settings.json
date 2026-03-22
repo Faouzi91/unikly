@@ -85,7 +85,13 @@
       "WebFetch(domain:github.com)",
       "Bash(xargs ls:*)",
       "Bash(./gradlew :job-service:cleanTest :payment-service:cleanTest :matching-service:cleanTest :job-service:test :payment-service:test :matching-service:test)",
-      "Bash(./gradlew :job-service:test :payment-service:test :matching-service:test --rerun)"
+      "Bash(./gradlew :job-service:test :payment-service:test :matching-service:test --rerun)",
+      "Bash(gh release:*)",
+      "Bash(find c:/Users/aboub/Desktop/unikly/backend -name \"build.gradle.kts\" -exec grep -l \"mapstruct\\\\|testcontainers\\\\|actuator\\\\|prometheus\\\\|micrometer\" {})",
+      "Bash(xargs -I {} head -80 {})",
+      "Bash(grep -r \"testcontainers\" c:/Users/aboub/Desktop/unikly/backend/build.gradle.kts c:/Users/aboub/Desktop/unikly/backend/*/build.gradle.kts)",
+      "Bash(grep -r \"sk_test\\\\|whsec\\\\|password:\" c:/Users/aboub/Desktop/unikly/backend/*/src/main/resources/*.yml)",
+      "Bash(grep -r @Autowired c:/Users/aboub/Desktop/unikly/backend/*/src/main/java/)"
     ],
     "additionalDirectories": [
       "C:\\Users\\aboub\\Desktop\\unikly\\backend\\$f"

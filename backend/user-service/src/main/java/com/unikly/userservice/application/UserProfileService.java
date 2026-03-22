@@ -12,6 +12,7 @@ import com.unikly.userservice.domain.UserProfile;
 import com.unikly.userservice.domain.UserRole;
 import com.unikly.userservice.infrastructure.UserProfileRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.security.oauth2.jwt.Jwt;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -68,6 +69,70 @@ public class UserProfileService {
         var profile = profileRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User profile not found: " + userId));
         return profileMapper.toResponse(profile);
+    }
+
+    /**
+     * Returns the profile for the given user, auto-creating a minimal one from JWT claims
+     * if no profile exists yet (e.g. test users seeded directly in Keycloak).
+     */
+    @Transactional
+    public UserProfileResponse getOrCreateProfile(UUID userId, Jwt jwt) {
+        return profileRepository.findById(userId)
+                .map(profileMapper::toResponse)
+                .orElseGet(() -> {
+                    String displayName = buildDisplayName(jwt);
+                    UserRole role = resolveRole(jwt);
+
+                    var profile = UserProfile.builder()
+                            .id(userId)
+                            .displayName(displayName)
+                            .role(role)
+                            .skills(List.of())
+                            .portfolioLinks(List.of())
+                            .createdAt(Instant.now())
+                            .updatedAt(Instant.now())
+                            .build();
+                    profile = profileRepository.save(profile);
+                    publishProfileUpdatedEvent(profile);
+                    log.info("Auto-created profile for userId={}", userId);
+                    return profileMapper.toResponse(profile);
+                });
+    }
+
+    private String buildDisplayName(Jwt jwt) {
+        String given = jwt.getClaimAsString("given_name");
+        String family = jwt.getClaimAsString("family_name");
+        if (given != null && family != null) return given + " " + family;
+        String name = jwt.getClaimAsString("name");
+        if (name != null && !name.isBlank()) return name;
+        String preferred = jwt.getClaimAsString("preferred_username");
+        return preferred != null ? preferred : "User";
+    }
+
+    private UserRole resolveRole(Jwt jwt) {
+        var realmAccess = jwt.getClaimAsMap("realm_access");
+        if (realmAccess != null && realmAccess.containsKey("roles")) {
+            @SuppressWarnings("unchecked")
+            var roles = (java.util.List<String>) realmAccess.get("roles");
+            if (roles.contains("ROLE_ADMIN")) return UserRole.ADMIN;
+            if (roles.contains("ROLE_FREELANCER")) return UserRole.FREELANCER;
+        }
+        return UserRole.CLIENT;
+    }
+
+    @Transactional(readOnly = true)
+    public long getTotalUsers() {
+        return profileRepository.count();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<UserProfileResponse> getAllUsers(int page, int size) {
+        var result = profileRepository.findAll(PageRequest.of(page, size));
+        var content = result.getContent().stream()
+                .map(profileMapper::toResponse)
+                .toList();
+        return new PageResponse<>(content, result.getNumber(), result.getSize(),
+                result.getTotalElements(), result.getTotalPages());
     }
 
     @Transactional(readOnly = true)

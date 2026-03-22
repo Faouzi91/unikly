@@ -35,7 +35,7 @@ export class MessageWebSocketService implements OnDestroy {
     const token = await this.keycloak.getToken();
 
     this.client.configure({
-      brokerURL: `${environment.wsUrl}/messages/websocket`,
+      brokerURL: `${window.location.origin.replace('http', 'ws')}${environment.wsUrl}/messages`,
       connectHeaders: { Authorization: `Bearer ${token}` },
       reconnectDelay: 2000,
       onConnect: () => {

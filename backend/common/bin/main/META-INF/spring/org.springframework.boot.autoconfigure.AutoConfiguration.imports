@@ -1,0 +1,2 @@
+com.unikly.common.observability.TracingAutoConfiguration
+com.unikly.common.jackson.Jackson2CompatAutoConfiguration

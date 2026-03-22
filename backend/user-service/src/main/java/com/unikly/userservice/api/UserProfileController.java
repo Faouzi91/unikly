@@ -12,6 +12,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -20,6 +22,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -32,11 +36,11 @@ public class UserProfileController {
 
     @GetMapping("/me")
     @Operation(summary = "Get current user's profile")
-    @ApiResponse(responseCode = "200", description = "Profile retrieved")
-    @ApiResponse(responseCode = "404", description = "Profile not found")
-    public ResponseEntity<UserProfileResponse> getCurrentProfile() {
+    @ApiResponse(responseCode = "200", description = "Profile retrieved or auto-created")
+    public ResponseEntity<UserProfileResponse> getCurrentProfile(Authentication authentication) {
         UUID userId = UserContext.getUserId();
-        return ResponseEntity.ok(profileService.getProfile(userId));
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        return ResponseEntity.ok(profileService.getOrCreateProfile(userId, jwt));
     }
 
     @PutMapping("/me")
@@ -55,6 +59,22 @@ public class UserProfileController {
     public ResponseEntity<UserProfileResponse> getProfile(
             @Parameter(description = "User UUID") @PathVariable UUID id) {
         return ResponseEntity.ok(profileService.getProfile(id));
+    }
+
+    @GetMapping("/admin/stats")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Operation(summary = "Get total registered users for admin dashboard")
+    public ResponseEntity<Map<String, Long>> getAdminStats() {
+        return ResponseEntity.ok(Map.of("totalUsers", profileService.getTotalUsers()));
+    }
+
+    @GetMapping("/admin/directory")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Operation(summary = "Get paginated user directory for admin dashboard")
+    public ResponseEntity<PageResponse<UserProfileResponse>> getAdminDirectory(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(profileService.getAllUsers(page, size));
     }
 
     @GetMapping

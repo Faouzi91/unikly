@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose:*)",
+      "Bash(docker exec:*)",
+      "Bash(curl -s http://localhost:9000/health/ready)",
+      "WebFetch(domain:spring.io)",
+      "WebFetch(domain:central.sonatype.com)",
+      "WebFetch(domain:repo1.maven.org)"
+    ]
+  }
+}

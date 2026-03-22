@@ -18,7 +18,7 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/**").permitAll()
-                .requestMatchers("/ws/messages/**").permitAll() // WS auth handled by STOMP interceptor
+                .requestMatchers("/ws/messages", "/ws/messages/**").permitAll() // WS auth handled by STOMP interceptor
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));

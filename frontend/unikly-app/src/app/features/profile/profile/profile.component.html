@@ -1,8 +1,21 @@
-@if (loading) {
+@if (loading()) {
   <div class="card-panel flex justify-center py-12">
     <span class="inline-block h-8 w-8 animate-spin rounded-full border-2 border-ink-300 border-t-brand"></span>
   </div>
-} @else if (profile) {
+} @else if (loadError()) {
+  <div class="card-panel px-6 py-12 text-center">
+    <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+      <svg class="h-6 w-6 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <h2 class="text-lg font-semibold text-ink-900">Profile not found</h2>
+    <p class="mt-2 text-sm text-[var(--ui-muted)]">
+      Your profile hasn't been set up yet. Make sure your account registration completed fully,
+      or contact support if this persists.
+    </p>
+  </div>
+} @else if (profile(); as p) {
   <section class="space-y-6">
     <header class="flex flex-wrap items-center justify-between gap-3">
       <div>
@@ -10,63 +23,63 @@
         <p class="muted-text">Manage your public profile and portfolio details.</p>
       </div>
       <button type="button" class="btn-secondary" (click)="toggleEditMode()">
-        {{ editMode ? 'Cancel Editing' : 'Edit Profile' }}
+        {{ editMode() ? 'Cancel Editing' : 'Edit Profile' }}
       </button>
     </header>
 
     <div class="card-panel p-2">
       <div class="flex gap-2">
-        <button type="button" class="tab-button" [class.tab-button-active]="activeTab === 'profile'" (click)="activeTab = 'profile'">
+        <button type="button" class="tab-button" [class.tab-button-active]="activeTab() === 'profile'" (click)="activeTab.set('profile')">
           Profile
         </button>
-        <button type="button" class="tab-button" [class.tab-button-active]="activeTab === 'reviews'" (click)="activeTab = 'reviews'">
-          Reviews ({{ profile.totalReviews }})
+        <button type="button" class="tab-button" [class.tab-button-active]="activeTab() === 'reviews'" (click)="activeTab.set('reviews')">
+          Reviews ({{ p.totalReviews }})
         </button>
       </div>
     </div>
 
-    @if (activeTab === 'profile' && !editMode) {
+    @if (activeTab() === 'profile' && !editMode()) {
       <article class="card-panel p-5">
         <div class="flex flex-wrap items-start gap-5">
-          <app-user-avatar [avatarUrl]="profile.avatarUrl" [displayName]="profile.displayName" [size]="84"></app-user-avatar>
+          <app-user-avatar [avatarUrl]="p.avatarUrl" [displayName]="p.displayName" [size]="84"></app-user-avatar>
 
           <div class="min-w-0 flex-1">
-            <h2 class="text-xl font-semibold text-ink-900">{{ profile.displayName }}</h2>
-            <p class="text-sm capitalize text-[var(--ui-muted)]">{{ profile.role | lowercase }}</p>
-            @if (profile.location) {
-              <p class="mt-1 text-sm text-[var(--ui-muted)]">{{ profile.location }}</p>
+            <h2 class="text-xl font-semibold text-ink-900">{{ p.displayName }}</h2>
+            <p class="text-sm capitalize text-[var(--ui-muted)]">{{ p.role | lowercase }}</p>
+            @if (p.location) {
+              <p class="mt-1 text-sm text-[var(--ui-muted)]">{{ p.location }}</p>
             }
-            <p class="mt-1 text-xs text-ink-400">Member since {{ profile.createdAt | timeAgo }}</p>
+            <p class="mt-1 text-xs text-ink-400">Member since {{ p.createdAt | timeAgo }}</p>
           </div>
 
           <div class="text-right">
-            <app-star-rating [rating]="profile.averageRating" [showValue]="true"></app-star-rating>
-            <p class="mt-1 text-sm text-[var(--ui-muted)]">{{ profile.totalReviews }} review{{ profile.totalReviews !== 1 ? 's' : '' }}</p>
-            @if (profile.hourlyRate) {
-              <p class="mt-2 text-base font-semibold text-brand-dark">{{ profile.hourlyRate | number: '1.0-0' }} {{ profile.currency }}/hr</p>
+            <app-star-rating [rating]="p.averageRating" [showValue]="true"></app-star-rating>
+            <p class="mt-1 text-sm text-[var(--ui-muted)]">{{ p.totalReviews }} review{{ p.totalReviews !== 1 ? 's' : '' }}</p>
+            @if (p.hourlyRate) {
+              <p class="mt-2 text-base font-semibold text-brand-dark">{{ p.hourlyRate | number: '1.0-0' }} {{ p.currency }}/hr</p>
             }
           </div>
         </div>
 
-        @if (profile.bio) {
+        @if (p.bio) {
           <section class="mt-5 border-t border-[var(--ui-border)] pt-4">
             <h3 class="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--ui-muted)]">Bio</h3>
-            <p class="mt-2 whitespace-pre-line text-sm text-ink-700">{{ profile.bio }}</p>
+            <p class="mt-2 whitespace-pre-line text-sm text-ink-700">{{ p.bio }}</p>
           </section>
         }
 
         <section class="mt-5 border-t border-[var(--ui-border)] pt-4">
           <h3 class="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--ui-muted)]">Skills</h3>
           <div class="mt-2">
-            <app-skill-chips [skills]="profile.skills"></app-skill-chips>
+            <app-skill-chips [skills]="p.skills"></app-skill-chips>
           </div>
         </section>
 
-        @if (profile.portfolioLinks.length > 0) {
+        @if (p.portfolioLinks.length > 0) {
           <section class="mt-5 border-t border-[var(--ui-border)] pt-4">
             <h3 class="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--ui-muted)]">Portfolio Links</h3>
             <ul class="mt-2 space-y-2">
-              @for (link of profile.portfolioLinks; track link) {
+              @for (link of p.portfolioLinks; track link) {
                 <li>
                   <a [href]="link" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-brand-dark hover:underline">
                     {{ link }}
@@ -79,7 +92,7 @@
       </article>
     }
 
-    @if (activeTab === 'profile' && editMode) {
+    @if (activeTab() === 'profile' && editMode()) {
       <article class="card-panel p-5">
         <form [formGroup]="form" (ngSubmit)="onSave()" class="space-y-4">
           <div>
@@ -128,7 +141,7 @@
               <button type="button" class="btn-secondary" (click)="addSkill()">Add</button>
             </div>
             <datalist id="profileSkillSuggestions">
-              @for (suggestion of skillSuggestions; track suggestion) {
+              @for (suggestion of skillSuggestions(); track suggestion) {
                 <option [value]="suggestion"></option>
               }
             </datalist>
@@ -159,8 +172,8 @@
 
           <footer class="flex justify-end gap-2">
             <button type="button" class="btn-secondary" (click)="toggleEditMode()">Cancel</button>
-            <button type="submit" class="btn-primary" [disabled]="saving || form.invalid">
-              @if (saving) {
+            <button type="submit" class="btn-primary" [disabled]="saving() || form.invalid">
+              @if (saving()) {
                 <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
                 Saving...
               } @else {
@@ -172,15 +185,15 @@
       </article>
     }
 
-    @if (activeTab === 'reviews') {
-      @if (reviews.length === 0) {
+    @if (activeTab() === 'reviews') {
+      @if (reviews().length === 0) {
         <div class="card-panel px-4 py-12 text-center">
           <p class="text-lg font-semibold text-ink-900">No reviews yet</p>
           <p class="mt-1 text-sm text-[var(--ui-muted)]">Reviews from completed work will appear here.</p>
         </div>
       } @else {
         <div class="space-y-3">
-          @for (review of reviews; track review.id) {
+          @for (review of reviews(); track review.id) {
             <article class="card-panel p-4">
               <div class="flex items-start justify-between gap-3">
                 <div>

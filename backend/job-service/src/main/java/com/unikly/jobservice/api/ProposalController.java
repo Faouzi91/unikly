@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/jobs/{jobId}/proposals")
+@RequestMapping("/api/v1/jobs/{jobId}/proposals")
 @RequiredArgsConstructor
 @Tag(name = "Proposals", description = "Freelancer proposals on job postings")
 public class ProposalController {

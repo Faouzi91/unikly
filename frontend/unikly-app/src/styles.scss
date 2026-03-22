@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "ngx-toastr/toastr";
 
 @theme {
   --font-sans: "Plus Jakarta Sans", "Manrope", "Segoe UI", sans-serif;
@@ -62,6 +63,13 @@
   --ui-shadow:
     0 22px 46px -26px rgb(0 0 0 / 0.58),
     0 10px 24px -18px rgb(0 0 0 / 0.52);
+
+  --color-ink-900: #f1f5f9;
+  --color-ink-800: #e2e8f0;
+  --color-ink-700: #cbd5e1;
+  --color-ink-600: #94a3b8;
+  --color-ink-50: #1e293b;
+  --color-ink-100: #243040;
 }
 
 @layer base {
@@ -203,7 +211,7 @@
   }
 
   .auth-left-panel {
-    @apply hidden lg:flex min-h-screen flex-col bg-ink-900 text-white;
+    @apply hidden lg:flex min-h-screen flex-col bg-surface-900 text-white;
   }
 }
 

@@ -154,6 +154,11 @@ export class KeycloakService {
     await this.router.navigate(['/']);
   }
 
+  async refreshTokens(): Promise<string> {
+    await this.refreshSession();
+    return this.accessToken;
+  }
+
   async getToken(): Promise<string> {
     if (!this.isAuthenticated()) {
       return '';

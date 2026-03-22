@@ -26,10 +26,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import org.springframework.security.access.prepost.PreAuthorize;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/jobs")
+@RequestMapping("/api/v1/jobs")
 @RequiredArgsConstructor
 @Tag(name = "Jobs", description = "Job lifecycle management")
 public class JobController {
@@ -94,5 +96,20 @@ public class JobController {
             @Valid @RequestBody StatusTransitionRequest request) {
         UUID userId = UserContext.getUserId();
         return ResponseEntity.ok(jobService.transitionStatus(id, userId, request.status()));
+    }
+
+    @GetMapping("/admin/stats")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Operation(summary = "Get total active jobs for admin dashboard")
+    public ResponseEntity<Map<String, Long>> getAdminStats() {
+        return ResponseEntity.ok(Map.of("totalActiveJobs", jobService.getTotalActiveJobs()));
+    }
+
+    @PatchMapping("/admin/{id}/close")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Operation(summary = "Admin force-close an inappropriate job")
+    public ResponseEntity<JobResponse> adminCloseJob(@PathVariable UUID id) {
+        UUID adminId = UserContext.getUserId();
+        return ResponseEntity.ok(jobService.adminCloseJob(id, adminId));
     }
 }

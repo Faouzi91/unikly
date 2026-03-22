@@ -60,6 +60,10 @@ export class PaymentService {
     });
   }
 
+  getAllPayments(): Observable<PaymentRecord[]> {
+    return this.api.get<PaymentRecord[]>('/v1/payments/mine');
+  }
+
   getPaymentStatus(jobId: string): Observable<PaymentRecord[]> {
     return this.api.get<PaymentRecord[]>('/v1/payments', { jobId });
   }

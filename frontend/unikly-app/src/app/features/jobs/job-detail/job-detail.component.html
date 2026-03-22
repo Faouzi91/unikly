@@ -152,6 +152,16 @@
           <app-payment-status [jobId]="job.id" [clientId]="job.clientId" />
         </div>
       }
+
+      @if (canLeaveReview) {
+        <div class="card-panel flex flex-wrap items-center justify-between gap-4 border border-brand/20 bg-brand-soft/10 p-4">
+          <div>
+            <p class="text-sm font-semibold text-ink-900">Project completed</p>
+            <p class="text-xs text-[var(--ui-muted)]">Share your experience working with {{ acceptedProposal?.freelancerName || 'the freelancer' }}.</p>
+          </div>
+          <button type="button" class="btn-secondary" (click)="openReviewDialog()">Leave a Review</button>
+        </div>
+      }
     }
 
     @if (canSubmitProposal) {
@@ -176,5 +186,14 @@
 
   @if (showPaymentModal()) {
     <app-payment-dialog [data]="paymentDialogData" (close)="closePaymentDialog()" (paid)="onPaymentCompleted()" />
+  }
+
+  @if (showReviewModal()) {
+    <app-review-dialog
+      [data]="reviewDialogData"
+      [submitting]="reviewSubmitting()"
+      (cancel)="closeReviewDialog()"
+      (submitReview)="submitReviewForm($event)"
+    />
   }
 }

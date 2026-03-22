@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Shared build base for all Java microservices.
 # Downloads the Gradle wrapper distribution once — baked into this layer.
 # Rebuild only when gradle-wrapper.properties changes (i.e. Gradle version bump).

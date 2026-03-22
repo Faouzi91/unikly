@@ -1,15 +1,18 @@
 <section class="card-panel flex h-[calc(100vh-7.5rem)] flex-col overflow-hidden">
   <header class="flex items-center justify-between border-b border-[var(--ui-border)] px-4 py-3">
-    <div class="flex items-center gap-2">
-      <a routerLink="/messages" class="btn-ghost px-2 py-1">Back</a>
+    <div class="flex items-center gap-3">
+      <a routerLink="/messages" class="btn-ghost px-2 py-1 text-xs">← Back</a>
+      <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-bold text-brand-dark">
+        {{ otherParticipantInitials() }}
+      </span>
       <div>
         <p class="text-sm font-semibold text-ink-900">{{ otherParticipantLabel() }}</p>
-        <p class="text-xs text-[var(--ui-muted)]">Direct conversation</p>
+        <p class="text-xs text-[var(--ui-muted)]">Direct message</p>
       </div>
     </div>
 
     @if (otherParticipantId()) {
-      <a [routerLink]="['/users', otherParticipantId()]" class="btn-secondary px-3 py-1.5">View Profile</a>
+      <a [routerLink]="['/users', otherParticipantId()]" class="btn-secondary px-3 py-1.5 text-xs">View Profile</a>
     }
   </header>
 
@@ -35,7 +38,7 @@
               [ngClass]="
                 msg.senderId === currentUserId
                   ? 'rounded-br-md bg-brand text-white'
-                  : 'rounded-bl-md bg-white text-ink-800 border border-[var(--ui-border)]'
+                  : 'rounded-bl-md bg-[var(--ui-surface)] text-ink-800 border border-[var(--ui-border)]'
               "
             >
               <p class="whitespace-pre-wrap break-words">{{ msg.content }}</p>
@@ -55,7 +58,7 @@
 
       @if (isTyping()) {
         <div class="mt-2 flex justify-start">
-          <div class="flex items-center gap-1 rounded-2xl rounded-bl-md border border-[var(--ui-border)] bg-white px-3 py-2">
+          <div class="flex items-center gap-1 rounded-2xl rounded-bl-md border border-[var(--ui-border)] bg-[var(--ui-surface)] px-3 py-2">
             <span class="typing-dot"></span>
             <span class="typing-dot"></span>
             <span class="typing-dot"></span>
@@ -67,7 +70,7 @@
     }
   </div>
 
-  <footer class="border-t border-[var(--ui-border)] bg-white p-3">
+  <footer class="border-t border-[var(--ui-border)] bg-[var(--ui-surface)] p-3">
     <div class="flex items-end gap-2">
       <textarea
         [(ngModel)]="newMessage"

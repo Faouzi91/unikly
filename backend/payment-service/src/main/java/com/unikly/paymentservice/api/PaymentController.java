@@ -57,6 +57,16 @@ public class PaymentController {
                 .toList();
     }
 
+    @GetMapping("/mine")
+    @Operation(summary = "Get my payments", description = "Returns all payments where the authenticated user is client or freelancer")
+    @ApiResponse(responseCode = "200", description = "Payments retrieved")
+    public List<PaymentResponse> getMyPayments() {
+        UUID userId = UserContext.getUserId();
+        return paymentService.getMyPayments(userId).stream()
+                .map(PaymentResponse::from)
+                .toList();
+    }
+
     @PostMapping("/{id}/release")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Release escrow", description = "Releases held funds to the freelancer after work completion")
@@ -79,5 +89,12 @@ public class PaymentController {
             @Parameter(description = "Payment UUID") @PathVariable UUID id) {
         UUID clientId = UserContext.getUserId();
         paymentService.requestRefund(id, clientId);
+    }
+
+    @GetMapping("/admin/stats")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Operation(summary = "Get total escrow volume for admin dashboard")
+    public ResponseEntity<java.util.Map<String, java.math.BigDecimal>> getAdminStats() {
+        return ResponseEntity.ok(java.util.Map.of("totalEscrowVolume", paymentService.getTotalEscrowVolume()));
     }
 }

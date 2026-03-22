@@ -21,7 +21,7 @@
         </div>
         <span class="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">+12%</span>
       </div>
-      <div class="text-2xl font-black text-surface-900 dark:text-white tracking-tighter">12,482</div>
+      <div class="text-2xl font-black text-surface-900 dark:text-white tracking-tighter">{{ stats?.totalUsers || 0 | number }}</div>
       <p class="text-surface-500 dark:text-surface-400 text-sm font-medium">Active Users</p>
     </div>
 
@@ -32,7 +32,7 @@
         </div>
         <span class="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">+5%</span>
       </div>
-      <div class="text-2xl font-black text-surface-900 dark:text-white tracking-tighter">3,105</div>
+      <div class="text-2xl font-black text-surface-900 dark:text-white tracking-tighter">{{ stats?.totalActiveJobs || 0 | number }}</div>
       <p class="text-surface-500 dark:text-surface-400 text-sm font-medium">Job Postings</p>
     </div>
 
@@ -43,7 +43,7 @@
         </div>
         <span class="text-xs font-bold text-surface-400 bg-surface-100 dark:bg-surface-800 px-2 py-1 rounded-full">Locked</span>
       </div>
-      <div class="text-2xl font-black text-surface-900 dark:text-white tracking-tighter">$1.2M</div>
+      <div class="text-2xl font-black text-surface-900 dark:text-white tracking-tighter">{{ stats?.totalEscrowVolume || 0 | currency:'USD':'symbol':'1.0-0' }}</div>
       <p class="text-surface-500 dark:text-surface-400 text-sm font-medium">Escrow Volume</p>
     </div>
 
@@ -60,46 +60,54 @@
   </div>
 
   <div class="grid lg:grid-cols-3 gap-8">
-    <!-- Service Health Table -->
+    <!-- User Directory Table -->
     <div class="lg:col-span-2">
       <div class="card-base">
         <div class="px-6 py-5 border-b border-surface-100 dark:border-surface-800 flex justify-between items-center">
-          <h2 class="font-bold text-surface-900 dark:text-white uppercase tracking-wider text-xs">Microservice Nodes</h2>
+          <h2 class="font-bold text-surface-900 dark:text-white uppercase tracking-wider text-xs">User Directory</h2>
           <div class="flex gap-2">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500">8 Online</span>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-500/10 text-orange-500">1 Warning</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-500/10 text-primary-500">{{ totalUsersInDirectory }} Total</span>
           </div>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left">
             <thead>
               <tr class="text-[10px] uppercase text-surface-400 font-black tracking-[0.2em] border-b border-surface-50 dark:border-surface-800/50">
-                <th class="px-6 py-4">Node</th>
-                <th class="px-6 py-4">Status</th>
-                <th class="px-6 py-4">Load</th>
-                <th class="px-6 py-4 text-right">Uptime</th>
+                <th class="px-6 py-4">Display Name</th>
+                <th class="px-6 py-4">Role</th>
+                <th class="px-6 py-4">Joined At</th>
+                <th class="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-surface-50 dark:divide-surface-800/50">
-              @for (service of services; track service.name) {
+              @for (user of users; track user.id) {
                 <tr class="group hover:bg-surface-50 dark:hover:bg-surface-900/50 transition-colors">
-                  <td class="px-6 py-4 font-bold text-surface-700 dark:text-surface-200 text-sm">{{service.name}}</td>
                   <td class="px-6 py-4">
-                    <div class="flex items-center gap-2">
-                      <div class="w-1.5 h-1.5 rounded-full animate-pulse" [ngClass]="{
-                        'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]': service.status === 'UP',
-                        'bg-orange-500': service.status === 'DEGRADED',
-                        'bg-red-500': service.status === 'DOWN'
-                      }"></div>
-                      <span class="text-[10px] font-black uppercase tracking-tighter text-surface-500">{{service.status}}</span>
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-primary-500 to-primary-300 flex items-center justify-center text-white font-bold text-xs">
+                        {{ user.displayName.charAt(0).toUpperCase() }}
+                      </div>
+                      <div class="font-bold text-surface-700 dark:text-surface-200 text-sm">{{user.displayName}}</div>
                     </div>
                   </td>
                   <td class="px-6 py-4">
-                    <div class="w-24 h-1.5 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
-                      <div class="h-full bg-primary-500 rounded-full" [style.width.%]="service.latency > 100 ? 85 : 30"></div>
-                    </div>
+                     <span class="px-2 py-1 text-[10px] font-black uppercase tracking-widest rounded-full"
+                           [ngClass]="{
+                             'bg-emerald-500/10 text-emerald-500': user.role === 'FREELANCER',
+                             'bg-blue-500/10 text-blue-500': user.role === 'CLIENT',
+                             'bg-purple-500/10 text-purple-500': user.role === 'ADMIN'
+                           }">
+                        {{ user.role }}
+                     </span>
                   </td>
-                  <td class="px-6 py-4 text-xs font-medium text-surface-400 text-right font-mono">99.99%</td>
+                  <td class="px-6 py-4">
+                    <span class="text-xs font-medium text-surface-500">
+                      {{ user.createdAt | date:'mediumDate' }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <button class="text-xs font-bold text-surface-400 hover:text-primary-500 transition-colors">Manage</button>
+                  </td>
                 </tr>
               }
             </tbody>

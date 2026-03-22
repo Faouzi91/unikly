@@ -80,12 +80,14 @@ public class JobService {
                 .budget(request.budget())
                 .currency(request.currency())
                 .skills(request.skills())
-                .status(JobStatus.DRAFT)
+                .status(JobStatus.OPEN)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
 
         job = jobRepository.save(job);
+        publishJobCreatedEvent(job);
+        jobCreatedCounter.increment();
         log.info("Job created: id={}, clientId={}", job.getId(), clientId);
         return jobMapper.toResponse(job, 0);
     }
@@ -125,8 +127,8 @@ public class JobService {
         var job = findJobOrThrow(id);
         validateOwnership(job, clientId);
 
-        if (job.getStatus() != JobStatus.DRAFT) {
-            throw new IllegalStateException("Job can only be updated in DRAFT status");
+        if (job.getStatus() != JobStatus.DRAFT && job.getStatus() != JobStatus.OPEN) {
+            throw new IllegalStateException("Job can only be updated while DRAFT or OPEN");
         }
 
         if (request.title() != null) job.setTitle(request.title());
@@ -164,6 +166,25 @@ public class JobService {
 
         sample.stop(jobStatusTransitionTimer);
         log.info("Job status transitioned: id={}, {} → {}", id, previousStatus, newStatus);
+        return jobMapper.toResponse(job, proposalRepository.countByJobId(id));
+    }
+
+    @Transactional(readOnly = true)
+    public long getTotalActiveJobs() {
+        return jobRepository.countByStatus(JobStatus.OPEN) + jobRepository.countByStatus(JobStatus.IN_PROGRESS);
+    }
+
+    @Transactional
+    public JobResponse adminCloseJob(UUID id, UUID adminId) {
+        var job = findJobOrThrow(id);
+        var previousStatus = job.getStatus();
+
+        job.setStatus(JobStatus.CANCELLED);
+        job.setUpdatedAt(Instant.now());
+        job = jobRepository.save(job);
+
+        publishStatusChangedEvent(job, previousStatus, adminId);
+        log.info("Job forcefully canceled by admin: id={}", id);
         return jobMapper.toResponse(job, proposalRepository.countByJobId(id));
     }
 

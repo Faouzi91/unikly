@@ -1,6 +1,7 @@
-import { Component, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, OnInit, inject } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { ThemeService } from '../../../core/services/theme.service';
+import { KeycloakService } from '../../../core/auth/keycloak.service';
 
 @Component({
   selector: 'app-landing-page',
@@ -9,8 +10,22 @@ import { ThemeService } from '../../../core/services/theme.service';
   templateUrl: './landing-page.component.html',
   styleUrl: './landing-page.component.scss',
 })
-export class LandingPageComponent {
+export class LandingPageComponent implements OnInit {
   readonly theme = inject(ThemeService);
+  readonly keycloak = inject(KeycloakService);
+  private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    if (!this.keycloak.isAuthenticated()) return;
+    const isAdmin = this.keycloak.hasRole('ROLE_ADMIN') || this.keycloak.hasRole('ADMIN');
+    this.router.navigate([isAdmin ? '/admin' : '/dashboard']);
+  }
+
+  getInitials(): string {
+    const username = this.keycloak.getUsername().trim();
+    if (!username) return 'UN';
+    return username.slice(0, 2).toUpperCase();
+  }
 
   readonly logos = ['Shopify', 'Notion', 'Airbyte', 'Linear', 'Ramp', 'Figma', 'Vercel', 'Datadog'];
 

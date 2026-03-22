@@ -13,9 +13,30 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <button type="button" class="btn-ghost px-3 py-2" (click)="theme.toggleTheme()">Theme</button>
-        <a routerLink="/auth/login" class="btn-ghost hidden sm:inline-flex">Sign In</a>
-        <a routerLink="/auth/register" class="btn-primary">Join Free</a>
+        <button type="button" class="btn-ghost rounded-xl p-2" aria-label="Toggle theme" (click)="theme.toggleTheme()">
+          @if (theme.isDarkMode()) {
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+          } @else {
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          }
+        </button>
+
+        @if (keycloak.isAuthenticated()) {
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-soft text-xs font-bold text-brand-dark">
+            {{ getInitials() }}
+          </span>
+          <a routerLink="/dashboard" class="btn-primary">Dashboard &rarr;</a>
+        } @else {
+          <a routerLink="/auth/login" class="btn-ghost hidden sm:inline-flex">Sign In</a>
+          <a routerLink="/auth/register" class="btn-primary">Join Free</a>
+        }
       </div>
     </div>
   </nav>
@@ -185,22 +206,22 @@
     </div>
   </section>
 
-  <section class="bg-ink-900 py-16 text-white sm:py-20">
+  <section class="bg-ink-900 py-16 text-white dark:text-surface-900 sm:py-20">
     <div class="container-narrow text-center">
       <h2 class="text-4xl font-bold tracking-tight">Ready to build something exceptional?</h2>
-      <p class="mx-auto mt-3 max-w-2xl text-sm text-white/75 sm:text-base">
+      <p class="mx-auto mt-3 max-w-2xl text-sm text-white/75 dark:text-surface-600 sm:text-base">
         Create your account and get matched with serious projects or serious talent without clutter.
       </p>
       <div class="mt-7 flex flex-wrap justify-center gap-3">
         <a routerLink="/auth/register" class="btn-primary px-6 py-3">Create Account</a>
-        <a routerLink="/auth/login" class="btn-secondary border-white/30 bg-white/10 text-white hover:bg-white/15">Sign In</a>
+        <a routerLink="/auth/login" class="btn-secondary dark:border-surface-300 dark:bg-surface-100 dark:text-surface-800 dark:hover:bg-surface-200 border-white/30 bg-white/10 text-white hover:bg-white/15">Sign In</a>
       </div>
     </div>
   </section>
 
-  <footer class="bg-white py-8">
+  <footer class="bg-[var(--ui-surface)] py-8 border-t border-[var(--ui-border)]">
     <div class="container-wide flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--ui-muted)]">
-      <p>Â(c) 2026 Unikly. Built for trusted freelance collaboration.</p>
+      <p>ï¿½(c) 2026 Unikly. Built for trusted freelance collaboration.</p>
       <div class="flex gap-4">
         <a href="#" class="hover:text-brand-dark">Privacy</a>
         <a href="#" class="hover:text-brand-dark">Terms</a>

@@ -36,4 +36,13 @@ export class UserService {
       size,
     });
   }
+
+  createReview(
+    userId: string,
+    jobId: string,
+    rating: number,
+    comment: string,
+  ): Observable<Review> {
+    return this.api.post<Review>(`/users/${userId}/reviews`, { jobId, rating, comment });
+  }
 }

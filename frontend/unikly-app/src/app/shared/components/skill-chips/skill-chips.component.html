@@ -3,7 +3,7 @@
     <span class="inline-flex items-center gap-1 rounded-full bg-ink-100 px-2.5 py-1 text-xs font-medium text-ink-700">
       {{ skill }}
       @if (editable) {
-        <button type="button" class="rounded-full p-0.5 text-ink-500 hover:bg-white hover:text-red-600" (click)="onRemove(skill)">
+        <button type="button" class="rounded-full p-0.5 text-ink-500 hover:bg-black/10 hover:text-red-600 dark:hover:bg-white/20" (click)="onRemove(skill)">
           <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"></path>
           </svg>
@@ -12,6 +12,6 @@
     </span>
   }
   @if (skills.length === 0) {
-    <span class="text-sm text-gray-400">No skills listed</span>
+    <span class="text-sm text-[var(--ui-muted)]">No skills listed</span>
   }
 </div>
