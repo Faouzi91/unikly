@@ -12,6 +12,7 @@ import {
   JobSearchResult,
   FreelancerSearchResult,
   MatchEntry,
+  EditDecision,
 } from '../models/job.models';
 
 @Injectable({
@@ -70,8 +71,16 @@ export class JobService {
     return this.api.post<Job>('/v1/jobs', data);
   }
 
-  updateJob(id: string, data: UpdateJobRequest): Observable<Job> {
-    return this.api.patch<Job>(`/v1/jobs/${id}`, data);
+  updateJob(id: string, data: UpdateJobRequest, confirmed = false): Observable<Job> {
+    return this.api.patch<Job>(`/v1/jobs/${id}`, data, { confirmed });
+  }
+
+  checkEditEligibility(id: string, request: UpdateJobRequest): Observable<EditDecision> {
+    return this.api.post<EditDecision>(`/v1/jobs/${id}/check-edit`, request);
+  }
+
+  cancelJob(id: string): Observable<void> {
+    return this.api.post<void>(`/v1/jobs/${id}/cancel`, null);
   }
 
   updateJobStatus(id: string, status: string): Observable<Job> {
@@ -100,6 +109,13 @@ export class JobService {
   rejectProposal(jobId: string, proposalId: string): Observable<Proposal> {
     return this.api.patch<Proposal>(
       `/v1/jobs/${jobId}/proposals/${proposalId}/reject`,
+    );
+  }
+
+  resubmitProposal(jobId: string, proposalId: string, request: SubmitProposalRequest): Observable<Proposal> {
+    return this.api.put<Proposal>(
+      `/v1/jobs/${jobId}/proposals/${proposalId}/resubmit`,
+      request,
     );
   }
 
