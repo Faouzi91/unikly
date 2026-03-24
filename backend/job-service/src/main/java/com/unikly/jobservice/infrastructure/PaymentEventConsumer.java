@@ -67,17 +67,24 @@ public class PaymentEventConsumer {
         }
 
         var job = jobOpt.get();
+
+        if (job.getStatus() != JobStatus.IN_REVIEW) {
+            log.warn("Received PaymentCompletedEvent but job {} is in status {}, expected IN_REVIEW. Skipping.",
+                    event.jobId(), job.getStatus());
+            markProcessed(event.eventId());
+            return;
+        }
+
+        var previousStatus = job.getStatus();
+        JobStateMachine.validateTransition(previousStatus, JobStatus.IN_PROGRESS);
+
+        job.setStatus(JobStatus.IN_PROGRESS);
+        job.setUpdatedAt(Instant.now());
+        jobRepository.save(job);
+
         var acceptedProposals = proposalRepository.findByJobIdAndStatus(event.jobId(), ProposalStatus.ACCEPTED);
-
-        if (job.getStatus() == JobStatus.OPEN && !acceptedProposals.isEmpty()) {
+        if (!acceptedProposals.isEmpty()) {
             var acceptedProposal = acceptedProposals.get(0);
-            var previousStatus = job.getStatus();
-            JobStateMachine.validateTransition(previousStatus, JobStatus.IN_PROGRESS);
-
-            job.setStatus(JobStatus.IN_PROGRESS);
-            job.setUpdatedAt(Instant.now());
-            jobRepository.save(job);
-
             var contract = com.unikly.jobservice.domain.Contract.builder()
                     .jobId(job.getId())
                     .clientId(job.getClientId())
@@ -86,15 +93,11 @@ public class PaymentEventConsumer {
                     .status(ContractStatus.ACTIVE)
                     .build();
             contractRepository.save(contract);
-
-            publishStatusChangedEvent(job, previousStatus);
-
-            log.info("Job transitioned to IN_PROGRESS and contract created via PaymentCompletedEvent: jobId={}, paymentId={}",
-                    event.jobId(), event.paymentId());
-        } else {
-            log.info("Job not eligible for transition: jobId={}, status={}, acceptedProposals={}",
-                    event.jobId(), job.getStatus(), acceptedProposals.size());
         }
+
+        publishStatusChangedEvent(job, previousStatus);
+
+        log.info("Job transitioned to IN_PROGRESS after payment: jobId={}", event.jobId());
 
         markProcessed(event.eventId());
     }
