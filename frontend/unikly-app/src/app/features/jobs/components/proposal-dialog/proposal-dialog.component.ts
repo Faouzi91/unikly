@@ -7,6 +7,10 @@ export interface ProposalDialogData {
   jobTitle: string;
   jobBudget: number;
   jobCurrency: string;
+  /** When true the dialog pre-fills and labels itself as a resubmission */
+  isResubmit?: boolean;
+  existingBudget?: number;
+  existingCoverLetter?: string;
 }
 
 @Component({
@@ -32,7 +36,10 @@ export class ProposalDialogComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['data']?.currentValue) {
       this.form.patchValue({
-        proposedBudget: this.data.jobBudget,
+        proposedBudget: this.data.isResubmit
+          ? (this.data.existingBudget ?? this.data.jobBudget)
+          : this.data.jobBudget,
+        coverLetter: this.data.isResubmit ? (this.data.existingCoverLetter ?? '') : '',
       });
     }
   }

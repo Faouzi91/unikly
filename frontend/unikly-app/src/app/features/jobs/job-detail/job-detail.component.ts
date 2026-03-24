@@ -66,6 +66,11 @@ export class JobDetailComponent implements OnInit {
   readonly editSkillsRaw = signal('');
   readonly editSaving = signal(false);
 
+  // Freelancer resubmit — tracks the freelancer's own proposal within the session
+  readonly myProposal = signal<Proposal | null>(null);
+  readonly showResubmitModal = signal(false);
+  readonly resubmitting = signal(false);
+
   get isJobOwner(): boolean {
     return (
       this.job?.clientId === this.keycloak.getUserId() ||
@@ -169,6 +174,24 @@ export class JobDetailComponent implements OnInit {
     );
   }
 
+  /** True when the freelancer's own proposal is stale and needs resubmission */
+  get canResubmit(): boolean {
+    const p = this.myProposal();
+    return !!p && (p.status === 'OUTDATED' || p.status === 'NEEDS_REVIEW');
+  }
+
+  get resubmitDialogData(): ProposalDialogData {
+    const p = this.myProposal();
+    return {
+      jobTitle: this.job?.title ?? '',
+      jobBudget: this.job?.budget ?? 0,
+      jobCurrency: this.job?.currency ?? 'USD',
+      isResubmit: true,
+      existingBudget: p?.proposedBudget,
+      existingCoverLetter: p?.coverLetter,
+    };
+  }
+
   get proposalDialogData(): ProposalDialogData {
     return {
       jobTitle: this.job?.title ?? '',
@@ -209,13 +232,29 @@ export class JobDetailComponent implements OnInit {
     if (!this.job) return;
     this.proposalSubmitting.set(true);
     this.jobService.submitProposal(this.job.id, payload).subscribe({
-      next: () => {
+      next: (proposal) => {
+        this.myProposal.set(proposal);
         this.proposalSubmitting.set(false);
         this.showProposalModal.set(false);
         this.toast.success('Proposal submitted successfully.');
         this.loadJob(this.job!.id);
       },
       error: () => this.proposalSubmitting.set(false),
+    });
+  }
+
+  resubmitProposalSubmit(payload: SubmitProposalRequest): void {
+    const p = this.myProposal();
+    if (!this.job || !p) return;
+    this.resubmitting.set(true);
+    this.jobService.resubmitProposal(this.job.id, p.id, payload).subscribe({
+      next: (updated) => {
+        this.myProposal.set(updated);
+        this.resubmitting.set(false);
+        this.showResubmitModal.set(false);
+        this.toast.success('Proposal resubmitted successfully.');
+      },
+      error: () => this.resubmitting.set(false),
     });
   }
 
@@ -450,13 +489,14 @@ export class JobDetailComponent implements OnInit {
   }
 
   proposalStatusClass(status: string): string {
-    if (status === 'SUBMITTED' || status === 'PENDING') return 'bg-amber-100 text-amber-800';
-    if (status === 'VIEWED') return 'bg-sky-100 text-sky-800';
-    if (status === 'SHORTLISTED') return 'bg-violet-100 text-violet-800';
-    if (status === 'ACCEPTED') return 'bg-emerald-100 text-emerald-800';
+    if (status === 'SUBMITTED' || status === 'PENDING') return 'bg-sky-100 text-sky-800';
+    if (status === 'VIEWED') return 'bg-ink-100 text-ink-600';
+    if (status === 'SHORTLISTED') return 'border border-emerald-500 bg-transparent text-emerald-700';
+    if (status === 'ACCEPTED') return 'bg-emerald-600 text-white';
     if (status === 'REJECTED') return 'bg-rose-100 text-rose-800';
-    if (status === 'OUTDATED' || status === 'NEEDS_REVIEW') return 'bg-orange-100 text-orange-800';
-    if (status === 'WITHDRAWN') return 'bg-ink-100 text-ink-600';
+    if (status === 'OUTDATED') return 'bg-amber-100 text-amber-800';
+    if (status === 'NEEDS_REVIEW') return 'bg-yellow-100 text-yellow-800';
+    if (status === 'WITHDRAWN') return 'bg-ink-100 text-ink-400';
     return 'bg-ink-100 text-ink-600';
   }
 

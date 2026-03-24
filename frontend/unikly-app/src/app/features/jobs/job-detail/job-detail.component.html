@@ -213,10 +213,27 @@
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2">
                     <a [routerLink]="['/users', proposal.freelancerId]"
-                       class="text-base font-semibold text-ink-900 hover:text-brand-dark hover:underline">
+                       class="text-base font-semibold text-ink-900 hover:text-brand-dark hover:underline"
+                       [class.line-through]="proposal.status === 'WITHDRAWN'">
                       {{ proposal.freelancerName || 'Freelancer' }}
                     </a>
-                    <span class="pill text-xs" [ngClass]="proposalStatusClass(proposal.status)">{{ proposal.status }}</span>
+                    <span class="pill text-xs" [ngClass]="proposalStatusClass(proposal.status)">
+                      @if (proposal.status === 'OUTDATED' || proposal.status === 'NEEDS_REVIEW') {
+                        <svg class="mr-1 inline h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                        </svg>
+                      }
+                      {{ proposal.status }}
+                    </span>
+                    @if (proposal.jobVersion < (job.version)) {
+                      <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700"
+                            title="Submitted before recent job changes">
+                        <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                        </svg>
+                        Submitted before recent job changes
+                      </span>
+                    }
                     <span class="text-xs text-[var(--ui-muted)]">v{{ proposal.jobVersion }}</span>
                   </div>
 
@@ -283,6 +300,19 @@
                   </a>
                 </div>
               </div>
+
+              <!-- Stale proposal alert banner -->
+              @if (proposal.status === 'OUTDATED' || proposal.status === 'NEEDS_REVIEW') {
+                <div class="mx-4 mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5">
+                  <svg class="mt-0.5 h-4 w-4 shrink-0 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                  </svg>
+                  <p class="text-sm text-amber-800">
+                    <strong>Awaiting resubmission.</strong>
+                    This proposal was submitted before the job was updated. The freelancer needs to review and resubmit.
+                  </p>
+                </div>
+              }
 
               <!-- Cover letter -->
               <div class="border-t border-[var(--ui-border)] bg-ink-50/50 px-5 py-4 dark:bg-white/[0.02]">
@@ -370,6 +400,24 @@
       }
     }
 
+    <!-- Freelancer resubmit alert — visible when their proposal is stale -->
+    @if (canResubmit) {
+      <div class="card-panel flex flex-wrap items-center justify-between gap-4 border border-amber-200 bg-amber-50/60 p-4">
+        <div class="flex items-start gap-3">
+          <svg class="mt-0.5 h-5 w-5 shrink-0 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+          </svg>
+          <div>
+            <p class="text-sm font-semibold text-amber-800">Your proposal needs review</p>
+            <p class="text-xs text-amber-700 mt-0.5">The job was updated after you submitted your proposal. Please review and resubmit.</p>
+          </div>
+        </div>
+        <button type="button" class="btn-primary shrink-0" (click)="showResubmitModal.set(true)">
+          Review &amp; Resubmit
+        </button>
+      </div>
+    }
+
     @if (canSubmitProposal) {
       <button
         type="button"
@@ -387,6 +435,15 @@
       [submitting]="proposalSubmitting()"
       (cancel)="closeProposalDialog()"
       (submitProposal)="submitProposal($event)"
+    />
+  }
+
+  @if (showResubmitModal()) {
+    <app-proposal-dialog
+      [data]="resubmitDialogData"
+      [submitting]="resubmitting()"
+      (cancel)="showResubmitModal.set(false)"
+      (submitProposal)="resubmitProposalSubmit($event)"
     />
   }
 
