@@ -1,5 +1,6 @@
 package com.unikly.jobservice.application.service;
 
+import com.unikly.common.dto.Money;
 import com.unikly.common.dto.PageResponse;
 import com.unikly.common.events.ProposalAcceptedEvent;
 import com.unikly.common.events.ProposalSubmittedEvent;
@@ -8,9 +9,10 @@ import com.unikly.jobservice.api.dto.SubmitProposalRequest;
 import com.unikly.jobservice.application.mapper.ProposalMapper;
 import com.unikly.jobservice.domain.DuplicateProposalException;
 import com.unikly.jobservice.domain.InvalidProposalStateException;
+import com.unikly.jobservice.domain.JobStateMachine;
+import com.unikly.jobservice.domain.JobStatus;
 import com.unikly.jobservice.domain.Proposal;
 import com.unikly.jobservice.domain.ProposalStatus;
-import com.unikly.jobservice.domain.JobStatus;
 import com.unikly.jobservice.infrastructure.repository.ContractRepository;
 import com.unikly.jobservice.infrastructure.repository.JobRepository;
 import com.unikly.jobservice.infrastructure.repository.ProposalRepository;
@@ -18,6 +20,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,16 +57,15 @@ public class ProposalService {
         Proposal proposal = proposalMapper.toEntity(request);
         proposal.setJobId(jobId);
         proposal.setFreelancerId(freelancerId);
+        proposal.setStatus(ProposalStatus.SUBMITTED);
+        proposal.setJobVersion(job.getVersion());
         proposal = proposalRepository.save(proposal);
 
-        var event = new ProposalSubmittedEvent(
-                UUID.randomUUID(), "ProposalSubmitted", Instant.now(),
-                jobId, freelancerId,
-                new com.unikly.common.dto.Money(request.proposedBudget(), job.getCurrency())
-        );
-        outboxEventPublisher.publish("PROPOSAL", proposal.getId(), event);
+        outboxEventPublisher.publish("PROPOSAL", proposal.getId(),
+                new ProposalSubmittedEvent(UUID.randomUUID(), "ProposalSubmitted", Instant.now(),
+                        jobId, freelancerId, new Money(request.proposedBudget(), job.getCurrency())));
 
-        log.info("Proposal {} submitted for job {}", proposal.getId(), jobId);
+        log.info("Proposal {} submitted for job {}, jobVersion={}", proposal.getId(), jobId, job.getVersion());
         return proposalMapper.toResponse(proposal);
     }
 
@@ -108,23 +110,32 @@ public class ProposalService {
             throw new SecurityException("You do not own this job");
         }
 
-        if (proposal.getStatus() != ProposalStatus.PENDING) {
-            throw new InvalidProposalStateException("Only PENDING proposals can be accepted");
+        if (proposal.getStatus() != ProposalStatus.SUBMITTED
+                && proposal.getStatus() != ProposalStatus.PENDING
+                && proposal.getStatus() != ProposalStatus.VIEWED
+                && proposal.getStatus() != ProposalStatus.SHORTLISTED) {
+            throw new InvalidProposalStateException(
+                    "Proposal cannot be accepted in status: " + proposal.getStatus());
         }
 
         proposal.setStatus(ProposalStatus.ACCEPTED);
         proposalRepository.save(proposal);
 
-        proposalRepository.rejectOtherPendingProposals(jobId, proposalId, ProposalStatus.REJECTED);
+        proposalRepository.bulkUpdateStatusByJobId(jobId,
+                List.of(ProposalStatus.SUBMITTED, ProposalStatus.PENDING,
+                        ProposalStatus.VIEWED, ProposalStatus.SHORTLISTED),
+                ProposalStatus.REJECTED);
 
-        var event = new ProposalAcceptedEvent(
-                UUID.randomUUID(), "ProposalAccepted", Instant.now(),
-                jobId, proposal.getFreelancerId(), clientId,
-                new com.unikly.common.dto.Money(proposal.getProposedBudget(), job.getCurrency())
-        );
-        outboxEventPublisher.publish("PROPOSAL", proposal.getId(), event);
+        JobStateMachine.validateTransition(job.getStatus(), JobStatus.IN_REVIEW);
+        job.setStatus(JobStatus.IN_REVIEW);
+        jobRepository.save(job);
 
-        log.info("Proposal {} accepted for job {}", proposalId, jobId);
+        outboxEventPublisher.publish("PROPOSAL", proposal.getId(),
+                new ProposalAcceptedEvent(UUID.randomUUID(), "ProposalAccepted", Instant.now(),
+                        jobId, proposal.getFreelancerId(), clientId,
+                        new Money(proposal.getProposedBudget(), job.getCurrency())));
+
+        log.info("Proposal {} accepted for job {}, job moved to IN_REVIEW", proposalId, jobId);
         return proposalMapper.toResponse(proposal);
     }
 
@@ -155,5 +166,41 @@ public class ProposalService {
 
         log.info("Proposal {} rejected for job {}", proposalId, jobId);
         return proposalMapper.toResponse(proposal);
+    }
+
+    @Transactional
+    public ProposalResponse resubmitProposal(UUID jobId, UUID proposalId,
+            UUID freelancerId, SubmitProposalRequest request) {
+        log.info("Freelancer {} resubmitting proposal {} for job {}", freelancerId, proposalId, jobId);
+
+        var proposal = proposalRepository.findById(proposalId)
+                .orElseThrow(() -> new EntityNotFoundException("Proposal not found: " + proposalId));
+
+        if (!proposal.getFreelancerId().equals(freelancerId)) {
+            throw new AccessDeniedException("Not your proposal");
+        }
+
+        if (proposal.getStatus() != ProposalStatus.OUTDATED
+                && proposal.getStatus() != ProposalStatus.NEEDS_REVIEW) {
+            throw new IllegalStateException(
+                    "Only OUTDATED or NEEDS_REVIEW proposals can be resubmitted");
+        }
+
+        var job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new EntityNotFoundException("Job not found: " + jobId));
+
+        proposal.setProposedBudget(request.proposedBudget());
+        proposal.setCoverLetter(request.coverLetter());
+        proposal.setStatus(ProposalStatus.SUBMITTED);
+        proposal.setJobVersion(job.getVersion());
+        Proposal saved = proposalRepository.save(proposal);
+
+        outboxEventPublisher.publish("PROPOSAL", saved.getId(),
+                new ProposalSubmittedEvent(UUID.randomUUID(), "ProposalSubmitted", Instant.now(),
+                        jobId, freelancerId, new Money(saved.getProposedBudget(), job.getCurrency())));
+
+        log.info("Proposal resubmitted: id={}, jobId={}, jobVersion={}",
+                saved.getId(), jobId, job.getVersion());
+        return proposalMapper.toResponse(saved);
     }
 }

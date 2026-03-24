@@ -15,7 +15,8 @@ public interface ProposalMapper {
     @Mapping(target = "id",           ignore = true)
     @Mapping(target = "jobId",        ignore = true)
     @Mapping(target = "freelancerId", ignore = true)
-    @Mapping(target = "status",       expression = "java(ProposalStatus.PENDING)")
+    @Mapping(target = "status",       expression = "java(ProposalStatus.SUBMITTED)")
+    @Mapping(target = "jobVersion",   ignore = true)
     @Mapping(target = "createdAt",    ignore = true)
     @Mapping(target = "version",      ignore = true)
     Proposal toEntity(SubmitProposalRequest request);

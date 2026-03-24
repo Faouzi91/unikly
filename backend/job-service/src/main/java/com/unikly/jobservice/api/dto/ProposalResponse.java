@@ -28,6 +28,9 @@ public record ProposalResponse(
         @Schema(description = "Current proposal status")
         ProposalStatus status,
 
+        @Schema(description = "Job version this proposal was submitted against")
+        int jobVersion,
+
         @Schema(description = "Submission timestamp")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssXXX", timezone = "UTC")
         Instant createdAt
