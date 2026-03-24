@@ -1,8 +1,13 @@
 package com.unikly.jobservice.domain;
 
 public enum ProposalStatus {
+    SUBMITTED,
     PENDING,
+    VIEWED,
+    SHORTLISTED,
     ACCEPTED,
     REJECTED,
-    WITHDRAWN
+    WITHDRAWN,
+    OUTDATED,
+    NEEDS_REVIEW
 }

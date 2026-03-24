@@ -53,6 +53,10 @@ public class Proposal {
     @Builder.Default
     private ProposalStatus status = ProposalStatus.PENDING;
 
+    @Column(name = "job_version", nullable = false)
+    @Builder.Default
+    private int jobVersion = 1;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
