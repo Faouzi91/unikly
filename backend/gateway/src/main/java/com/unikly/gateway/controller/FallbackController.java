@@ -1,7 +1,6 @@
 package com.unikly.gateway.controller;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -14,7 +13,7 @@ import java.util.Map;
 @RequestMapping("/fallback")
 public class FallbackController {
 
-    @GetMapping("/{service}")
+    @RequestMapping("/{service}")
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     public Mono<Map<String, String>> fallback(@PathVariable String service) {
         return Mono.just(Map.of(

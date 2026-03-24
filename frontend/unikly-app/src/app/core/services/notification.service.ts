@@ -39,9 +39,11 @@ export class NotificationService implements OnDestroy {
   private readonly keycloak = inject(KeycloakService);
 
   private wsSub: Subscription | null = null;
+  private initialized = false;
 
   init(): void {
-    if (!this.keycloak.isAuthenticated()) return;
+    if (this.initialized || !this.keycloak.isAuthenticated()) return;
+    this.initialized = true;
     this.loadInitialNotifications();
     this.subscribeToWebSocket();
     this.ws.activate();

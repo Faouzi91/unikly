@@ -16,6 +16,7 @@ export type JobStatus =
   | 'DRAFT'
   | 'OPEN'
   | 'IN_PROGRESS'
+  | 'DELIVERED'
   | 'COMPLETED'
   | 'CLOSED'
   | 'CANCELLED'

@@ -52,6 +52,16 @@ export class JobService {
     });
   }
 
+  getMyContracts(
+    page: number,
+    size: number,
+  ): Observable<PageResponse<Job>> {
+    return this.api.get<PageResponse<Job>>('/v1/jobs/my-contracts', {
+      page,
+      size,
+    });
+  }
+
   getJob(id: string): Observable<Job> {
     return this.api.get<Job>(`/v1/jobs/${id}`);
   }
@@ -77,8 +87,8 @@ export class JobService {
     return this.api.post<Proposal>(`/v1/jobs/${jobId}/proposals`, data);
   }
 
-  getProposals(jobId: string): Observable<Proposal[]> {
-    return this.api.get<Proposal[]>(`/v1/jobs/${jobId}/proposals`);
+  getProposals(jobId: string): Observable<PageResponse<Proposal>> {
+    return this.api.get<PageResponse<Proposal>>(`/v1/jobs/${jobId}/proposals`);
   }
 
   acceptProposal(jobId: string, proposalId: string): Observable<Proposal> {

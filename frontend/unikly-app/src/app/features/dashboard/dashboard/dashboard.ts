@@ -3,7 +3,7 @@ import { DecimalPipe, SlicePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { KeycloakService } from '../../../core/auth/keycloak.service';
 import { JobService } from '../../jobs/services/job.service';
-import { JobSearchResult } from '../../jobs/models/job.models';
+import { Job, JobSearchResult } from '../../jobs/models/job.models';
 import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
 
 interface QuickAction {
@@ -39,6 +39,12 @@ export class Dashboard implements OnInit {
   readonly jobs = signal<JobSearchResult[]>([]);
   readonly loading = signal(true);
   readonly loadError = signal(false);
+
+  readonly myJobs = signal<Job[]>([]);
+  readonly myJobsLoading = signal(false);
+  readonly hasActionRequired = computed(
+    () => this.myJobs().some((j) => j.status === 'OPEN' && (j.proposalCount ?? 0) > 0),
+  );
 
   readonly username = computed(() => this.keycloak.getUsername() || 'there');
 
@@ -82,5 +88,15 @@ export class Dashboard implements OnInit {
         this.loading.set(false);
       },
     });
+    if (this.isClient()) {
+      this.myJobsLoading.set(true);
+      this.jobService.getMyJobs(0, 20).subscribe({
+        next: (res) => {
+          this.myJobs.set(res.content);
+          this.myJobsLoading.set(false);
+        },
+        error: () => this.myJobsLoading.set(false),
+      });
+    }
   }
 }

@@ -52,9 +52,9 @@ springdoc:
 stripe:
   # TEST key: set STRIPE_SECRET_KEY=sk_test_... in .env (https://dashboard.stripe.com/test/apikeys)
   # PROD key: set STRIPE_SECRET_KEY=sk_live_... in .env (disable Test Mode in Stripe dashboard)
-  secret-key: ${STRIPE_SECRET_KEY:sk_test_REPLACE_WITH_YOUR_TEST_KEY}
-  # Dev webhook: run `stripe listen --forward-to localhost:8083/api/v1/payments/webhook`, copy whsec_...
-  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_REPLACE_WITH_YOUR_WEBHOOK_SECRET}
+  secret-key: ${STRIPE_SECRET_KEY:sk_test_51TDbpkCVmfTR414i40PDisCVPuDWBVQylWVt78JTcvjEF0ZEaqoVoeCRzhUgnGbAZe18JR49jHbjFdlc1dioDmSF0059bDqoxv}
+  # Dev webhook: run `stripe listen --forward-to localhost:8080/webhooks/stripe`, copy the printed whsec_... into .env as STRIPE_WEBHOOK_SECRET, then restart the payment-service container.
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_59aa9a7ec85fa9a96b6730d1f9704f5e0fe683616f013135de4a1f19db12adad}
 
 resilience4j:
   circuitbreaker:

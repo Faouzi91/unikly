@@ -22,6 +22,16 @@ export class UserService {
     return this.api.put<UserProfile>('/users/me', data);
   }
 
+  /**
+   * Upload profile avatar image. Sends multipart/form-data to backend.
+   * Returns { avatarUrl: string } on success.
+   */
+  uploadAvatar(file: File): Observable<{ avatarUrl: string }> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.api.postFormData<{ avatarUrl: string }>('/users/me/avatar', form);
+  }
+
   getProfile(id: string): Observable<UserProfile> {
     return this.api.get<UserProfile>(`/users/${id}`);
   }

@@ -12,7 +12,7 @@ import { Job, MatchEntry, Proposal, SubmitProposalRequest } from '../models/job.
 import { ProposalDialogComponent, ProposalDialogData } from '../components/proposal-dialog/proposal-dialog.component';
 import { ReviewDialog, ReviewDialogData } from '../components/review-dialog/review-dialog';
 import { UserService } from '../../profile/services/user.service';
-import { ReviewRequest } from '../../profile/models/user.models';
+import { ReviewRequest, UserProfile } from '../../profile/models/user.models';
 import { JobService } from '../services/job.service';
 
 @Component({
@@ -45,6 +45,8 @@ export class JobDetailComponent implements OnInit {
   payment: PaymentRecord | null = null;
   loading = true;
   matchesLoading = false;
+  readonly ownerConfirmedViaApi = signal(false);
+  readonly freelancerProfiles = signal<Record<string, UserProfile>>({});
 
   readonly activeTab = signal<'details' | 'proposals' | 'matches'>('details');
   readonly showProposalModal = signal(false);
@@ -54,7 +56,10 @@ export class JobDetailComponent implements OnInit {
   readonly reviewSubmitting = signal(false);
 
   get isJobOwner(): boolean {
-    return this.job?.clientId === this.keycloak.getUserId();
+    return (
+      this.job?.clientId === this.keycloak.getUserId() ||
+      this.ownerConfirmedViaApi()
+    );
   }
 
   get hasAcceptedProposal(): boolean {
@@ -63,6 +68,23 @@ export class JobDetailComponent implements OnInit {
 
   get acceptedProposal(): Proposal | undefined {
     return this.proposals.find((proposal) => proposal.status === 'ACCEPTED');
+  }
+
+  get pendingProposalCount(): number {
+    return this.proposals.filter((p) => p.status === 'PENDING').length;
+  }
+
+  get sortedProposals(): Proposal[] {
+    const order: Record<string, number> = { ACCEPTED: 0, PENDING: 1, REJECTED: 2, WITHDRAWN: 3 };
+    return [...this.proposals].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
+  }
+
+  freelancerInitials(name: string): string {
+    return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
+  }
+
+  starsArray(rating: number): boolean[] {
+    return Array.from({ length: 5 }, (_, i) => i < Math.round(rating));
   }
 
   get canLeaveReview(): boolean {
@@ -232,9 +254,25 @@ export class JobDetailComponent implements OnInit {
     });
   }
 
+  readonly lifecycleSteps: { key: string; label: string }[] = [
+    { key: 'OPEN',        label: 'Open' },
+    { key: 'IN_PROGRESS', label: 'In Progress' },
+    { key: 'DELIVERED',   label: 'Delivered' },
+    { key: 'COMPLETED',   label: 'Completed' },
+  ];
+
+  get lifecycleStepIndex(): number {
+    return this.lifecycleSteps.findIndex((s) => s.key === this.job?.status);
+  }
+
+  get isLinearStatus(): boolean {
+    return this.lifecycleStepIndex >= 0;
+  }
+
   statusClass(status: string): string {
     if (status === 'OPEN') return 'bg-emerald-100 text-emerald-800';
     if (status === 'IN_PROGRESS') return 'bg-sky-100 text-sky-800';
+    if (status === 'DELIVERED') return 'bg-violet-100 text-violet-800';
     if (status === 'COMPLETED' || status === 'CLOSED') return 'bg-ink-100 text-ink-600';
     if (status === 'CANCELLED' || status === 'DISPUTED') return 'bg-rose-100 text-rose-800';
     if (status === 'DRAFT') return 'bg-amber-100 text-amber-800';
@@ -256,12 +294,11 @@ export class JobDetailComponent implements OnInit {
       next: (job) => {
         this.job = job;
         this.loading = false;
-
-        if (this.isJobOwner) {
-          this.loadProposals(jobId);
-          this.loadMatches(jobId);
-          this.loadPayment(jobId);
-        }
+        // Always attempt all three — backend enforces ownership via 403.
+        // A successful proposals response sets ownerConfirmedViaApi and reveals the tab.
+        this.loadProposals(jobId);
+        this.loadMatches(jobId);
+        this.loadPayment(jobId);
       },
       error: () => (this.loading = false),
     });
@@ -269,7 +306,26 @@ export class JobDetailComponent implements OnInit {
 
   private loadProposals(jobId: string): void {
     this.jobService.getProposals(jobId).subscribe({
-      next: (proposals) => (this.proposals = proposals),
+      next: (response) => {
+        this.ownerConfirmedViaApi.set(true);
+        this.proposals = response.content;
+        // Load each freelancer's profile in parallel for richer proposal cards
+        const uniqueIds = [...new Set(this.proposals.map((p) => p.freelancerId))];
+        for (const id of uniqueIds) {
+          this.userService.getProfile(id).subscribe({
+            next: (profile) => {
+              this.freelancerProfiles.update((map) => ({ ...map, [id]: profile }));
+            },
+          });
+        }
+        if (this.proposals.length > 0 && this.activeTab() === 'details') {
+          this.activeTab.set('proposals');
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load proposals:', err);
+        /* 403 for non-owners — tab stays hidden */
+      },
     });
   }
 
@@ -287,6 +343,7 @@ export class JobDetailComponent implements OnInit {
   private loadPayment(jobId: string): void {
     this.paymentService.getPaymentStatus(jobId).subscribe({
       next: (records) => (this.payment = records[0] ?? null),
+      error: () => (this.payment = null),
     });
   }
 }

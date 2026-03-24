@@ -11,8 +11,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -30,7 +29,12 @@ public class OutboxEvent {
     @Column(name = "event_type", nullable = false, length = 100)
     private String eventType;
 
-    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "aggregate_id", nullable = false)
+    private UUID aggregateId;
+
+    @Column(name = "aggregate_type", nullable = false, length = 50)
+    private String aggregateType;
+
     @Column(name = "payload", nullable = false, columnDefinition = "jsonb")
     private String payload;
 
@@ -39,6 +43,7 @@ public class OutboxEvent {
     @Column(name = "status", nullable = false, length = 20)
     private OutboxStatus status = OutboxStatus.PENDING;
 
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -49,11 +54,12 @@ public class OutboxEvent {
     @Column(name = "retry_count", nullable = false)
     private int retryCount = 0;
 
-    public OutboxEvent(String eventType, String payload) {
+    public OutboxEvent(String eventType, UUID aggregateId, String aggregateType, String payload) {
         this.eventType = eventType;
+        this.aggregateId = aggregateId;
+        this.aggregateType = aggregateType;
         this.payload = payload;
         this.status = OutboxStatus.PENDING;
-        this.createdAt = Instant.now();
     }
 
     public void incrementRetryCount() {

@@ -38,4 +38,9 @@ export class ApiService {
   delete<T>(path: string): Observable<T> {
     return this.http.delete<T>(`${this.baseUrl}${path}`);
   }
+
+  /** Upload multipart/form-data (e.g. file uploads). Browser sets boundary automatically. */
+  postFormData<T>(path: string, body: FormData): Observable<T> {
+    return this.http.post<T>(`${this.baseUrl}${path}`, body);
+  }
 }

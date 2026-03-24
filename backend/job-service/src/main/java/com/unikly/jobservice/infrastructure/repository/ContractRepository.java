@@ -1,4 +1,4 @@
-package com.unikly.jobservice.infrastructure;
+package com.unikly.jobservice.infrastructure.repository;
 
 import com.unikly.jobservice.domain.Contract;
 import org.springframework.data.jpa.repository.JpaRepository;

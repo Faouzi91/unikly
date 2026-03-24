@@ -29,7 +29,7 @@ export class JobCreateComponent implements OnDestroy {
   readonly form: FormGroup = this.fb.group({
     title: ['', [Validators.required, Validators.maxLength(200)]],
     description: ['', [Validators.required, Validators.minLength(40)]],
-    budget: [null, [Validators.required, Validators.min(1)]],
+    budget: [null, [Validators.required, Validators.min(1), Validators.max(999999)]],
     currency: ['USD', [Validators.required]],
   });
 

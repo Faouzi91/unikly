@@ -7,10 +7,14 @@ import com.unikly.common.events.JobStatusChangedEvent;
 import com.unikly.common.events.PaymentCompletedEvent;
 import com.unikly.common.outbox.OutboxEvent;
 import com.unikly.common.outbox.OutboxRepository;
+import com.unikly.jobservice.domain.ContractStatus;
 import com.unikly.jobservice.domain.JobStatus;
-import com.unikly.jobservice.domain.JobStatusMachine;
+import com.unikly.jobservice.domain.JobStateMachine;
 import com.unikly.jobservice.domain.ProcessedEvent;
 import com.unikly.jobservice.domain.ProposalStatus;
+import com.unikly.jobservice.infrastructure.repository.ContractRepository;
+import com.unikly.jobservice.infrastructure.repository.JobRepository;
+import com.unikly.jobservice.infrastructure.repository.ProposalRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -68,20 +72,18 @@ public class PaymentEventConsumer {
         if (job.getStatus() == JobStatus.OPEN && !acceptedProposals.isEmpty()) {
             var acceptedProposal = acceptedProposals.get(0);
             var previousStatus = job.getStatus();
-            JobStatusMachine.validateTransition(previousStatus, JobStatus.IN_PROGRESS);
+            JobStateMachine.validateTransition(previousStatus, JobStatus.IN_PROGRESS);
 
             job.setStatus(JobStatus.IN_PROGRESS);
             job.setUpdatedAt(Instant.now());
             jobRepository.save(job);
 
-            // Create and activate the contract now that payment is confirmed
             var contract = com.unikly.jobservice.domain.Contract.builder()
                     .jobId(job.getId())
                     .clientId(job.getClientId())
                     .freelancerId(acceptedProposal.getFreelancerId())
                     .agreedBudget(acceptedProposal.getProposedBudget())
-                    .status(com.unikly.jobservice.domain.ContractStatus.ACTIVE)
-                    .startedAt(Instant.now())
+                    .status(ContractStatus.ACTIVE)
                     .build();
             contractRepository.save(contract);
 
@@ -124,7 +126,7 @@ public class PaymentEventConsumer {
                     UUID.randomUUID(), null, Instant.now(),
                     job.getId(), previousStatus.name(), job.getStatus().name(), job.getClientId()
             );
-            outboxRepository.save(new OutboxEvent(event.eventType(), objectMapper.writeValueAsString(event)));
+            outboxRepository.save(new OutboxEvent(event.eventType(), job.getId(), "JOB", objectMapper.writeValueAsString(event)));
         } catch (Exception e) {
             log.error("Failed to publish JobStatusChangedEvent for job={}", job.getId(), e);
         }

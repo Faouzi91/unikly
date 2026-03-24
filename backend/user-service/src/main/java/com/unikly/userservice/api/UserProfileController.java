@@ -4,6 +4,7 @@ import com.unikly.common.dto.PageResponse;
 import com.unikly.common.security.UserContext;
 import com.unikly.userservice.api.dto.UserProfileRequest;
 import com.unikly.userservice.api.dto.UserProfileResponse;
+import com.unikly.userservice.application.StorageService;
 import com.unikly.userservice.application.UserProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -11,18 +12,21 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
-import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.Map;
 import java.util.UUID;
 
@@ -33,6 +37,7 @@ import java.util.UUID;
 public class UserProfileController {
 
     private final UserProfileService profileService;
+    private final StorageService storageService;
 
     @GetMapping("/me")
     @Operation(summary = "Get current user's profile")
@@ -50,6 +55,17 @@ public class UserProfileController {
     public ResponseEntity<UserProfileResponse> updateCurrentProfile(@Valid @RequestBody UserProfileRequest request) {
         UUID userId = UserContext.getUserId();
         return ResponseEntity.ok(profileService.createOrUpdateProfile(userId, request));
+    }
+
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload profile avatar photo")
+    @ApiResponse(responseCode = "200", description = "Avatar uploaded, returns avatarUrl")
+    @ApiResponse(responseCode = "400", description = "Invalid file type or size")
+    public ResponseEntity<Map<String, String>> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        UUID userId = UserContext.getUserId();
+        String avatarUrl = storageService.uploadAvatar(userId, file);
+        profileService.updateAvatarUrl(userId, avatarUrl);
+        return ResponseEntity.ok(Map.of("avatarUrl", avatarUrl));
     }
 
     @GetMapping("/{id}")
@@ -78,7 +94,7 @@ public class UserProfileController {
     }
 
     @GetMapping
-    @Operation(summary = "Search freelancers", description = "Returns a paginated list of freelancer profiles, optionally filtered by skill")
+    @Operation(summary = "Search freelancers")
     @ApiResponse(responseCode = "200", description = "Freelancers retrieved")
     public ResponseEntity<PageResponse<UserProfileResponse>> searchFreelancers(
             @Parameter(description = "Filter by skill") @RequestParam(required = false) String skill,

@@ -1,4 +1,4 @@
-package com.unikly.jobservice.infrastructure;
+package com.unikly.jobservice.infrastructure.repository;
 
 import com.unikly.jobservice.domain.Proposal;
 import com.unikly.jobservice.domain.ProposalStatus;
@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,11 +16,15 @@ public interface ProposalRepository extends JpaRepository<Proposal, UUID> {
 
     Page<Proposal> findByJobId(UUID jobId, Pageable pageable);
 
+    Page<Proposal> findByFreelancerId(UUID freelancerId, Pageable pageable);
+
+    List<Proposal> findByJobIdAndStatusIn(UUID jobId, List<ProposalStatus> statuses);
+
     List<Proposal> findByJobIdAndStatus(UUID jobId, ProposalStatus status);
 
-    long countByJobId(UUID jobId);
+    boolean existsByJobIdAndFreelancerId(UUID jobId, UUID freelancerId);
 
     @Modifying
     @Query("UPDATE Proposal p SET p.status = :status WHERE p.jobId = :jobId AND p.status = 'PENDING' AND p.id <> :excludeId")
-    void rejectOtherPendingProposals(UUID jobId, UUID excludeId, ProposalStatus status);
+    void rejectOtherPendingProposals(@Param("jobId") UUID jobId, @Param("excludeId") UUID excludeId, @Param("status") ProposalStatus status);
 }

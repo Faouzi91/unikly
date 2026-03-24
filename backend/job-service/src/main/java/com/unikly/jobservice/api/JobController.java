@@ -6,7 +6,7 @@ import com.unikly.jobservice.api.dto.CreateJobRequest;
 import com.unikly.jobservice.api.dto.JobResponse;
 import com.unikly.jobservice.api.dto.StatusTransitionRequest;
 import com.unikly.jobservice.api.dto.UpdateJobRequest;
-import com.unikly.jobservice.application.JobService;
+import com.unikly.jobservice.application.service.JobService;
 import com.unikly.jobservice.domain.JobStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -50,6 +50,7 @@ public class JobController {
                 .body(jobService.createJob(clientId, request));
     }
 
+/*
     @GetMapping
     @Operation(summary = "List jobs", description = "Returns a paginated list of jobs with optional filters")
     @ApiResponse(responseCode = "200", description = "Jobs retrieved")
@@ -64,6 +65,7 @@ public class JobController {
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(jobService.listJobs(status, skill, minBudget, maxBudget, sort, direction, page, size));
     }
+*/
 
     @GetMapping("/{id}")
     @Operation(summary = "Get a job by ID")
@@ -82,11 +84,13 @@ public class JobController {
     @ApiResponse(responseCode = "404", description = "Job not found")
     public ResponseEntity<JobResponse> updateJob(
             @Parameter(description = "Job UUID") @PathVariable UUID id,
+            @Parameter(description = "Confirm sensitive changes") @RequestParam(defaultValue = "false") boolean confirmed,
             @Valid @RequestBody UpdateJobRequest request) {
         UUID clientId = UserContext.getUserId();
-        return ResponseEntity.ok(jobService.updateJob(id, clientId, request));
+        return ResponseEntity.ok(jobService.updateJob(id, clientId, request, confirmed));
     }
 
+/*
     @PatchMapping("/{id}/status")
     @Operation(summary = "Transition job status", description = "Move the job through its lifecycle state machine")
     @ApiResponse(responseCode = "200", description = "Status updated")
@@ -112,4 +116,27 @@ public class JobController {
         UUID adminId = UserContext.getUserId();
         return ResponseEntity.ok(jobService.adminCloseJob(id, adminId));
     }
+
+    @PatchMapping("/{id}/submit-delivery")
+    @Operation(summary = "Submit work for delivery (freelancer)")
+    @ApiResponse(responseCode = "200", description = "Delivery submitted")
+    @ApiResponse(responseCode = "403", description = "Only the assigned freelancer may submit delivery")
+    public ResponseEntity<JobResponse> submitDelivery(
+            @PathVariable UUID id,
+            @RequestBody(required = false) Map<String, String> body) {
+        UUID freelancerId = UserContext.getUserId();
+        String note = body != null ? body.getOrDefault("note", "") : "";
+        return ResponseEntity.ok(jobService.submitDelivery(id, freelancerId, note));
+    }
+
+    @GetMapping("/my-contracts")
+    @Operation(summary = "Get active contracts for the current freelancer")
+    @ApiResponse(responseCode = "200", description = "Contracts retrieved")
+    public ResponseEntity<PageResponse<JobResponse>> getMyContracts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        UUID freelancerId = UserContext.getUserId();
+        return ResponseEntity.ok(jobService.getFreelancerContracts(freelancerId, page, size));
+    }
+*/
 }

@@ -48,6 +48,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
   readonly activeTab = signal<'profile' | 'reviews'>('profile');
   readonly skillSuggestions = signal<string[]>([]);
   readonly reviews = signal<Review[]>([]);
+  readonly avatarPreview = signal<string | null>(null);
+  readonly uploadingAvatar = signal(false);
 
   editSkills: string[] = [];
   reviewsPage = 0;
@@ -96,6 +98,31 @@ export class ProfileComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  onAvatarChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => this.avatarPreview.set(reader.result as string);
+    reader.readAsDataURL(file);
+
+    this.uploadingAvatar.set(true);
+    this.userService.uploadAvatar(file).subscribe({
+      next: (res) => {
+        const p = this.profile();
+        if (p) this.profile.set({ ...p, avatarUrl: res.avatarUrl });
+        this.avatarPreview.set(null);
+        this.uploadingAvatar.set(false);
+        this.toast.success('Avatar updated.');
+      },
+      error: () => {
+        this.avatarPreview.set(null);
+        this.uploadingAvatar.set(false);
+      },
+    });
   }
 
   toggleEditMode(): void {

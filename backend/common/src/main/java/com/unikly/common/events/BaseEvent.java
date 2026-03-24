@@ -17,7 +17,10 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = EscrowReleasedEvent.class, name = "EscrowReleased"),
         @JsonSubTypes.Type(value = JobMatchedEvent.class, name = "JobMatched"),
         @JsonSubTypes.Type(value = MessageSentEvent.class, name = "MessageSent"),
-        @JsonSubTypes.Type(value = UserProfileUpdatedEvent.class, name = "UserProfileUpdated")
+        @JsonSubTypes.Type(value = UserProfileUpdatedEvent.class, name = "UserProfileUpdated"),
+        @JsonSubTypes.Type(value = JobPublishedEvent.class, name = "JobPublished"),
+        @JsonSubTypes.Type(value = JobUpdatedEvent.class, name = "JobUpdated"),
+        @JsonSubTypes.Type(value = JobCancelledEvent.class, name = "JobCancelled")
 })
 public sealed interface BaseEvent permits
         JobCreatedEvent,
@@ -29,7 +32,10 @@ public sealed interface BaseEvent permits
         EscrowReleasedEvent,
         JobMatchedEvent,
         MessageSentEvent,
-        UserProfileUpdatedEvent {
+        UserProfileUpdatedEvent,
+        JobPublishedEvent,
+        JobUpdatedEvent,
+        JobCancelledEvent {
 
     UUID eventId();
 

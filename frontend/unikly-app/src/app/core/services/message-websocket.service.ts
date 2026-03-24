@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy, inject } from '@angular/core';
+import { Injectable, OnDestroy, inject, NgZone } from '@angular/core';
 import { Client, IMessage } from '@stomp/stompjs';
 import { Subject } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -25,6 +25,7 @@ export class MessageWebSocketService implements OnDestroy {
   readonly typing$ = new Subject<TypingIndicator>();
 
   private readonly keycloak = inject(KeycloakService);
+  private readonly zone = inject(NgZone);
   private client: Client;
 
   constructor() {
@@ -41,7 +42,8 @@ export class MessageWebSocketService implements OnDestroy {
       onConnect: () => {
         this.client.subscribe('/user/queue/messages', (msg: IMessage) => {
           try {
-            this.messages$.next(JSON.parse(msg.body) as IncomingMessage);
+            const message = JSON.parse(msg.body) as IncomingMessage;
+            this.zone.run(() => this.messages$.next(message));
           } catch {
             console.error('Failed to parse incoming message', msg.body);
           }
@@ -49,7 +51,8 @@ export class MessageWebSocketService implements OnDestroy {
 
         this.client.subscribe('/user/queue/typing', (msg: IMessage) => {
           try {
-            this.typing$.next(JSON.parse(msg.body) as TypingIndicator);
+            const indicator = JSON.parse(msg.body) as TypingIndicator;
+            this.zone.run(() => this.typing$.next(indicator));
           } catch {
             console.error('Failed to parse typing indicator', msg.body);
           }

@@ -6,7 +6,7 @@ export const adminGuard = () => {
   const keycloakService = inject(KeycloakService);
   const router = inject(Router);
 
-  if (keycloakService.isAuthenticated() && keycloakService.hasRole('ADMIN')) {
+  if (keycloakService.isAuthenticated() && keycloakService.hasRole('ROLE_ADMIN')) {
     return true;
   }
 

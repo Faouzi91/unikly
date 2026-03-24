@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, OnDestroy, inject } from '@angular/core';
+import { Injectable, OnDestroy, inject, NgZone } from '@angular/core';
 import { Client, IMessage } from '@stomp/stompjs';
 import { Subject } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -21,6 +21,7 @@ export class WebSocketService implements OnDestroy {
 
   private readonly keycloak = inject(KeycloakService);
   private readonly http = inject(HttpClient);
+  private readonly zone = inject(NgZone);
 
   private client: Client;
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
@@ -43,7 +44,7 @@ export class WebSocketService implements OnDestroy {
         this.client.subscribe('/user/queue/notifications', (message: IMessage) => {
           try {
             const notification = JSON.parse(message.body) as NotificationPayload;
-            this.notifications$.next(notification);
+            this.zone.run(() => this.notifications$.next(notification));
           } catch {
             console.error('Failed to parse notification payload', message.body);
           }

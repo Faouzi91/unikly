@@ -7,6 +7,6 @@ export const environment = {
     realm: 'unikly',
     clientId: 'unikly-frontend',
   },
-  // Stripe LIVE publishable key — get from https://dashboard.stripe.com/apikeys (disable Test Mode)
-  stripePublishableKey: 'pk_live_REPLACE_WITH_YOUR_LIVE_KEY',
+  // Stripe TEST publishable key
+  stripePublishableKey: 'pk_test_51TDbpkCVmfTR414iZSGQbxGDzS61OSYW8LC36V3Su522Z8e9yHBwwgXyDlRlzck9m9VcqnbYZiLanir4wsWswroO00xsADbK3l',
 };

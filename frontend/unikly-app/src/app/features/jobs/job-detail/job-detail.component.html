@@ -29,14 +29,69 @@
       </div>
     </header>
 
+    <!-- Lifecycle stepper — only for the main linear flow -->
+    @if (isLinearStatus) {
+      <div class="card-panel p-5">
+        <p class="mb-4 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--ui-muted)]">Project Progress</p>
+        <ol class="flex items-start">
+          @for (step of lifecycleSteps; track step.key; let i = $index; let last = $last) {
+            <li class="flex flex-1 flex-col items-center">
+              <div class="relative flex w-full items-center">
+                <!-- Left connector -->
+                @if (i > 0) {
+                  <div class="h-0.5 flex-1" [ngClass]="i <= lifecycleStepIndex ? 'bg-brand' : 'bg-[var(--ui-border)]'"></div>
+                } @else {
+                  <div class="flex-1"></div>
+                }
+
+                <!-- Circle -->
+                @if (i < lifecycleStepIndex) {
+                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand">
+                    <svg class="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </div>
+                } @else if (i === lifecycleStepIndex) {
+                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-brand bg-brand-soft ring-4 ring-brand/20">
+                    <div class="h-2.5 w-2.5 rounded-full bg-brand"></div>
+                  </div>
+                } @else {
+                  <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[var(--ui-border)] bg-[var(--ui-bg)]">
+                    <div class="h-2.5 w-2.5 rounded-full bg-[var(--ui-border)]"></div>
+                  </div>
+                }
+
+                <!-- Right connector -->
+                @if (!last) {
+                  <div class="h-0.5 flex-1" [ngClass]="i < lifecycleStepIndex ? 'bg-brand' : 'bg-[var(--ui-border)]'"></div>
+                } @else {
+                  <div class="flex-1"></div>
+                }
+              </div>
+
+              <span class="mt-2 text-center text-xs font-semibold"
+                [ngClass]="i < lifecycleStepIndex ? 'text-brand-dark' : i === lifecycleStepIndex ? 'text-brand' : 'text-[var(--ui-muted)]'">
+                {{ step.label }}
+              </span>
+            </li>
+          }
+        </ol>
+      </div>
+    }
+
     <div class="card-panel p-2">
       <div class="flex flex-wrap gap-2">
         <button type="button" class="tab-button" [class.tab-button-active]="activeTab() === 'details'" (click)="activeTab.set('details')">
           Details
         </button>
-        @if (isJobOwner) {
-          <button type="button" class="tab-button" [class.tab-button-active]="activeTab() === 'proposals'" (click)="activeTab.set('proposals')">
+        @if (ownerConfirmedViaApi()) {
+          <button type="button" class="tab-button relative" [class.tab-button-active]="activeTab() === 'proposals'" (click)="activeTab.set('proposals')">
             Proposals ({{ proposals.length }})
+            @if (pendingProposalCount > 0) {
+              <span class="ml-1.5 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+                {{ pendingProposalCount }}
+              </span>
+            }
           </button>
           <button type="button" class="tab-button" [class.tab-button-active]="activeTab() === 'matches'" (click)="activeTab.set('matches')">
             Matches ({{ matches.length }})
@@ -52,45 +107,134 @@
       </article>
     }
 
-    @if (activeTab() === 'proposals' && isJobOwner) {
+    @if (activeTab() === 'proposals' && ownerConfirmedViaApi()) {
       <div class="space-y-3">
+
         @if (proposals.length === 0) {
           <div class="card-panel px-4 py-10 text-center">
-            <p class="text-lg font-semibold text-ink-900">No proposals yet</p>
-            <p class="mt-1 text-sm text-[var(--ui-muted)]">Incoming proposals will appear here.</p>
+            <svg class="mx-auto mb-3 h-10 w-10 text-ink-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+            </svg>
+            <p class="text-base font-semibold text-ink-900">No proposals yet</p>
+            <p class="mt-1 text-sm text-[var(--ui-muted)]">Freelancers who apply will appear here.</p>
           </div>
         } @else {
-          @for (proposal of proposals; track proposal.id) {
-            <article class="card-panel p-4">
-              <div class="flex flex-wrap items-start justify-between gap-4">
+
+          <!-- Summary bar -->
+          <div class="flex flex-wrap items-center gap-3 rounded-xl border border-brand/20 bg-brand-soft/10 px-4 py-3">
+            <span class="text-sm font-semibold text-ink-900">{{ proposals.length }} proposal{{ proposals.length !== 1 ? 's' : '' }}</span>
+            @if (pendingProposalCount > 0) {
+              <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                {{ pendingProposalCount }} pending
+              </span>
+            }
+            @if (hasAcceptedProposal) {
+              <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+                1 accepted
+              </span>
+            }
+            <p class="ml-auto text-xs text-[var(--ui-muted)]">Accept a freelancer to move the project to In Progress. Escrow payment will be required.</p>
+          </div>
+
+          <!-- Proposal cards (PENDING first, then accepted, then rejected) -->
+          @for (proposal of sortedProposals; track proposal.id) {
+            @let profile = freelancerProfiles()[proposal.freelancerId];
+            <article class="card-panel overflow-hidden"
+              [class.border-emerald-300]="proposal.status === 'ACCEPTED'"
+              [class.opacity-60]="proposal.status === 'REJECTED' || proposal.status === 'WITHDRAWN'">
+
+              <!-- Top row: avatar + name + meta + bid + actions -->
+              <div class="flex flex-wrap items-start gap-4 p-5">
+
+                <!-- Avatar -->
+                <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-brand-dark">
+                  {{ freelancerInitials(proposal.freelancerName || 'FL') }}
+                </span>
+
+                <!-- Freelancer info -->
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2">
-                    <a [routerLink]="['/users', proposal.freelancerId]" class="text-sm font-semibold text-brand-dark hover:underline">
+                    <a [routerLink]="['/users', proposal.freelancerId]"
+                       class="text-base font-semibold text-ink-900 hover:text-brand-dark hover:underline">
                       {{ proposal.freelancerName || 'Freelancer' }}
                     </a>
-                    <span class="pill" [ngClass]="proposalStatusClass(proposal.status)">{{ proposal.status }}</span>
+                    <span class="pill text-xs" [ngClass]="proposalStatusClass(proposal.status)">{{ proposal.status }}</span>
                   </div>
-                  <p class="mt-2 text-sm font-semibold text-ink-900">{{ proposal.proposedBudget | number: '1.0-0' }} {{ job.currency }}</p>
-                  <p class="mt-2 text-sm text-ink-700">{{ proposal.coverLetter }}</p>
-                  <p class="mt-2 text-xs text-ink-400">Submitted {{ proposal.createdAt | timeAgo }}</p>
+
+                  <!-- Rating + location from profile -->
+                  <div class="mt-1 flex flex-wrap items-center gap-3 text-xs text-[var(--ui-muted)]">
+                    @if (profile?.averageRating) {
+                      <span class="flex items-center gap-1">
+                        @for (filled of starsArray(profile.averageRating); track $index) {
+                          <svg class="h-3.5 w-3.5" [class.text-amber-400]="filled" [class.text-ink-300]="!filled"
+                            viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                          </svg>
+                        }
+                        <span>{{ profile.averageRating | number: '1.1-1' }}
+                          @if (profile.totalReviews > 0) { ({{ profile.totalReviews }}) }
+                        </span>
+                      </span>
+                    }
+                    @if (profile?.hourlyRate) {
+                      <span>{{ profile.hourlyRate | number: '1.0-0' }}/hr {{ profile.currency }}</span>
+                    }
+                    @if (profile?.location) {
+                      <span>{{ profile.location }}</span>
+                    }
+                    <span>Submitted {{ proposal.createdAt | timeAgo }}</span>
+                  </div>
+
+                  <!-- Skills from profile -->
+                  @if (profile?.skills?.length) {
+                    <div class="mt-2 flex flex-wrap gap-1.5">
+                      @for (skill of (profile.skills | slice: 0 : 6); track skill) {
+                        <span class="pill bg-ink-100 text-ink-600 text-xs">{{ skill }}</span>
+                      }
+                    </div>
+                  }
                 </div>
 
-                @if (proposal.status === 'PENDING') {
-                  <div class="flex gap-2">
-                    <button type="button" class="btn-primary px-3 py-2 text-xs" (click)="acceptProposal(proposal)">Accept</button>
-                    <button type="button" class="btn-secondary px-3 py-2 text-xs text-red-700 hover:border-red-300 hover:bg-red-50" (click)="rejectProposal(proposal)">
-                      Reject
-                    </button>
-                  </div>
-                }
+                <!-- Bid + actions (right side) -->
+                <div class="flex shrink-0 flex-col items-end gap-2">
+                  <p class="text-xl font-bold text-brand-dark">{{ proposal.proposedBudget | number: '1.0-0' }} {{ job.currency }}</p>
+                  @if (proposal.status === 'PENDING') {
+                    <div class="flex gap-2">
+                      <button type="button"
+                        class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                        (click)="acceptProposal(proposal)">
+                        ✓ Hire
+                      </button>
+                      <button type="button"
+                        class="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:bg-transparent dark:hover:bg-red-900/20"
+                        (click)="rejectProposal(proposal)">
+                        Decline
+                      </button>
+                    </div>
+                  }
+                  @if (proposal.status === 'ACCEPTED') {
+                    <span class="text-xs font-semibold text-emerald-700">✓ Hired</span>
+                  }
+                  <a [routerLink]="['/users', proposal.freelancerId]"
+                     class="text-xs text-[var(--ui-muted)] hover:text-brand-dark hover:underline">
+                    View full profile →
+                  </a>
+                </div>
               </div>
+
+              <!-- Cover letter -->
+              <div class="border-t border-[var(--ui-border)] bg-ink-50/50 px-5 py-4 dark:bg-white/[0.02]">
+                <p class="mb-1 text-[11px] font-semibold uppercase tracking-widest text-[var(--ui-muted)]">Cover Letter</p>
+                <p class="whitespace-pre-line text-sm text-ink-700">{{ proposal.coverLetter }}</p>
+              </div>
+
             </article>
           }
         }
       </div>
     }
 
-    @if (activeTab() === 'matches' && isJobOwner) {
+    @if (activeTab() === 'matches' && ownerConfirmedViaApi()) {
       <div class="space-y-3">
         @if (matchesLoading) {
           <div class="card-panel flex justify-center py-10">

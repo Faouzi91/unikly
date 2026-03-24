@@ -13,6 +13,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -40,7 +41,7 @@ public class Contract {
     @Column(name = "freelancer_id", nullable = false)
     private UUID freelancerId;
 
-    @Column(name = "agreed_budget", nullable = false, precision = 10, scale = 2)
+    @Column(name = "agreed_budget", nullable = false, precision = 12, scale = 2)
     private BigDecimal agreedBudget;
 
     @Column(columnDefinition = "TEXT")
@@ -51,7 +52,8 @@ public class Contract {
     @Builder.Default
     private ContractStatus status = ContractStatus.ACTIVE;
 
-    @Column(name = "started_at", nullable = false)
+    @CreationTimestamp
+    @Column(name = "started_at", nullable = false, updatable = false)
     private Instant startedAt;
 
     @Column(name = "completed_at")

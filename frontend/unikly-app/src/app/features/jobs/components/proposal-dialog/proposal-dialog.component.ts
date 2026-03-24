@@ -25,7 +25,7 @@ export class ProposalDialogComponent implements OnChanges {
   @Output() submitProposal = new EventEmitter<SubmitProposalRequest>();
 
   readonly form: FormGroup = this.fb.group({
-    proposedBudget: [null, [Validators.required, Validators.min(1)]],
+    proposedBudget: [null, [Validators.required, Validators.min(1), Validators.max(999999)]],
     coverLetter: ['', [Validators.required, Validators.minLength(50)]],
   });
 

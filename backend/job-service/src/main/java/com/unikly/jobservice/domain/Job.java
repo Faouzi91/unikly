@@ -14,7 +14,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
@@ -44,7 +46,7 @@ public class Job {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal budget;
 
     @Column(nullable = false, length = 3)
@@ -55,16 +57,19 @@ public class Job {
     private List<String> skills;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, columnDefinition = "job_status")
     @Builder.Default
     private JobStatus status = JobStatus.DRAFT;
 
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
     @Version
+    @Column(nullable = false)
     private int version;
 }

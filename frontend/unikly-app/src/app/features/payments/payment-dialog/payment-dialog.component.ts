@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, inject, signal } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Stripe, StripeElements } from '@stripe/stripe-js';
 import { PaymentService } from '../../../core/services/payment.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -69,7 +70,12 @@ export class PaymentDialogComponent implements OnInit, OnDestroy {
       paymentElement.mount('#stripe-payment-element');
       this.mountingStripe.set(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to initialize payment.';
+      let message = 'Failed to initialize payment.';
+      if (err instanceof HttpErrorResponse) {
+        message = err.error?.message ?? `Request failed (${err.status}). Please try again.`;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
       this.stripeError.set(message);
       this.mountingStripe.set(false);
     }

@@ -30,4 +30,7 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-kafka")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.springframework.kafka:spring-kafka-test")
+
+    // AWS S3 SDK for MinIO (S3-compatible) file uploads
+    implementation("software.amazon.awssdk:s3:2.29.23")
 }

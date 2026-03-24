@@ -4,7 +4,7 @@ import com.unikly.common.dto.PageResponse;
 import com.unikly.common.security.UserContext;
 import com.unikly.jobservice.api.dto.ProposalResponse;
 import com.unikly.jobservice.api.dto.SubmitProposalRequest;
-import com.unikly.jobservice.application.ProposalService;
+import com.unikly.jobservice.application.service.ProposalService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

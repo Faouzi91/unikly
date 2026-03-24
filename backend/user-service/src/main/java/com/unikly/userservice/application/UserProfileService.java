@@ -135,6 +135,16 @@ public class UserProfileService {
                 result.getTotalElements(), result.getTotalPages());
     }
 
+    @Transactional
+    public void updateAvatarUrl(UUID userId, String avatarUrl) {
+        var profile = profileRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User profile not found: " + userId));
+        profile.setAvatarUrl(avatarUrl);
+        profile.setUpdatedAt(Instant.now());
+        profileRepository.save(profile);
+        log.info("Avatar URL updated for userId={}", userId);
+    }
+
     @Transactional(readOnly = true)
     public PageResponse<UserProfileResponse> searchFreelancers(String skill, int page, int size) {
         var pageable = PageRequest.of(page, size);
