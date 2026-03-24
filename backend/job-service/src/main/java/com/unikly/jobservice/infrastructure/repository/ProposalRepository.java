@@ -24,6 +24,8 @@ public interface ProposalRepository extends JpaRepository<Proposal, UUID> {
 
     boolean existsByJobIdAndFreelancerId(UUID jobId, UUID freelancerId);
 
+    long countByJobIdAndStatusNotIn(UUID jobId, List<ProposalStatus> statuses);
+
     @Modifying
     @Query("UPDATE Proposal p SET p.status = :status WHERE p.jobId = :jobId AND p.status = 'PENDING' AND p.id <> :excludeId")
     void rejectOtherPendingProposals(@Param("jobId") UUID jobId, @Param("excludeId") UUID excludeId, @Param("status") ProposalStatus status);
