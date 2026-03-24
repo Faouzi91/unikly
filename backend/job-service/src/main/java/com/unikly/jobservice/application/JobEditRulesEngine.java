@@ -1,8 +1,10 @@
 package com.unikly.jobservice.application;
 
 import com.unikly.jobservice.api.dto.UpdateJobRequest;
+import com.unikly.jobservice.domain.EditDecision;
 import com.unikly.jobservice.domain.Job;
 import com.unikly.jobservice.domain.JobStatus;
+import com.unikly.jobservice.domain.ProposalImpact;
 import com.unikly.jobservice.domain.ProposalStatus;
 import com.unikly.jobservice.infrastructure.repository.ProposalRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,17 +18,6 @@ import java.util.List;
 public class JobEditRulesEngine {
 
     private final ProposalRepository proposalRepository;
-
-    public record EditDecision(
-            boolean allowed,
-            boolean requiresConfirmation,
-            List<String> sensitiveFieldsChanged,
-            ProposalImpact proposalImpact,
-            int activeProposalCount,
-            String message
-    ) {}
-
-    public enum ProposalImpact { NONE, NEEDS_REVIEW, OUTDATED }
 
     public EditDecision evaluateEdit(Job job, UpdateJobRequest updateRequest) {
         JobStatus status = job.getStatus();

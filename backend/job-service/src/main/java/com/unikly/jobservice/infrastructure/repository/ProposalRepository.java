@@ -29,4 +29,10 @@ public interface ProposalRepository extends JpaRepository<Proposal, UUID> {
     @Modifying
     @Query("UPDATE Proposal p SET p.status = :status WHERE p.jobId = :jobId AND p.status = 'PENDING' AND p.id <> :excludeId")
     void rejectOtherPendingProposals(@Param("jobId") UUID jobId, @Param("excludeId") UUID excludeId, @Param("status") ProposalStatus status);
+
+    @Modifying
+    @Query("UPDATE Proposal p SET p.status = :newStatus WHERE p.jobId = :jobId AND p.status IN :currentStatuses")
+    int bulkUpdateStatusByJobId(@Param("jobId") UUID jobId,
+                                @Param("currentStatuses") List<ProposalStatus> currentStatuses,
+                                @Param("newStatus") ProposalStatus newStatus);
 }

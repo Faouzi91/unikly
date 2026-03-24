@@ -2,6 +2,7 @@ package com.unikly.jobservice.api;
 
 import com.unikly.common.error.ErrorResponse;
 import com.unikly.common.error.GlobalExceptionHandlerBase;
+import com.unikly.jobservice.domain.EditConfirmationRequiredException;
 import com.unikly.jobservice.domain.InvalidStateTransitionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,5 +23,10 @@ public class GlobalExceptionHandler extends GlobalExceptionHandlerBase {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ErrorResponse.of(403, "Forbidden",
                         "You don't have permission for this action", getTraceId()));
+    }
+
+    @ExceptionHandler(EditConfirmationRequiredException.class)
+    public ResponseEntity<?> handleEditConfirmationRequired(EditConfirmationRequiredException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getDecision());
     }
 }

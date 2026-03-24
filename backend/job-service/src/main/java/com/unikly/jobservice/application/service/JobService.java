@@ -6,16 +6,17 @@ import com.unikly.common.events.JobCreatedEvent;
 import com.unikly.common.events.JobPublishedEvent;
 import com.unikly.common.events.JobUpdatedEvent;
 import com.unikly.jobservice.api.dto.CreateJobRequest;
-import com.unikly.jobservice.api.dto.JobEditWarningResponse;
 import com.unikly.jobservice.api.dto.JobResponse;
 import com.unikly.jobservice.api.dto.UpdateJobRequest;
+import com.unikly.jobservice.application.JobEditRulesEngine;
 import com.unikly.jobservice.application.mapper.JobMapper;
 import com.unikly.jobservice.domain.EditConfirmationRequiredException;
+import com.unikly.jobservice.domain.EditDecision;
 import com.unikly.jobservice.domain.Job;
 import com.unikly.jobservice.domain.JobNotEditableException;
 import com.unikly.jobservice.domain.JobStateMachine;
 import com.unikly.jobservice.domain.JobStatus;
-import com.unikly.jobservice.domain.Proposal;
+import com.unikly.jobservice.domain.ProposalImpact;
 import com.unikly.jobservice.domain.ProposalStatus;
 import com.unikly.jobservice.infrastructure.repository.ContractRepository;
 import com.unikly.jobservice.infrastructure.repository.JobRepository;
@@ -90,75 +91,69 @@ public class JobService {
         return jobRepository.findByClientId(clientId, pageable).map(jobMapper::toResponse);
     }
 
-    @Transactional
-    public JobEditWarningResponse checkEditEligibility(UUID jobId, UUID clientId, UpdateJobRequest request) {
+    @Transactional(readOnly = true)
+    public EditDecision checkEditEligibility(UUID jobId, UUID clientId, UpdateJobRequest request) {
         log.info("Checking edit eligibility for job {} by client {}", jobId, clientId);
-        Job job = getJobOrThrow(jobId);
-        validateOwnership(job, clientId);
-
-        long activeProposals = jobRepository.countActiveProposalsByJobId(jobId);
-        EditDecision decision = jobEditRulesEngine.evaluateEdit(job, request, activeProposals);
-
-        return new JobEditWarningResponse(decision.sensitiveFieldsChanged(), (int) activeProposals, decision.message());
+        Job job = findJobOwnedBy(jobId, clientId);
+        return jobEditRulesEngine.evaluateEdit(job, request);
     }
 
     @Transactional
     public JobResponse updateJob(UUID jobId, UUID clientId, UpdateJobRequest request, boolean confirmed) {
         log.info("Updating job {} by client {}, confirmed={}", jobId, clientId, confirmed);
-        Job job = getJobOrThrow(jobId);
-        validateOwnership(job, clientId);
-
-        long activeProposals = jobRepository.countActiveProposalsByJobId(jobId);
-        EditDecision decision = jobEditRulesEngine.evaluateEdit(job, request, activeProposals);
+        Job job = findJobOwnedBy(jobId, clientId);
+        EditDecision decision = jobEditRulesEngine.evaluateEdit(job, request);
 
         if (!decision.allowed()) {
             throw new JobNotEditableException(decision.message());
         }
-
         if (decision.requiresConfirmation() && !confirmed) {
-            throw new EditConfirmationRequiredException(decision.message(), decision.sensitiveFieldsChanged());
+            throw new EditConfirmationRequiredException(decision);
         }
 
         jobMapper.updateEntity(request, job);
         job.setVersion(job.getVersion() + 1);
-        job = jobRepository.save(job);
+        Job saved = jobRepository.save(job);
 
-        if (decision.proposalImpact() != EditDecision.ProposalImpact.NONE) {
-            List<Proposal> proposals = proposalRepository.findByJobIdAndStatusIn(jobId,
-                    List.of(ProposalStatus.PENDING));
-            proposals.forEach(p -> p.setStatus(ProposalStatus.REJECTED));
-            proposalRepository.saveAll(proposals);
+        if (decision.proposalImpact() == ProposalImpact.OUTDATED) {
+            proposalRepository.bulkUpdateStatusByJobId(
+                    jobId,
+                    List.of(ProposalStatus.SUBMITTED, ProposalStatus.PENDING,
+                            ProposalStatus.VIEWED, ProposalStatus.SHORTLISTED),
+                    ProposalStatus.OUTDATED
+            );
         }
 
-        var updateEvent = new JobUpdatedEvent(UUID.randomUUID(), "JobUpdated", Instant.now(), job.getId(), clientId,
-                decision.sensitiveFieldsChanged(), job.getVersion());
-        outboxEventPublisher.publish("JOB", job.getId(), updateEvent);
+        outboxEventPublisher.publish("JOB", saved.getId(),
+                new JobUpdatedEvent(UUID.randomUUID(), "JobUpdated", Instant.now(),
+                        saved.getId(), clientId, decision.sensitiveFieldsChanged(), saved.getVersion()));
 
-        if (job.getStatus() == JobStatus.OPEN) {
-            var publishEvent = new JobPublishedEvent(UUID.randomUUID(), "JobPublished", Instant.now(), job.getId(), clientId);
-            outboxEventPublisher.publish("JOB", job.getId(), publishEvent);
-        }
+        log.info("Job updated: id={}, version={}, sensitiveChanges={}",
+                saved.getId(), saved.getVersion(), decision.sensitiveFieldsChanged());
 
-        return jobMapper.toResponse(job);
+        return jobMapper.toResponse(saved);
     }
 
     @Transactional
     public void cancelJob(UUID jobId, UUID clientId) {
         log.info("Cancelling job {} by client {}", jobId, clientId);
-        Job job = getJobOrThrow(jobId);
-        validateOwnership(job, clientId);
+        Job job = findJobOwnedBy(jobId, clientId);
         JobStateMachine.validateTransition(job.getStatus(), JobStatus.CANCELLED);
+
+        proposalRepository.bulkUpdateStatusByJobId(
+                jobId,
+                List.of(ProposalStatus.SUBMITTED, ProposalStatus.PENDING,
+                        ProposalStatus.VIEWED, ProposalStatus.SHORTLISTED),
+                ProposalStatus.REJECTED
+        );
 
         job.setStatus(JobStatus.CANCELLED);
         jobRepository.save(job);
 
-        List<Proposal> pendingProposals = proposalRepository.findByJobIdAndStatusIn(jobId,
-                List.of(ProposalStatus.PENDING));
-        pendingProposals.forEach(p -> p.setStatus(ProposalStatus.REJECTED));
-        proposalRepository.saveAll(pendingProposals);
+        outboxEventPublisher.publish("JOB", jobId,
+                new JobCancelledEvent(UUID.randomUUID(), "JobCancelled", Instant.now(), jobId, clientId));
 
-        var event = new JobCancelledEvent(UUID.randomUUID(), "JobCancelled", Instant.now(), job.getId(), clientId);
-        outboxEventPublisher.publish("JOB", job.getId(), event);
+        log.info("Job cancelled: id={}", jobId);
     }
 
     @Transactional
@@ -175,14 +170,23 @@ public class JobService {
             var event = new JobPublishedEvent(UUID.randomUUID(), "JobPublished", Instant.now(), job.getId(), userId);
             outboxEventPublisher.publish("JOB", job.getId(), event);
         } else if (targetStatus == JobStatus.CANCELLED) {
-            List<Proposal> pending = proposalRepository.findByJobIdAndStatusIn(jobId, List.of(ProposalStatus.PENDING));
-            pending.forEach(p -> p.setStatus(ProposalStatus.REJECTED));
-            proposalRepository.saveAll(pending);
+            proposalRepository.bulkUpdateStatusByJobId(
+                    jobId,
+                    List.of(ProposalStatus.SUBMITTED, ProposalStatus.PENDING,
+                            ProposalStatus.VIEWED, ProposalStatus.SHORTLISTED),
+                    ProposalStatus.REJECTED
+            );
             var event = new JobCancelledEvent(UUID.randomUUID(), "JobCancelled", Instant.now(), job.getId(), userId);
             outboxEventPublisher.publish("JOB", job.getId(), event);
         }
 
         return jobMapper.toResponse(job);
+    }
+
+    private Job findJobOwnedBy(UUID jobId, UUID clientId) {
+        Job job = getJobOrThrow(jobId);
+        validateOwnership(job, clientId);
+        return job;
     }
 
     private Job getJobOrThrow(UUID jobId) {
