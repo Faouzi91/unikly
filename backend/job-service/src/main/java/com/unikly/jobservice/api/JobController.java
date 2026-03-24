@@ -7,6 +7,7 @@ import com.unikly.jobservice.api.dto.JobResponse;
 import com.unikly.jobservice.api.dto.StatusTransitionRequest;
 import com.unikly.jobservice.api.dto.UpdateJobRequest;
 import com.unikly.jobservice.application.service.JobService;
+import com.unikly.jobservice.domain.EditDecision;
 import com.unikly.jobservice.domain.JobStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -88,6 +89,33 @@ public class JobController {
             @Valid @RequestBody UpdateJobRequest request) {
         UUID clientId = UserContext.getUserId();
         return ResponseEntity.ok(jobService.updateJob(id, clientId, request, confirmed));
+    }
+
+    @PostMapping("/{id}/check-edit")
+    @Operation(summary = "Check job edit eligibility",
+               description = "Returns an EditDecision describing whether the edit is allowed and its impact on active proposals")
+    @ApiResponse(responseCode = "200", description = "Decision returned")
+    @ApiResponse(responseCode = "403", description = "Forbidden — not the job owner")
+    @ApiResponse(responseCode = "404", description = "Job not found")
+    public ResponseEntity<EditDecision> checkEditEligibility(
+            @Parameter(description = "Job UUID") @PathVariable UUID id,
+            @Valid @RequestBody UpdateJobRequest request) {
+        UUID clientId = UserContext.getUserId();
+        return ResponseEntity.ok(jobService.checkEditEligibility(id, clientId, request));
+    }
+
+    @PostMapping("/{id}/cancel")
+    @Operation(summary = "Cancel a job",
+               description = "Cancels the job and rejects all active proposals. Only the owning client may cancel.")
+    @ApiResponse(responseCode = "204", description = "Job cancelled")
+    @ApiResponse(responseCode = "403", description = "Forbidden — not the job owner")
+    @ApiResponse(responseCode = "404", description = "Job not found")
+    @ApiResponse(responseCode = "409", description = "Invalid status transition")
+    public ResponseEntity<Void> cancelJob(
+            @Parameter(description = "Job UUID") @PathVariable UUID id) {
+        UUID clientId = UserContext.getUserId();
+        jobService.cancelJob(id, clientId);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/status")

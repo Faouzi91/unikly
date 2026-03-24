@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -67,6 +68,23 @@ public class ProposalController {
             @Parameter(description = "Proposal UUID") @PathVariable UUID proposalId) {
         UUID clientId = UserContext.getUserId();
         return ResponseEntity.ok(proposalService.acceptProposal(jobId, proposalId, clientId));
+    }
+
+    @PutMapping("/{proposalId}/resubmit")
+    @Operation(summary = "Resubmit an OUTDATED proposal",
+               description = "Allows a freelancer to resubmit a proposal that became OUTDATED or NEEDS_REVIEW after a job edit")
+    @ApiResponse(responseCode = "200", description = "Proposal resubmitted")
+    @ApiResponse(responseCode = "400", description = "Validation failed")
+    @ApiResponse(responseCode = "403", description = "Forbidden — not the proposal owner")
+    @ApiResponse(responseCode = "404", description = "Proposal not found")
+    @ApiResponse(responseCode = "409", description = "Proposal is not in a resubmittable state")
+    public ResponseEntity<ProposalResponse> resubmitProposal(
+            @Parameter(description = "Job UUID") @PathVariable UUID jobId,
+            @Parameter(description = "Proposal UUID") @PathVariable UUID proposalId,
+            @Valid @RequestBody SubmitProposalRequest request) {
+        UUID freelancerId = UserContext.getUserId();
+        return ResponseEntity.ok(
+                proposalService.resubmitProposal(jobId, proposalId, freelancerId, request));
     }
 
     @PatchMapping("/{proposalId}/reject")
