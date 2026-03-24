@@ -17,7 +17,7 @@ dependencies {
 
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
-    testImplementation("org.testcontainers:elasticsearch")
+    testImplementation("org.testcontainers:elasticsearch:1.21.3")
     testImplementation("org.testcontainers:testcontainers-kafka")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.springframework.kafka:spring-kafka-test")

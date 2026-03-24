@@ -1,6 +1,6 @@
 # Unikly — Architecture Diagram
 
-> **Last updated:** Step 2.5 — Angular Frontend Setup & Auth
+> **Last updated:** 2026-03-24 — Phase B–H: Job workflow enhancement (edit rules, IN_REVIEW, proposal versioning, cancel, resubmit)
 
 ---
 
@@ -62,8 +62,9 @@
 │                       │  │ └── UserProfileUpdated│  │ ├── JobEvents         │
 │ State Machine:        │  │     → user.events     │  │ └── UserEvents        │
 │ DRAFT → OPEN →        │  │                       │  │                       │
-│ IN_PROGRESS →         │  │ DB: postgres-users    │  │ DB: Elasticsearch     │
-│ COMPLETED → CLOSED    │  │     (port 5434)       │  │     (port 9200)       │
+│ IN_REVIEW →           │  │ DB: postgres-users    │  │ DB: Elasticsearch     │
+│ IN_PROGRESS →         │  │     (port 5434)       │  │     (port 9200)       │
+│ COMPLETED → CLOSED    │  │                       │  │                       │
 ├───────────────────────┤  │                       │  │                       │
 │ DB: postgres-jobs     │  │                       │  │                       │
 │     (port 5433)       │  │                       │  │                       │
@@ -125,25 +126,32 @@
 
 ## Event Types Published
 
-| Event                     | Source       | Topic         | Trigger                      |
-| ------------------------- | ------------ | ------------- | ---------------------------- |
-| `JobCreatedEvent`         | Job Service  | `job.events`  | Job transitions DRAFT → OPEN |
-| `JobStatusChangedEvent`   | Job Service  | `job.events`  | Any job status transition    |
-| `ProposalSubmittedEvent`  | Job Service  | `job.events`  | Freelancer submits proposal  |
-| `ProposalAcceptedEvent`   | Job Service  | `job.events`  | Client accepts proposal      |
-| `UserProfileUpdatedEvent` | User Service | `user.events` | User updates their profile   |
+| Event                     | Source       | Topic         | Trigger                                                      |
+| ------------------------- | ------------ | ------------- | ------------------------------------------------------------ |
+| `JobCreatedEvent`         | Job Service  | `job.events`  | Job created (DRAFT)                                          |
+| `JobPublishedEvent`       | Job Service  | `job.events`  | Job transitions DRAFT → OPEN                                 |
+| `JobUpdatedEvent`         | Job Service  | `job.events`  | Client edits job; includes `affectedFreelancerIds`, `newVersion` |
+| `JobCancelledEvent`       | Job Service  | `job.events`  | Client cancels job; includes `affectedFreelancerIds`         |
+| `ProposalSubmittedEvent`  | Job Service  | `job.events`  | Freelancer submits or resubmits proposal                     |
+| `ProposalAcceptedEvent`   | Job Service  | `job.events`  | Client accepts proposal; job → IN_REVIEW                     |
+| `UserProfileUpdatedEvent` | User Service | `user.events` | User updates their profile                                   |
 
 ---
 
 ## Event Types Consumed
 
-| Event                     | Consumer       | Source Topic     | Action                                                          |
-| ------------------------- | -------------- | ---------------- | --------------------------------------------------------------- |
-| `PaymentCompletedEvent`   | Job Service    | `payment.events` | Transition job OPEN → IN_PROGRESS (if accepted proposal exists) |
-| `EscrowReleasedEvent`     | Job Service    | `payment.events` | Log event, mark payment as settled                              |
-| `JobCreatedEvent`         | Search Service | `job.events`     | Index new job document in Elasticsearch                         |
-| `JobStatusChangedEvent`   | Search Service | `job.events`     | Update status; delete if CANCELLED/CLOSED                       |
-| `UserProfileUpdatedEvent` | Search Service | `user.events`    | Re-index freelancer document (REST + event data)                |
+| Event                     | Consumer             | Source Topic     | Action                                                                    |
+| ------------------------- | -------------------- | ---------------- | ------------------------------------------------------------------------- |
+| `PaymentCompletedEvent`   | Job Service          | `payment.events` | Transition job IN_REVIEW → IN_PROGRESS                                    |
+| `EscrowReleasedEvent`     | Job Service          | `payment.events` | Log event, mark payment as settled                                        |
+| `JobCreatedEvent`         | Notification Service | `job.events`     | Cache jobId → clientId mapping for later lookups                          |
+| `JobUpdatedEvent`         | Notification Service | `job.events`     | Notify each `affectedFreelancerIds` that their proposal may be outdated   |
+| `JobCancelledEvent`       | Notification Service | `job.events`     | Notify affected freelancers + client that job was cancelled                |
+| `ProposalSubmittedEvent`  | Notification Service | `job.events`     | Notify client of new proposal                                             |
+| `ProposalAcceptedEvent`   | Notification Service | `job.events`     | Notify freelancer their proposal was accepted                             |
+| `JobCreatedEvent`         | Search Service       | `job.events`     | Index new job document in Elasticsearch                                   |
+| `JobStatusChangedEvent`   | Search Service       | `job.events`     | Update status; delete if CANCELLED/CLOSED                                 |
+| `UserProfileUpdatedEvent` | Search Service       | `user.events`    | Re-index freelancer document (REST + event data)                          |
 
 ---
 

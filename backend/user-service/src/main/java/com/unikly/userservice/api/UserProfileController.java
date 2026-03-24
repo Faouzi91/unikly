@@ -44,7 +44,7 @@ public class UserProfileController {
     @ApiResponse(responseCode = "200", description = "Profile retrieved or auto-created")
     public ResponseEntity<UserProfileResponse> getCurrentProfile(Authentication authentication) {
         UUID userId = UserContext.getUserId();
-        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Jwt jwt = authentication != null && authentication.getPrincipal() instanceof Jwt j ? j : null;
         return ResponseEntity.ok(profileService.getOrCreateProfile(userId, jwt));
     }
 

@@ -233,7 +233,10 @@ public class PaymentService {
         try {
             String payload = objectMapper.writeValueAsString(event);
             String eventType = event.getClass().getSimpleName();
-            outboxEventRepository.save(new OutboxEvent(eventType, payload));
+            UUID aggregateId = (event instanceof com.unikly.common.events.BaseEvent be)
+                    ? be.eventId()
+                    : UUID.randomUUID();
+            outboxEventRepository.save(new OutboxEvent(eventType, aggregateId, "Payment", payload));
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to serialize event", e);
         }

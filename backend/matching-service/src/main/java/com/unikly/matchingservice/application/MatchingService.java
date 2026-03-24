@@ -186,7 +186,7 @@ public class MatchingService {
 
         try {
             String payload = objectMapper.writeValueAsString(event);
-            outboxRepository.save(new OutboxEvent("JobMatched", payload));
+            outboxRepository.save(new OutboxEvent("JobMatched", trigger.jobId(), "Job", payload));
             log.info("Published JobMatchedEvent to outbox: jobId={}, matchCount={}, strategy={}",
                     trigger.jobId(), entries.size(), strategy);
         } catch (JsonProcessingException e) {

@@ -26,8 +26,10 @@ class SearchIntegrationTest {
 
     @Container
     static ElasticsearchContainer elasticsearch =
-            new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.13.0")
-                    .withEnv("xpack.security.enabled", "false");
+            new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:9.0.0")
+                    .withEnv("xpack.security.enabled", "false")
+                    .withEnv("xpack.security.http.ssl.enabled", "false")
+                    .withEnv("xpack.security.transport.ssl.enabled", "false");
 
     @Container
     static ConfluentKafkaContainer kafka = new ConfluentKafkaContainer("confluentinc/cp-kafka:7.6.0");

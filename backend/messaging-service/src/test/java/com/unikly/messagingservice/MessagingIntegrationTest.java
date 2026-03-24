@@ -32,6 +32,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -43,7 +44,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MessagingIntegrationTest {
 
     private static final UUID FIXED_USER_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
-    private static final String BEARER_TOKEN = "test-token";
+    // Token value = subject UUID so the decoder can derive the user from the token
+    private static final String BEARER_TOKEN = FIXED_USER_ID.toString();
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
@@ -71,10 +73,10 @@ class MessagingIntegrationTest {
         @Bean
         @Primary
         JwtDecoder jwtDecoder() {
-            // Return a predefined JWT for any token string — avoids Keycloak calls in tests
+            // Token value IS the subject UUID — allows tests to control which user is authenticated
             return token -> Jwt.withTokenValue(token)
                     .header("alg", "RS256")
-                    .subject(FIXED_USER_ID.toString())
+                    .subject(token)
                     .issuedAt(Instant.now())
                     .expiresAt(Instant.now().plusSeconds(3600))
                     .build();
@@ -101,15 +103,17 @@ class MessagingIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(wac).apply(springSecurity()).build();
     }
 
     // ── Tests ────────────────────────────────────────────────────────────────
 
     @Test
     void testGetConversations_returnsEmptyPage() throws Exception {
+        // Fresh UUID — has no conversations
+        String freshToken = UUID.randomUUID().toString();
         mockMvc.perform(get("/api/v1/messages/conversations")
-                        .header("Authorization", "Bearer " + BEARER_TOKEN))
+                        .header("Authorization", "Bearer " + freshToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(0));
     }

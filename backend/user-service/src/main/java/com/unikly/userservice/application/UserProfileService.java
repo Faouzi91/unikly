@@ -80,8 +80,8 @@ public class UserProfileService {
         return profileRepository.findById(userId)
                 .map(profileMapper::toResponse)
                 .orElseGet(() -> {
-                    String displayName = buildDisplayName(jwt);
-                    UserRole role = resolveRole(jwt);
+                    String displayName = jwt != null ? buildDisplayName(jwt) : "User";
+                    UserRole role = jwt != null ? resolveRole(jwt) : UserRole.CLIENT;
 
                     var profile = UserProfile.builder()
                             .id(userId)
@@ -171,7 +171,7 @@ public class UserProfileService {
                     profile.getSkills() != null ? profile.getSkills() : List.of()
             );
             String payload = objectMapper.writeValueAsString(event);
-            outboxRepository.save(new OutboxEvent(event.eventType(), payload));
+            outboxRepository.save(new OutboxEvent(event.eventType(), profile.getId(), "UserProfile", payload));
         } catch (Exception e) {
             log.error("Failed to serialize UserProfileUpdatedEvent", e);
         }

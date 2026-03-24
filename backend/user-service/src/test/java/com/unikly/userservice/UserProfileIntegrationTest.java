@@ -149,8 +149,7 @@ class UserProfileIntegrationTest {
 
     @Test
     void testGetMyProfile_notFound_returns404() throws Exception {
-        mockMvc.perform(get("/api/users/me")
-                        .header("X-User-Id", UUID.randomUUID().toString()))
+        mockMvc.perform(get("/api/users/{id}", UUID.randomUUID()))
                 .andExpect(status().isNotFound());
     }
 

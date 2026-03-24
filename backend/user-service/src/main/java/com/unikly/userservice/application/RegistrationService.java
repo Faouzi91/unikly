@@ -196,7 +196,7 @@ public class RegistrationService {
                     profile.getSkills() != null ? profile.getSkills() : List.of()
             );
             String payload = objectMapper.writeValueAsString(event);
-            outboxRepository.save(new OutboxEvent(event.eventType(), payload));
+            outboxRepository.save(new OutboxEvent(event.eventType(), profile.getId(), "UserProfile", payload));
         } catch (Exception e) {
             log.error("Failed to publish profile created event for userId={}", profile.getId(), e);
         }
