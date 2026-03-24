@@ -112,7 +112,6 @@ public class JobService {
         }
 
         jobMapper.updateEntity(request, job);
-        job.setVersion(job.getVersion() + 1);
         Job saved = jobRepository.save(job);
 
         if (decision.proposalImpact() == ProposalImpact.OUTDATED) {

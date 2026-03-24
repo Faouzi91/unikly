@@ -2,8 +2,11 @@ package com.unikly.jobservice.api;
 
 import com.unikly.common.error.ErrorResponse;
 import com.unikly.common.error.GlobalExceptionHandlerBase;
+import com.unikly.jobservice.domain.DuplicateProposalException;
 import com.unikly.jobservice.domain.EditConfirmationRequiredException;
+import com.unikly.jobservice.domain.InvalidProposalStateException;
 import com.unikly.jobservice.domain.InvalidStateTransitionException;
+import com.unikly.jobservice.domain.JobNotEditableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -28,5 +31,23 @@ public class GlobalExceptionHandler extends GlobalExceptionHandlerBase {
     @ExceptionHandler(EditConfirmationRequiredException.class)
     public ResponseEntity<?> handleEditConfirmationRequired(EditConfirmationRequiredException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getDecision());
+    }
+
+    @ExceptionHandler(JobNotEditableException.class)
+    public ResponseEntity<ErrorResponse> handleJobNotEditable(JobNotEditableException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(409, "Conflict", ex.getMessage(), getTraceId()));
+    }
+
+    @ExceptionHandler(DuplicateProposalException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateProposal(DuplicateProposalException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(409, "Conflict", ex.getMessage(), getTraceId()));
+    }
+
+    @ExceptionHandler(InvalidProposalStateException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidProposalState(InvalidProposalStateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(409, "Conflict", ex.getMessage(), getTraceId()));
     }
 }
