@@ -1,6 +1,7 @@
 package com.unikly.common.events;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record JobUpdatedEvent(
@@ -8,7 +9,9 @@ public record JobUpdatedEvent(
         String eventType,
         Instant timestamp,
         UUID jobId,
-        UUID clientId
+        UUID clientId,
+        List<String> changedFields,
+        int newVersion
 ) implements BaseEvent {
     public JobUpdatedEvent {
         if (eventType == null) eventType = "JobUpdated";

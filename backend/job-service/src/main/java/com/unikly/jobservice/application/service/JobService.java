@@ -130,7 +130,8 @@ public class JobService {
             proposalRepository.saveAll(proposals);
         }
 
-        var updateEvent = new JobUpdatedEvent(UUID.randomUUID(), "JobUpdated", Instant.now(), job.getId(), clientId);
+        var updateEvent = new JobUpdatedEvent(UUID.randomUUID(), "JobUpdated", Instant.now(), job.getId(), clientId,
+                decision.sensitiveFieldsChanged(), job.getVersion());
         outboxEventPublisher.publish("JOB", job.getId(), updateEvent);
 
         if (job.getStatus() == JobStatus.OPEN) {
