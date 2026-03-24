@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
 @Testcontainers
 @ActiveProfiles("test")
 class JobLifecycleIntegrationTest {
@@ -68,9 +68,8 @@ class JobLifecycleIntegrationTest {
             return mock(JwtDecoder.class);
         }
 
-        @Bean(name = "testSecurityFilterChain")
-        @Primary
-        SecurityFilterChain testFilterChain(HttpSecurity http) throws Exception {
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
             http.csrf(AbstractHttpConfigurer::disable)
                     .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                     .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
@@ -103,7 +102,7 @@ class JobLifecycleIntegrationTest {
                 List.of("Angular", "TypeScript")
         );
 
-        mockMvc.perform(post("/api/jobs")
+        mockMvc.perform(post("/api/v1/jobs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-User-Id", UUID.randomUUID().toString())
                         .header("X-User-Roles", "ROLE_CLIENT")
@@ -123,7 +122,7 @@ class JobLifecycleIntegrationTest {
                 List.of("Java")
         );
 
-        mockMvc.perform(post("/api/jobs")
+        mockMvc.perform(post("/api/v1/jobs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-User-Id", UUID.randomUUID().toString())
                         .header("X-User-Roles", "ROLE_CLIENT")
@@ -146,7 +145,7 @@ class JobLifecycleIntegrationTest {
                 List.of("Java", "Angular", "PostgreSQL")
         );
 
-        String createBody = mockMvc.perform(post("/api/jobs")
+        String createBody = mockMvc.perform(post("/api/v1/jobs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-User-Id", clientId.toString())
                         .header("X-User-Roles", "ROLE_CLIENT")
@@ -158,7 +157,7 @@ class JobLifecycleIntegrationTest {
         String jobId = objectMapper.readValue(createBody, JsonNode.class).get("id").asText();
 
         // 2. Transition DRAFT → OPEN
-        mockMvc.perform(patch("/api/jobs/{id}/status", jobId)
+        mockMvc.perform(patch("/api/v1/jobs/{id}/status", jobId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-User-Id", clientId.toString())
                         .header("X-User-Roles", "ROLE_CLIENT")
@@ -172,7 +171,7 @@ class JobLifecycleIntegrationTest {
                 "I have 5 years experience with this stack and can deliver on time."
         );
 
-        String proposalBody = mockMvc.perform(post("/api/jobs/{jobId}/proposals", jobId)
+        String proposalBody = mockMvc.perform(post("/api/v1/jobs/{jobId}/proposals", jobId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-User-Id", freelancerId.toString())
                         .header("X-User-Roles", "ROLE_FREELANCER")
@@ -183,7 +182,7 @@ class JobLifecycleIntegrationTest {
         String proposalId = objectMapper.readValue(proposalBody, JsonNode.class).get("id").asText();
 
         // 4. Accept proposal (client) — creates contract
-        mockMvc.perform(patch("/api/jobs/{jobId}/proposals/{proposalId}/accept", jobId, proposalId)
+        mockMvc.perform(patch("/api/v1/jobs/{jobId}/proposals/{proposalId}/accept", jobId, proposalId)
                         .header("X-User-Id", clientId.toString())
                         .header("X-User-Roles", "ROLE_CLIENT"))
                 .andExpect(status().isOk())
@@ -203,7 +202,7 @@ class JobLifecycleIntegrationTest {
                 List.of("Python")
         );
 
-        String createBody = mockMvc.perform(post("/api/jobs")
+        String createBody = mockMvc.perform(post("/api/v1/jobs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-User-Id", clientId.toString())
                         .header("X-User-Roles", "ROLE_CLIENT")
@@ -214,7 +213,7 @@ class JobLifecycleIntegrationTest {
         String jobId = objectMapper.readValue(createBody, JsonNode.class).get("id").asText();
 
         // Try DRAFT → COMPLETED (invalid — machine only allows DRAFT → OPEN)
-        mockMvc.perform(patch("/api/jobs/{id}/status", jobId)
+        mockMvc.perform(patch("/api/v1/jobs/{id}/status", jobId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-User-Id", clientId.toString())
                         .header("X-User-Roles", "ROLE_CLIENT")

@@ -90,7 +90,6 @@ public class JobController {
         return ResponseEntity.ok(jobService.updateJob(id, clientId, request, confirmed));
     }
 
-/*
     @PatchMapping("/{id}/status")
     @Operation(summary = "Transition job status", description = "Move the job through its lifecycle state machine")
     @ApiResponse(responseCode = "200", description = "Status updated")
@@ -102,6 +101,7 @@ public class JobController {
         return ResponseEntity.ok(jobService.transitionStatus(id, userId, request.status()));
     }
 
+/*
     @GetMapping("/admin/stats")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Get total active jobs for admin dashboard")

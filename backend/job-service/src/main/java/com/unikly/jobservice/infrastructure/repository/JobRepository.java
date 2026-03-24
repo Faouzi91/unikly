@@ -20,8 +20,8 @@ public interface JobRepository extends JpaRepository<Job, UUID>, JpaSpecificatio
 
     Page<Job> findByStatus(JobStatus status, Pageable pageable);
 
-    @Query("SELECT j FROM Job j JOIN j.skills s WHERE j.status = :status AND s LIKE %:skill%")
-    List<Job> findByStatusAndSkillsContaining(@Param("status") JobStatus status, @Param("skill") String skill);
+    @Query(value = "SELECT * FROM jobs WHERE status::text = :status AND :skill = ANY(skills)", nativeQuery = true)
+    List<Job> findByStatusAndSkillsContaining(@Param("status") String status, @Param("skill") String skill);
 
     @Query("SELECT COUNT(p) FROM Proposal p WHERE p.jobId = :jobId AND p.status NOT IN ('REJECTED', 'WITHDRAWN')")
     long countActiveProposalsByJobId(@Param("jobId") UUID jobId);

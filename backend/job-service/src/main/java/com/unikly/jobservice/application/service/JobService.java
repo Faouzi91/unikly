@@ -160,6 +160,30 @@ public class JobService {
         outboxEventPublisher.publish("JOB", job.getId(), event);
     }
 
+    @Transactional
+    public JobResponse transitionStatus(UUID jobId, UUID userId, JobStatus targetStatus) {
+        log.info("Transitioning job {} to {} by user {}", jobId, targetStatus, userId);
+        Job job = getJobOrThrow(jobId);
+        validateOwnership(job, userId);
+        JobStateMachine.validateTransition(job.getStatus(), targetStatus);
+
+        job.setStatus(targetStatus);
+        job = jobRepository.save(job);
+
+        if (targetStatus == JobStatus.OPEN) {
+            var event = new JobPublishedEvent(UUID.randomUUID(), "JobPublished", Instant.now(), job.getId(), userId);
+            outboxEventPublisher.publish("JOB", job.getId(), event);
+        } else if (targetStatus == JobStatus.CANCELLED) {
+            List<Proposal> pending = proposalRepository.findByJobIdAndStatusIn(jobId, List.of(ProposalStatus.PENDING));
+            pending.forEach(p -> p.setStatus(ProposalStatus.REJECTED));
+            proposalRepository.saveAll(pending);
+            var event = new JobCancelledEvent(UUID.randomUUID(), "JobCancelled", Instant.now(), job.getId(), userId);
+            outboxEventPublisher.publish("JOB", job.getId(), event);
+        }
+
+        return jobMapper.toResponse(job);
+    }
+
     private Job getJobOrThrow(UUID jobId) {
         return jobRepository.findById(jobId)
                 .orElseThrow(() -> new EntityNotFoundException("Job not found: " + jobId));

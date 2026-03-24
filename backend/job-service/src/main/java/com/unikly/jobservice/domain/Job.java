@@ -18,6 +18,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
+import org.hibernate.dialect.type.PostgreSQLEnumJdbcType;
+import org.hibernate.annotations.JdbcType;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -57,6 +59,7 @@ public class Job {
     private List<String> skills;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(nullable = false, columnDefinition = "job_status")
     @Builder.Default
     private JobStatus status = JobStatus.DRAFT;
