@@ -7,6 +7,7 @@ export interface Job {
   currency: string;
   skills: string[];
   status: JobStatus;
+  version: number;
   proposalCount?: number;
   createdAt: string;
   updatedAt: string;

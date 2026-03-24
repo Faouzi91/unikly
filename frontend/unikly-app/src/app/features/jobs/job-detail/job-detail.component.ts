@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule, NgClass } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
 import { KeycloakService } from '../../../core/auth/keycloak.service';
@@ -8,7 +9,7 @@ import { ToastService } from '../../../core/services/toast.service';
 import { PaymentRecord, PaymentService } from '../../../core/services/payment.service';
 import { PaymentDialogComponent, PaymentDialogData } from '../../payments/payment-dialog/payment-dialog.component';
 import { PaymentStatusComponent } from '../../payments/payment-status/payment-status.component';
-import { Job, MatchEntry, Proposal, SubmitProposalRequest } from '../models/job.models';
+import { EditDecision, Job, MatchEntry, Proposal, SubmitProposalRequest, UpdateJobRequest } from '../models/job.models';
 import { ProposalDialogComponent, ProposalDialogData } from '../components/proposal-dialog/proposal-dialog.component';
 import { ReviewDialog, ReviewDialogData } from '../components/review-dialog/review-dialog';
 import { UserService } from '../../profile/services/user.service';
@@ -22,6 +23,7 @@ import { JobService } from '../services/job.service';
     CommonModule,
     NgClass,
     RouterLink,
+    FormsModule,
     TimeAgoPipe,
     ProposalDialogComponent,
     PaymentDialogComponent,
@@ -33,6 +35,7 @@ import { JobService } from '../services/job.service';
 })
 export class JobDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly jobService = inject(JobService);
   private readonly keycloak = inject(KeycloakService);
   private readonly paymentService = inject(PaymentService);
@@ -55,6 +58,14 @@ export class JobDetailComponent implements OnInit {
   readonly showReviewModal = signal(false);
   readonly reviewSubmitting = signal(false);
 
+  // Edit mode
+  readonly editMode = signal(false);
+  readonly editTitle = signal('');
+  readonly editDescription = signal('');
+  readonly editBudget = signal(0);
+  readonly editSkillsRaw = signal('');
+  readonly editSaving = signal(false);
+
   get isJobOwner(): boolean {
     return (
       this.job?.clientId === this.keycloak.getUserId() ||
@@ -71,12 +82,32 @@ export class JobDetailComponent implements OnInit {
   }
 
   get pendingProposalCount(): number {
-    return this.proposals.filter((p) => p.status === 'PENDING').length;
+    return this.proposals.filter(
+      (p) =>
+        p.status === 'SUBMITTED' ||
+        p.status === 'PENDING' ||
+        p.status === 'VIEWED' ||
+        p.status === 'SHORTLISTED',
+    ).length;
   }
 
   get sortedProposals(): Proposal[] {
-    const order: Record<string, number> = { ACCEPTED: 0, PENDING: 1, REJECTED: 2, WITHDRAWN: 3 };
+    const order: Record<string, number> = {
+      ACCEPTED: 0,
+      SHORTLISTED: 1, SUBMITTED: 2, PENDING: 3, VIEWED: 4,
+      NEEDS_REVIEW: 5, OUTDATED: 6,
+      REJECTED: 7, WITHDRAWN: 8,
+    };
     return [...this.proposals].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
+  }
+
+  isActionableProposal(status: string): boolean {
+    return (
+      status === 'SUBMITTED' ||
+      status === 'PENDING' ||
+      status === 'VIEWED' ||
+      status === 'SHORTLISTED'
+    );
   }
 
   freelancerInitials(name: string): string {
@@ -110,7 +141,9 @@ export class JobDetailComponent implements OnInit {
       this.isJobOwner &&
       this.hasAcceptedProposal &&
       this.payment === null &&
-      (this.job?.status === 'IN_PROGRESS' || this.job?.status === 'OPEN')
+      (this.job?.status === 'IN_REVIEW' ||
+       this.job?.status === 'IN_PROGRESS' ||
+       this.job?.status === 'OPEN')
     );
   }
 
@@ -119,6 +152,20 @@ export class JobDetailComponent implements OnInit {
       this.job?.status === 'OPEN' &&
       (this.keycloak.hasRole('ROLE_FREELANCER') || this.keycloak.hasRole('FREELANCER')) &&
       !this.isJobOwner
+    );
+  }
+
+  get canEdit(): boolean {
+    return (
+      this.isJobOwner &&
+      (this.job?.status === 'DRAFT' || this.job?.status === 'OPEN')
+    );
+  }
+
+  get canCancel(): boolean {
+    return (
+      this.isJobOwner &&
+      (this.job?.status === 'DRAFT' || this.job?.status === 'OPEN')
     );
   }
 
@@ -216,6 +263,123 @@ export class JobDetailComponent implements OnInit {
     });
   }
 
+  openEditMode(): void {
+    if (!this.job) return;
+    this.editTitle.set(this.job.title);
+    this.editDescription.set(this.job.description);
+    this.editBudget.set(this.job.budget);
+    this.editSkillsRaw.set(this.job.skills.join(', '));
+    this.editMode.set(true);
+    this.activeTab.set('details');
+  }
+
+  cancelEdit(): void {
+    this.editMode.set(false);
+  }
+
+  async saveJobEdit(): Promise<void> {
+    if (!this.job) return;
+
+    const parsedSkills = this.editSkillsRaw()
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const request: UpdateJobRequest = {
+      title: this.editTitle() !== this.job.title ? this.editTitle() : undefined,
+      description:
+        this.editDescription() !== this.job.description
+          ? this.editDescription()
+          : undefined,
+      budget:
+        this.editBudget() !== this.job.budget ? this.editBudget() : undefined,
+      skills:
+        JSON.stringify(parsedSkills) !== JSON.stringify(this.job.skills)
+          ? parsedSkills
+          : undefined,
+    };
+
+    this.editSaving.set(true);
+
+    this.jobService.checkEditEligibility(this.job.id, request).subscribe({
+      next: async (decision: EditDecision) => {
+        if (!decision.allowed) {
+          this.editSaving.set(false);
+          this.toast.error(decision.message);
+          return;
+        }
+
+        let confirmed = false;
+
+        if (decision.requiresConfirmation) {
+          const result = await Swal.fire({
+            title: 'Edit may affect proposals',
+            html: `This job has <strong>${decision.activeProposalCount}</strong> active proposal(s).<br>
+                   Changing <strong>${decision.sensitiveFieldsChanged.join(', ')}</strong> will mark existing
+                   proposals as outdated. Freelancers will need to review and resubmit.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Apply Changes',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#14a800',
+          });
+
+          if (!result.isConfirmed) {
+            this.editSaving.set(false);
+            return;
+          }
+          confirmed = true;
+        }
+
+        this.jobService.updateJob(this.job!.id, request, confirmed).subscribe({
+          next: (updated) => {
+            this.job = updated;
+            this.editMode.set(false);
+            this.editSaving.set(false);
+            const msg = confirmed
+              ? 'Job updated. Affected proposals have been notified.'
+              : 'Job updated successfully.';
+            this.toast.success(msg);
+          },
+          error: () => {
+            this.editSaving.set(false);
+            this.toast.error('Failed to update job.');
+          },
+        });
+      },
+      error: () => {
+        this.editSaving.set(false);
+        this.toast.error('Failed to check edit eligibility.');
+      },
+    });
+  }
+
+  async confirmCancelJob(): Promise<void> {
+    if (!this.job) return;
+
+    const result = await Swal.fire({
+      title: 'Cancel this job?',
+      text: 'Are you sure? This will reject all active proposals.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, cancel job',
+      cancelButtonText: 'Keep job',
+      confirmButtonColor: '#dc2626',
+    });
+
+    if (!result.isConfirmed) return;
+
+    this.jobService.cancelJob(this.job.id).subscribe({
+      next: () => {
+        this.toast.info('Job cancelled successfully.');
+        this.router.navigate(['/jobs']);
+      },
+      error: () => {
+        this.toast.error('Failed to cancel job.');
+      },
+    });
+  }
+
   openPaymentDialog(): void {
     if (!this.acceptedProposal) return;
     this.showPaymentModal.set(true);
@@ -256,8 +420,8 @@ export class JobDetailComponent implements OnInit {
 
   readonly lifecycleSteps: { key: string; label: string }[] = [
     { key: 'OPEN',        label: 'Open' },
+    { key: 'IN_REVIEW',   label: 'Awaiting Payment' },
     { key: 'IN_PROGRESS', label: 'In Progress' },
-    { key: 'DELIVERED',   label: 'Delivered' },
     { key: 'COMPLETED',   label: 'Completed' },
   ];
 
@@ -271,8 +435,8 @@ export class JobDetailComponent implements OnInit {
 
   statusClass(status: string): string {
     if (status === 'OPEN') return 'bg-emerald-100 text-emerald-800';
+    if (status === 'IN_REVIEW') return 'bg-amber-100 text-amber-800';
     if (status === 'IN_PROGRESS') return 'bg-sky-100 text-sky-800';
-    if (status === 'DELIVERED') return 'bg-violet-100 text-violet-800';
     if (status === 'COMPLETED' || status === 'CLOSED') return 'bg-ink-100 text-ink-600';
     if (status === 'CANCELLED' || status === 'DISPUTED') return 'bg-rose-100 text-rose-800';
     if (status === 'DRAFT') return 'bg-amber-100 text-amber-800';
@@ -280,10 +444,18 @@ export class JobDetailComponent implements OnInit {
     return 'bg-ink-100 text-ink-600';
   }
 
+  statusLabel(status: string): string {
+    if (status === 'IN_REVIEW') return 'Awaiting Payment';
+    return status.replace(/_/g, ' ');
+  }
+
   proposalStatusClass(status: string): string {
-    if (status === 'PENDING') return 'bg-amber-100 text-amber-800';
+    if (status === 'SUBMITTED' || status === 'PENDING') return 'bg-amber-100 text-amber-800';
+    if (status === 'VIEWED') return 'bg-sky-100 text-sky-800';
+    if (status === 'SHORTLISTED') return 'bg-violet-100 text-violet-800';
     if (status === 'ACCEPTED') return 'bg-emerald-100 text-emerald-800';
     if (status === 'REJECTED') return 'bg-rose-100 text-rose-800';
+    if (status === 'OUTDATED' || status === 'NEEDS_REVIEW') return 'bg-orange-100 text-orange-800';
     if (status === 'WITHDRAWN') return 'bg-ink-100 text-ink-600';
     return 'bg-ink-100 text-ink-600';
   }
