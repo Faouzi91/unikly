@@ -2,7 +2,9 @@ package com.unikly.notificationservice.infrastructure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unikly.common.events.BaseEvent;
+import com.unikly.common.events.JobCancelledEvent;
 import com.unikly.common.events.JobCreatedEvent;
+import com.unikly.common.events.JobUpdatedEvent;
 import com.unikly.common.events.ProposalAcceptedEvent;
 import com.unikly.common.events.ProposalSubmittedEvent;
 import com.unikly.notificationservice.application.NotificationDeliveryService;
@@ -33,6 +35,8 @@ public class JobEventConsumer {
             var event = objectMapper.readValue(message, BaseEvent.class);
             switch (event) {
                 case JobCreatedEvent e       -> handleJobCreated(e);
+                case JobUpdatedEvent e       -> handleJobUpdated(e);
+                case JobCancelledEvent e     -> handleJobCancelled(e);
                 case ProposalSubmittedEvent e -> handleProposalSubmitted(e);
                 case ProposalAcceptedEvent e  -> handleProposalAccepted(e);
                 default -> log.debug("Ignoring event type: {}", event.eventType());
@@ -56,6 +60,55 @@ public class JobEventConsumer {
         jobClientCacheRepository.save(cache);
         processedEventRepository.save(new ProcessedEvent(event.eventId(), Instant.now()));
         log.debug("Cached job client mapping: jobId={}, clientId={}", event.jobId(), event.clientId());
+    }
+
+    @Transactional
+    public void handleJobUpdated(JobUpdatedEvent event) {
+        if (processedEventRepository.existsById(event.eventId())) return;
+
+        jobClientCacheRepository.findById(event.jobId()).ifPresent(job -> {
+            String changedSummary = String.join(", ", event.changedFields());
+            String body = "The job '" + job.getTitle() + "' has been updated"
+                    + (changedSummary.isBlank() ? "." : " (changed: " + changedSummary + ").");
+
+            for (var freelancerId : event.affectedFreelancerIds()) {
+                deliveryService.createAndDeliver(
+                        freelancerId,
+                        NotificationType.SYSTEM,
+                        "Job updated — your proposal may be outdated",
+                        body,
+                        "/jobs/" + event.jobId());
+            }
+        });
+
+        processedEventRepository.save(new ProcessedEvent(event.eventId(), Instant.now()));
+    }
+
+    @Transactional
+    public void handleJobCancelled(JobCancelledEvent event) {
+        if (processedEventRepository.existsById(event.eventId())) return;
+
+        jobClientCacheRepository.findById(event.jobId()).ifPresent(job -> {
+            String body = "The job '" + job.getTitle() + "' has been cancelled.";
+
+            for (var freelancerId : event.affectedFreelancerIds()) {
+                deliveryService.createAndDeliver(
+                        freelancerId,
+                        NotificationType.SYSTEM,
+                        "Job cancelled",
+                        body,
+                        "/jobs/" + event.jobId());
+            }
+
+            deliveryService.createAndDeliver(
+                    event.clientId(),
+                    NotificationType.SYSTEM,
+                    "Job cancelled",
+                    body,
+                    "/jobs/" + event.jobId());
+        });
+
+        processedEventRepository.save(new ProcessedEvent(event.eventId(), Instant.now()));
     }
 
     @Transactional

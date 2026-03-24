@@ -114,7 +114,12 @@ public class JobService {
         jobMapper.updateEntity(request, job);
         Job saved = jobRepository.save(job);
 
+        List<UUID> affectedFreelancerIds = List.of();
         if (decision.proposalImpact() == ProposalImpact.OUTDATED) {
+            affectedFreelancerIds = proposalRepository.findFreelancerIdsByJobIdAndStatusIn(
+                    jobId,
+                    List.of(ProposalStatus.SUBMITTED, ProposalStatus.PENDING,
+                            ProposalStatus.VIEWED, ProposalStatus.SHORTLISTED));
             proposalRepository.bulkUpdateStatusByJobId(
                     jobId,
                     List.of(ProposalStatus.SUBMITTED, ProposalStatus.PENDING,
@@ -125,7 +130,8 @@ public class JobService {
 
         outboxEventPublisher.publish("JOB", saved.getId(),
                 new JobUpdatedEvent(UUID.randomUUID(), "JobUpdated", Instant.now(),
-                        saved.getId(), clientId, decision.sensitiveFieldsChanged(), saved.getVersion()));
+                        saved.getId(), clientId, decision.sensitiveFieldsChanged(),
+                        saved.getVersion(), affectedFreelancerIds));
 
         log.info("Job updated: id={}, version={}, sensitiveChanges={}",
                 saved.getId(), saved.getVersion(), decision.sensitiveFieldsChanged());
@@ -139,6 +145,11 @@ public class JobService {
         Job job = findJobOwnedBy(jobId, clientId);
         JobStateMachine.validateTransition(job.getStatus(), JobStatus.CANCELLED);
 
+        List<UUID> affectedFreelancerIds = proposalRepository.findFreelancerIdsByJobIdAndStatusIn(
+                jobId,
+                List.of(ProposalStatus.SUBMITTED, ProposalStatus.PENDING,
+                        ProposalStatus.VIEWED, ProposalStatus.SHORTLISTED));
+
         proposalRepository.bulkUpdateStatusByJobId(
                 jobId,
                 List.of(ProposalStatus.SUBMITTED, ProposalStatus.PENDING,
@@ -150,7 +161,8 @@ public class JobService {
         jobRepository.save(job);
 
         outboxEventPublisher.publish("JOB", jobId,
-                new JobCancelledEvent(UUID.randomUUID(), "JobCancelled", Instant.now(), jobId, clientId));
+                new JobCancelledEvent(UUID.randomUUID(), "JobCancelled", Instant.now(), jobId, clientId,
+                        affectedFreelancerIds));
 
         log.info("Job cancelled: id={}", jobId);
     }
@@ -169,13 +181,18 @@ public class JobService {
             var event = new JobPublishedEvent(UUID.randomUUID(), "JobPublished", Instant.now(), job.getId(), userId);
             outboxEventPublisher.publish("JOB", job.getId(), event);
         } else if (targetStatus == JobStatus.CANCELLED) {
+            List<UUID> affectedFreelancerIds = proposalRepository.findFreelancerIdsByJobIdAndStatusIn(
+                    jobId,
+                    List.of(ProposalStatus.SUBMITTED, ProposalStatus.PENDING,
+                            ProposalStatus.VIEWED, ProposalStatus.SHORTLISTED));
             proposalRepository.bulkUpdateStatusByJobId(
                     jobId,
                     List.of(ProposalStatus.SUBMITTED, ProposalStatus.PENDING,
                             ProposalStatus.VIEWED, ProposalStatus.SHORTLISTED),
                     ProposalStatus.REJECTED
             );
-            var event = new JobCancelledEvent(UUID.randomUUID(), "JobCancelled", Instant.now(), job.getId(), userId);
+            var event = new JobCancelledEvent(UUID.randomUUID(), "JobCancelled", Instant.now(), job.getId(), userId,
+                    affectedFreelancerIds);
             outboxEventPublisher.publish("JOB", job.getId(), event);
         }
 

@@ -11,9 +11,11 @@ public record JobUpdatedEvent(
         UUID jobId,
         UUID clientId,
         List<String> changedFields,
-        int newVersion
+        int newVersion,
+        List<UUID> affectedFreelancerIds
 ) implements BaseEvent {
     public JobUpdatedEvent {
         if (eventType == null) eventType = "JobUpdated";
+        if (affectedFreelancerIds == null) affectedFreelancerIds = List.of();
     }
 }
