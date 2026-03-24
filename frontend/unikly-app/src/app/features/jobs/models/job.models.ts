@@ -15,8 +15,8 @@ export interface Job {
 export type JobStatus =
   | 'DRAFT'
   | 'OPEN'
+  | 'IN_REVIEW'
   | 'IN_PROGRESS'
-  | 'DELIVERED'
   | 'COMPLETED'
   | 'CLOSED'
   | 'CANCELLED'
@@ -31,10 +31,29 @@ export interface Proposal {
   proposedBudget: number;
   coverLetter: string;
   status: ProposalStatus;
+  jobVersion: number;
   createdAt: string;
 }
 
-export type ProposalStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
+export type ProposalStatus =
+  | 'SUBMITTED'
+  | 'PENDING'
+  | 'VIEWED'
+  | 'SHORTLISTED'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'WITHDRAWN'
+  | 'OUTDATED'
+  | 'NEEDS_REVIEW';
+
+export interface EditDecision {
+  allowed: boolean;
+  requiresConfirmation: boolean;
+  sensitiveFieldsChanged: string[];
+  proposalImpact: 'NONE' | 'NEEDS_REVIEW' | 'OUTDATED';
+  activeProposalCount: number;
+  message: string;
+}
 
 export interface Contract {
   id: string;
