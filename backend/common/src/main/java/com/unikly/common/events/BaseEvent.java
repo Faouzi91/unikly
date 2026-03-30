@@ -20,22 +20,24 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = UserProfileUpdatedEvent.class, name = "UserProfileUpdated"),
         @JsonSubTypes.Type(value = JobPublishedEvent.class, name = "JobPublished"),
         @JsonSubTypes.Type(value = JobUpdatedEvent.class, name = "JobUpdated"),
-        @JsonSubTypes.Type(value = JobCancelledEvent.class, name = "JobCancelled")
+        @JsonSubTypes.Type(value = JobCancelledEvent.class, name = "JobCancelled"),
+        @JsonSubTypes.Type(value = FreelancerInvitedEvent.class, name = "FreelancerInvited")
 })
 public sealed interface BaseEvent permits
         JobCreatedEvent,
+        JobUpdatedEvent,
+        JobPublishedEvent,
+        JobCancelledEvent,
         JobStatusChangedEvent,
         ProposalSubmittedEvent,
         ProposalAcceptedEvent,
+        JobMatchedEvent,
+        MessageSentEvent,
         PaymentInitiatedEvent,
         PaymentCompletedEvent,
         EscrowReleasedEvent,
-        JobMatchedEvent,
-        MessageSentEvent,
         UserProfileUpdatedEvent,
-        JobPublishedEvent,
-        JobUpdatedEvent,
-        JobCancelledEvent {
+        FreelancerInvitedEvent {
 
     UUID eventId();
 

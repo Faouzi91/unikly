@@ -1,12 +1,12 @@
 package com.unikly.jobservice.application;
 
-import com.unikly.jobservice.api.dto.UpdateJobRequest;
-import com.unikly.jobservice.domain.EditDecision;
-import com.unikly.jobservice.domain.Job;
-import com.unikly.jobservice.domain.JobStatus;
-import com.unikly.jobservice.domain.ProposalImpact;
-import com.unikly.jobservice.domain.ProposalStatus;
-import com.unikly.jobservice.infrastructure.repository.ProposalRepository;
+import com.unikly.jobservice.adapter.in.web.dto.UpdateJobRequest;
+import com.unikly.jobservice.domain.model.EditDecision;
+import com.unikly.jobservice.domain.model.Job;
+import com.unikly.jobservice.domain.model.JobStatus;
+import com.unikly.jobservice.domain.model.ProposalImpact;
+import com.unikly.jobservice.domain.model.ProposalStatus;
+import com.unikly.jobservice.application.port.out.ProposalRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

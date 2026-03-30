@@ -6,6 +6,7 @@ spring:
           issuer-uri: http://localhost:9999/realms/test   # overridden — JwtDecoder is mocked in tests
   flyway:
     locations: classpath:db/migration
+    mixed: true
   jpa:
     hibernate:
       ddl-auto: validate

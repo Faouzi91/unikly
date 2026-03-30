@@ -6,7 +6,24 @@
       "Bash(curl -s http://localhost:9000/health/ready)",
       "WebFetch(domain:spring.io)",
       "WebFetch(domain:central.sonatype.com)",
-      "WebFetch(domain:repo1.maven.org)"
+      "WebFetch(domain:repo1.maven.org)",
+      "Bash(docker port:*)",
+      "Bash(curl -s \"http://localhost:8180/realms/unikly/protocol/openid-connect/token\" -d \"grant_type=password&client_id=unikly-app&username=client1@test.com&password=Test1234!\" -d \"client_secret=\")",
+      "Bash(python3 -c \"import sys,json; print\\(json.dumps\\(json.load\\(sys.stdin\\), indent=2\\)\\)\")",
+      "Bash(python3 -c 'import sys,json; [print\\(c[\"\"\"\"clientId\"\"\"\"]\\) for c in json.load\\(sys.stdin\\)]')",
+      "Bash(curl -s http://localhost:8180/realms/master/protocol/openid-connect/token -d \"grant_type=password&client_id=admin-cli&username=admin&password=admin\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\(''''error'''',''''ok''''\\), list\\(d.keys\\(\\)\\)[:5]\\)\")",
+      "Bash(ls /c/Users/aboub/Desktop/unikly/*.md)",
+      "Bash(find /c/Users/aboub/Desktop/unikly -maxdepth 2 -name *.md)",
+      "Bash(./gradlew :backend:job-service:compileJava -q)",
+      "Bash(./gradlew :job-service:compileJava -q)",
+      "Bash(./gradlew :job-service:bootJar -q)",
+      "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); [print\\(k\\) for k in data.get\\(''''contexts'''',{}\\).get\\(''''application'''',{}\\).get\\(''''mappings'''',{}\\).get\\(''''dispatcherServlets'''',{}\\).get\\(''''dispatcherServlet'''',[]\\) if ''''my-contracts'''' in str\\(k\\)]\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(list\\(d.keys\\(\\)\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\(''''message'''',''''''''\\),d.get\\(''''status'''',''''''''\\)\\)\")",
+      "Bash(grep -E \"\\\\.\\(ts|html|scss\\)$\")",
+      "Bash(find /c/Users/aboub/Desktop/unikly/frontend/unikly-app/src/app/core/models -type f -name *.ts)",
+      "Bash(git status:*)"
     ]
   }
 }

@@ -562,6 +562,8 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
+      mailhog:
+        condition: service_started
     environment:
       DB_HOST: postgres-notifications
       DB_PORT: 5432
@@ -571,12 +573,26 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8086/actuator/health || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
       start_period: 30s
+    networks:
+      - unikly-net
+
+  # ============================================================
+  # MAILHOG (Dev Email Testing)
+  # ============================================================
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: unikly-mailhog
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI for viewing emails
     networks:
       - unikly-net
 

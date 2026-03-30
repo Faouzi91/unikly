@@ -2,8 +2,10 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { KeycloakService } from '../../core/auth/keycloak.service';
 import { ThemeService } from '../../core/services/theme.service';
+import { LoadingService } from '../../core/services/loading.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { NotificationBellComponent } from '../../shared/components/notification-bell/notification-bell.component';
+import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
 
 const ICONS = {
   dashboard: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
@@ -17,13 +19,14 @@ const ICONS = {
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NotificationBellComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NotificationBellComponent, LoadingSpinnerComponent],
   templateUrl: './main-layout.component.html',
   styleUrl: './main-layout.component.scss',
 })
 export class MainLayoutComponent {
   private readonly keycloak = inject(KeycloakService);
   readonly theme = inject(ThemeService);
+  readonly loading = inject(LoadingService);
   private readonly notificationService = inject(NotificationService);
 
   readonly mobileNavOpen = signal(false);

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unikly.common.events.BaseEvent;
 import com.unikly.common.outbox.OutboxEvent;
-import com.unikly.jobservice.infrastructure.repository.OutboxEventRepository;
+import com.unikly.jobservice.application.port.out.OutboxEventRepository;
 
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

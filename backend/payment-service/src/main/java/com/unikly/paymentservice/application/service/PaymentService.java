@@ -1,0 +1,314 @@
+package com.unikly.paymentservice.application.service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stripe.model.Event;
+import com.stripe.model.PaymentIntent;
+import com.unikly.common.dto.Money;
+import com.unikly.common.events.EscrowReleasedEvent;
+import com.unikly.common.events.PaymentCompletedEvent;
+import com.unikly.common.events.PaymentInitiatedEvent;
+import com.unikly.common.outbox.OutboxEvent;
+import com.unikly.common.outbox.OutboxRepository;
+import com.unikly.paymentservice.domain.exception.DuplicateIdempotencyKeyException;
+import com.unikly.paymentservice.domain.exception.InvalidPaymentStateException;
+import com.unikly.paymentservice.domain.exception.PaymentAccessDeniedException;
+import com.unikly.paymentservice.domain.exception.PaymentNotFoundException;
+import com.unikly.paymentservice.domain.model.LedgerEntry;
+import com.unikly.paymentservice.domain.model.LedgerEntryType;
+import com.unikly.paymentservice.domain.model.Payment;
+import com.unikly.paymentservice.domain.model.PaymentStatus;
+import com.unikly.paymentservice.domain.model.WebhookEvent;
+import com.unikly.paymentservice.application.port.out.LedgerEntryRepository;
+import com.unikly.paymentservice.application.port.out.PaymentRepository;
+import com.unikly.paymentservice.adapter.out.provider.StripeClient;
+import com.unikly.paymentservice.application.port.out.WebhookEventRepository;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+@Slf4j
+@Service
+public class PaymentService {
+
+    private final PaymentRepository paymentRepository;
+    private final LedgerEntryRepository ledgerEntryRepository;
+    private final WebhookEventRepository webhookEventRepository;
+    private final OutboxRepository outboxEventRepository;
+    private final StripeClient stripeClient;
+    private final ObjectMapper objectMapper;
+
+    private final Counter paymentCompletedCounter;
+    private final Counter paymentFailedCounter;
+    private final Timer stripeApiCallTimer;
+
+    public PaymentService(PaymentRepository paymentRepository,
+                          LedgerEntryRepository ledgerEntryRepository,
+                          WebhookEventRepository webhookEventRepository,
+                          OutboxRepository outboxEventRepository,
+                          StripeClient stripeClient,
+                          ObjectMapper objectMapper,
+                          MeterRegistry meterRegistry) {
+        this.paymentRepository = paymentRepository;
+        this.ledgerEntryRepository = ledgerEntryRepository;
+        this.webhookEventRepository = webhookEventRepository;
+        this.outboxEventRepository = outboxEventRepository;
+        this.stripeClient = stripeClient;
+        this.objectMapper = objectMapper;
+
+        this.paymentCompletedCounter = Counter.builder("unikly_payment_completed_total")
+                .description("Total number of completed payments")
+                .tag("currency", "USD")
+                .register(meterRegistry);
+        this.paymentFailedCounter = Counter.builder("unikly_payment_failed_total")
+                .description("Total number of failed payments")
+                .register(meterRegistry);
+        this.stripeApiCallTimer = Timer.builder("unikly_stripe_api_call_seconds")
+                .description("Time spent calling Stripe API")
+                .register(meterRegistry);
+    }
+
+    @Transactional
+    public PaymentIntentResult createPaymentIntent(UUID jobId, UUID clientId, UUID freelancerId,
+                                                    BigDecimal amount, String currency,
+                                                    String idempotencyKey) {
+        if (paymentRepository.existsByIdempotencyKey(idempotencyKey)) {
+            throw new DuplicateIdempotencyKeyException(idempotencyKey);
+        }
+
+        // If a PENDING payment already exists for this job, retrieve its Stripe client secret
+        var existing = paymentRepository.findByJobIdAndStatus(jobId, PaymentStatus.PENDING);
+        if (!existing.isEmpty()) {
+            Payment p = existing.get(0);
+            PaymentIntent pi = stripeClient.retrievePaymentIntent(p.getStripePaymentIntentId());
+            log.info("Reusing existing PENDING payment {} for job {}", p.getId(), jobId);
+            return new PaymentIntentResult(p.getId(), pi.getClientSecret());
+        }
+
+        long amountInCents = amount.movePointRight(2).longValueExact();
+        PaymentIntent pi = stripeClient.createPaymentIntent(amountInCents, currency, jobId, idempotencyKey);
+
+        Payment payment = Payment.create(jobId, clientId, freelancerId, amount, currency,
+                idempotencyKey, pi.getId());
+        paymentRepository.save(payment);
+
+        publishEvent(new PaymentInitiatedEvent(
+                UUID.randomUUID(), "PaymentInitiated", Instant.now(),
+                payment.getId(), jobId, clientId,
+                new Money(amount, currency), pi.getId()
+        ));
+
+        return new PaymentIntentResult(payment.getId(), pi.getClientSecret());
+    }
+
+    @Transactional
+    public void handleWebhook(String payload, String sigHeader) {
+        Event event = stripeClient.constructWebhookEvent(payload, sigHeader);
+
+        if (webhookEventRepository.existsById(event.getId())) {
+            log.info("Skipping already-processed Stripe event: {}", event.getId());
+            return;
+        }
+
+        switch (event.getType()) {
+            case "payment_intent.succeeded" -> handlePaymentSucceeded(event);
+            case "payment_intent.payment_failed" -> handlePaymentFailed(event);
+            default -> log.debug("Unhandled Stripe event type: {}", event.getType());
+        }
+
+        webhookEventRepository.save(WebhookEvent.of(event.getId(), event.getType()));
+    }
+
+    private void handlePaymentSucceeded(Event event) {
+        String piId = extractPaymentIntentId(event);
+        Payment payment = paymentRepository.findByStripePaymentIntentId(piId)
+                .orElseThrow(() -> new PaymentNotFoundException(null));
+
+        payment.transitionTo(PaymentStatus.FUNDED);
+        ledgerEntryRepository.save(LedgerEntry.of(
+                payment.getId(), LedgerEntryType.ESCROW_FUND,
+                payment.getAmount(), payment.getCurrency(),
+                "Escrow funded via Stripe PaymentIntent " + piId
+        ));
+
+        publishEvent(new PaymentCompletedEvent(
+                UUID.randomUUID(), "PaymentCompleted", Instant.now(),
+                payment.getId(), payment.getJobId(), piId
+        ));
+        paymentCompletedCounter.increment();
+        log.info("Payment {} transitioned to FUNDED", payment.getId());
+    }
+
+    private void handlePaymentFailed(Event event) {
+        String piId = extractPaymentIntentId(event);
+        paymentRepository.findByStripePaymentIntentId(piId).ifPresent(payment -> {
+            payment.transitionTo(PaymentStatus.FAILED);
+            paymentFailedCounter.increment();
+            log.warn("Payment {} transitioned to FAILED", payment.getId());
+        });
+    }
+
+    @Transactional
+    public void releaseEscrow(UUID paymentId, UUID clientId) {
+        Payment payment = findAndVerifyOwner(paymentId, clientId);
+
+        if (payment.getStatus() != PaymentStatus.FUNDED) {
+            throw new InvalidPaymentStateException(
+                    "Can only release escrow from FUNDED state, current: " + payment.getStatus());
+        }
+
+        // TODO: Call Stripe Transfer.create once freelancer Stripe accounts are onboarded
+        payment.transitionTo(PaymentStatus.RELEASED);
+        payment.transitionTo(PaymentStatus.COMPLETED);
+
+        ledgerEntryRepository.save(LedgerEntry.of(
+                payment.getId(), LedgerEntryType.ESCROW_RELEASE,
+                payment.getAmount(), payment.getCurrency(),
+                "Escrow released to freelancer " + payment.getFreelancerId()
+        ));
+
+        publishEvent(new EscrowReleasedEvent(
+                UUID.randomUUID(), "EscrowReleased", Instant.now(),
+                payment.getId(), payment.getJobId(), payment.getFreelancerId(),
+                new Money(payment.getAmount(), payment.getCurrency())
+        ));
+        log.info("Escrow released for payment {}", paymentId);
+    }
+
+    @Transactional
+    public void requestRefund(UUID paymentId, UUID clientId) {
+        Payment payment = findAndVerifyOwner(paymentId, clientId);
+
+        if (payment.getStatus() != PaymentStatus.FUNDED) {
+            throw new InvalidPaymentStateException(
+                    "Can only refund from FUNDED state, current: " + payment.getStatus());
+        }
+
+        stripeClient.createRefund(payment.getStripePaymentIntentId());
+
+        payment.transitionTo(PaymentStatus.REFUNDED);
+        ledgerEntryRepository.save(LedgerEntry.of(
+                payment.getId(), LedgerEntryType.REFUND,
+                payment.getAmount(), payment.getCurrency(),
+                "Refund issued for PaymentIntent " + payment.getStripePaymentIntentId()
+        ));
+        log.info("Refund issued for payment {}", paymentId);
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal getTotalEscrowVolume() {
+        return paymentRepository.sumVolumeByStatuses(List.of(
+                PaymentStatus.FUNDED, PaymentStatus.RELEASED, PaymentStatus.COMPLETED
+        ));
+    }
+
+    /**
+     * Verifies a payment's status directly with Stripe and transitions to FUNDED if succeeded.
+     * This is the primary confirmation path — webhooks serve as a backup.
+     */
+    @Transactional
+    public Payment verifyPayment(UUID paymentId, UUID clientId) {
+        Payment payment = findAndVerifyOwner(paymentId, clientId);
+
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            return payment; // already transitioned
+        }
+
+        PaymentIntent pi = stripeClient.retrievePaymentIntent(payment.getStripePaymentIntentId());
+
+        if ("succeeded".equals(pi.getStatus())) {
+            payment.transitionTo(PaymentStatus.FUNDED);
+            ledgerEntryRepository.save(LedgerEntry.of(
+                    payment.getId(), LedgerEntryType.ESCROW_FUND,
+                    payment.getAmount(), payment.getCurrency(),
+                    "Escrow funded — verified via PaymentIntent " + pi.getId()
+            ));
+
+            publishEvent(new PaymentCompletedEvent(
+                    UUID.randomUUID(), "PaymentCompleted", Instant.now(),
+                    payment.getId(), payment.getJobId(), pi.getId()
+            ));
+            paymentCompletedCounter.increment();
+            log.info("Payment {} verified and transitioned to FUNDED", payment.getId());
+        } else {
+            log.info("Payment {} Stripe status is '{}', not yet succeeded", payment.getId(), pi.getStatus());
+        }
+
+        return payment;
+    }
+
+    @Transactional
+    public Payment mockFundPayment(UUID jobId, UUID clientId, UUID freelancerId,
+                                    BigDecimal amount, String currency) {
+        String idempotencyKey = "dev-mock-" + UUID.randomUUID();
+        Payment payment = Payment.create(jobId, clientId, freelancerId, amount, currency,
+                idempotencyKey, "dev_mock_pi_" + UUID.randomUUID());
+        payment.transitionTo(PaymentStatus.FUNDED);
+        paymentRepository.save(payment);
+
+        ledgerEntryRepository.save(LedgerEntry.of(
+                payment.getId(), LedgerEntryType.ESCROW_FUND,
+                payment.getAmount(), payment.getCurrency(),
+                "DEV MOCK — escrow funded without Stripe"
+        ));
+
+        publishEvent(new PaymentCompletedEvent(
+                UUID.randomUUID(), "PaymentCompleted", Instant.now(),
+                payment.getId(), payment.getJobId(), payment.getStripePaymentIntentId()
+        ));
+        paymentCompletedCounter.increment();
+        log.warn("DEV MOCK: Payment {} created and immediately FUNDED for job {}", payment.getId(), jobId);
+        return payment;
+    }
+
+    public List<Payment> getPaymentsByJob(UUID jobId) {
+        return paymentRepository.findByJobId(jobId);
+    }
+
+    public List<Payment> getMyPayments(UUID userId) {
+        return paymentRepository.findByClientIdOrFreelancerId(userId, userId);
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private Payment findAndVerifyOwner(UUID paymentId, UUID clientId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new PaymentNotFoundException(paymentId));
+        if (!payment.getClientId().equals(clientId)) {
+            throw new PaymentAccessDeniedException();
+        }
+        return payment;
+    }
+
+    private String extractPaymentIntentId(Event event) {
+        return event.getDataObjectDeserializer()
+                .getObject()
+                .map(obj -> ((PaymentIntent) obj).getId())
+                .orElseThrow(() -> new IllegalStateException("Cannot deserialize Stripe event data"));
+    }
+
+    private void publishEvent(Object event) {
+        try {
+            String payload = objectMapper.writeValueAsString(event);
+            String eventType = event.getClass().getSimpleName();
+            UUID aggregateId = (event instanceof com.unikly.common.events.BaseEvent be)
+                    ? be.eventId()
+                    : UUID.randomUUID();
+            outboxEventRepository.save(new OutboxEvent(eventType, aggregateId, "Payment", payload));
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Failed to serialize event", e);
+        }
+    }
+
+    public record PaymentIntentResult(UUID paymentId, String clientSecret) {}
+}

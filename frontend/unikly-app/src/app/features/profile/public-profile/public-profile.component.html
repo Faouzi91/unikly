@@ -31,6 +31,36 @@
               Send Message
             }
           </button>
+
+          @if (isClient() && profile.role === 'FREELANCER') {
+            <div class="relative mt-1">
+              <button type="button" class="btn-secondary w-full" [disabled]="inviting()" (click)="toggleInviteDropdown()">
+                @if (inviting()) {
+                  <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-ink-300 border-t-brand"></span>
+                  Sending...
+                } @else {
+                  Invite to Job
+                }
+              </button>
+              @if (showInviteDropdown()) {
+                <div class="fixed inset-0 z-40" (click)="showInviteDropdown.set(false)"></div>
+                <div class="card-panel absolute right-0 z-50 mt-1 w-64 max-h-60 overflow-y-auto py-1 shadow-lg">
+                  @if (myOpenJobs().length === 0) {
+                    <p class="px-4 py-3 text-sm text-[var(--ui-muted)]">No open jobs to invite to.</p>
+                  } @else {
+                    @for (job of myOpenJobs(); track job.id) {
+                      <button type="button"
+                        class="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-ink-700 transition hover:bg-ink-50 dark:hover:bg-white/5"
+                        (click)="inviteToJob(job)">
+                        <span class="min-w-0 flex-1 truncate">{{ job.title }}</span>
+                        <span class="shrink-0 text-xs text-[var(--ui-muted)]">{{ job.budget | number:'1.0-0' }}$</span>
+                      </button>
+                    }
+                  }
+                </div>
+              }
+            </div>
+          }
         </div>
       </div>
 

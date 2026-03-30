@@ -160,3 +160,8 @@
     <router-outlet />
   </div>
 </main>
+
+<!-- ===== GLOBAL LOADING SPINNER ===== -->
+@if (loading.isLoading()) {
+  <app-loading-spinner />
+}
