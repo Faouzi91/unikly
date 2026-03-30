@@ -10,7 +10,7 @@ Built with **Spring Boot 4.0.3** (Java 25) · **Angular 21** · **Apache Kafka 4
 
 ## Architecture
 
-Event-driven microservices with Domain-Driven Design (DDD) and **Hexagonal Architecture (Ports & Adapters)**. Each service logically separates the primary/secondary adapters from the core domain logic in `application` and `domain` packages. The frontend runs on a strict **Angular 21 Standalone Component Architecture**. Each service owns its database; all cross-service communication is asynchronous through Kafka topics. Events are published using the **Outbox Pattern** for transactional reliability, and all consumers are **idempotent** via a `processed_events` table.
+Event-driven microservices with Domain-Driven Design (DDD) and **Feature-Based Hexagonal Architecture**. Each service logically organizes by feature (e.g., job, proposal, contract) and isolates primary/secondary adapters from the core domain logic. The frontend runs on a strict **Angular 21 Standalone Component Architecture**. Each service owns its database; all cross-service communication is asynchronous through Kafka topics. Events are published using the **Outbox Pattern** for transactional reliability, and all consumers are **idempotent** via a `processed_events` table.
 
 ```
                          ┌──────────────────┐

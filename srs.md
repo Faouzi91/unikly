@@ -48,6 +48,7 @@ Core capabilities:
 - **Phase 1b: Architecture Standardization (COMPLETED)**
   - Event-driven communication with Kafka.
   - Strict bounded contexts and outbox pattern implementation.
+  - Refined backend directory structure to Feature-Based Hexagonal Architecture (Domain-Driven Design) aligned with Spring Modulith principles.
 - **Phase 2: Core Platform Functionality (COMPLETED)**
   - Real-time matchmaking with FastAPI.
   - Job posting and bidding.
