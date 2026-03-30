@@ -412,6 +412,15 @@
       }
 
       @if (canLeaveReview) {
+        @if (payment?.status === 'FUNDED') {
+          <div class="card-panel flex flex-wrap items-center justify-between gap-4 border border-brand/20 bg-brand-soft/10 p-4 mb-4">
+            <div>
+              <p class="text-sm font-semibold text-ink-900">Work Delivered</p>
+              <p class="text-xs text-[var(--ui-muted)]">The freelancer has submitted their delivery. Approve the work to release the funds from escrow.</p>
+            </div>
+            <button type="button" class="btn-primary" (click)="approveDelivery()">Approve & Release Funds</button>
+          </div>
+        }
         <div class="card-panel flex flex-wrap items-center justify-between gap-4 border border-brand/20 bg-brand-soft/10 p-4">
           <div>
             <p class="text-sm font-semibold text-ink-900">Project completed</p>

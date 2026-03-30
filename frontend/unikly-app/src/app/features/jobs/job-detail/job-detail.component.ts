@@ -288,6 +288,29 @@ export class JobDetailComponent implements OnInit {
     });
   }
 
+  async approveDelivery(): Promise<void> {
+    if (!this.job || !this.payment) return;
+
+    const result = await Swal.fire({
+      title: 'Approve Delivery & Release Funds?',
+      text: `Are you satisfied with the work? This will permanently release ${this.payment.amount.toFixed(2)} ${this.payment.currency} to the freelancer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Approve & Release',
+      confirmButtonColor: '#14a800',
+    });
+
+    if (!result.isConfirmed) return;
+
+    this.paymentService.releaseEscrow(this.payment.id).subscribe({
+      next: () => {
+        this.toast.success('Funds released successfully!');
+        this.loadPayment(this.job!.id);
+      },
+      error: () => this.toast.error('Failed to release funds. Please try again.'),
+    });
+  }
+
   submitReviewClientForm(payload: ReviewRequest): void {
     const data = this.reviewClientDialogData;
     if (!data.revieweeId) return;

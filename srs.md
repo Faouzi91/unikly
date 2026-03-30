@@ -42,17 +42,22 @@ Unikly connects clients with freelancers using:
 
 Core capabilities:
 
-- User authentication & authorization (Keycloak OIDC)
-- Job lifecycle management (state machine)
-- Proposal submission, acceptance, rejection, resubmission
-- Contract creation on proposal acceptance
-- AI-powered freelancer matching
-- Real-time messaging with read receipts
-- Escrow payments via Stripe (create, fund, release, refund)
-- Notifications (WebSocket + push + polling fallback)
-- Full-text search (Elasticsearch)
-- Observability (Prometheus, Grafana, distributed tracing)
-- Containerized deployment (Docker)
+- **Phase 1: Foundation (COMPLETED)**
+  - Setup Spring Boot microservices, Keycloak, PostgreSQL, API Gateway, Docker Compose.
+  - Implement DDD/Hexagonal architecture, Eureka, Config Server.
+- **Phase 1b: Architecture Standardization (COMPLETED)**
+  - Event-driven communication with Kafka.
+  - Strict bounded contexts and outbox pattern implementation.
+- **Phase 2: Core Platform Functionality (COMPLETED)**
+  - Real-time matchmaking with FastAPI.
+  - Job posting and bidding.
+  - File Uploads via MinIO, Secure Escrow Payments via Stripe.
+  - Job Lifecycle (Proposals -> Accepted -> In Progress -> Completed -> Reviewed).
+- **Phase 3: Production Readiness (PLANNED)**
+  - Notifications (WebSocket + push + polling fallback)
+  - Full-text search (Elasticsearch)
+  - Observability (Prometheus, Grafana, distributed tracing)
+  - Containerized deployment (Docker)
 
 ### 1.4 Status Legend
 
