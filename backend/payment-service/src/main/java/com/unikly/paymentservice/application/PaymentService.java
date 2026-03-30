@@ -84,6 +84,15 @@ public class PaymentService {
             throw new DuplicateIdempotencyKeyException(idempotencyKey);
         }
 
+        // If a PENDING payment already exists for this job, retrieve its Stripe client secret
+        var existing = paymentRepository.findByJobIdAndStatus(jobId, PaymentStatus.PENDING);
+        if (!existing.isEmpty()) {
+            Payment p = existing.get(0);
+            PaymentIntent pi = stripeClient.retrievePaymentIntent(p.getStripePaymentIntentId());
+            log.info("Reusing existing PENDING payment {} for job {}", p.getId(), jobId);
+            return new PaymentIntentResult(p.getId(), pi.getClientSecret());
+        }
+
         long amountInCents = amount.movePointRight(2).longValueExact();
         PaymentIntent pi = stripeClient.createPaymentIntent(amountInCents, currency, jobId, idempotencyKey);
 
@@ -199,6 +208,65 @@ public class PaymentService {
         return paymentRepository.sumVolumeByStatuses(List.of(
                 PaymentStatus.FUNDED, PaymentStatus.RELEASED, PaymentStatus.COMPLETED
         ));
+    }
+
+    /**
+     * Verifies a payment's status directly with Stripe and transitions to FUNDED if succeeded.
+     * This is the primary confirmation path — webhooks serve as a backup.
+     */
+    @Transactional
+    public Payment verifyPayment(UUID paymentId, UUID clientId) {
+        Payment payment = findAndVerifyOwner(paymentId, clientId);
+
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            return payment; // already transitioned
+        }
+
+        PaymentIntent pi = stripeClient.retrievePaymentIntent(payment.getStripePaymentIntentId());
+
+        if ("succeeded".equals(pi.getStatus())) {
+            payment.transitionTo(PaymentStatus.FUNDED);
+            ledgerEntryRepository.save(LedgerEntry.of(
+                    payment.getId(), LedgerEntryType.ESCROW_FUND,
+                    payment.getAmount(), payment.getCurrency(),
+                    "Escrow funded — verified via PaymentIntent " + pi.getId()
+            ));
+
+            publishEvent(new PaymentCompletedEvent(
+                    UUID.randomUUID(), "PaymentCompleted", Instant.now(),
+                    payment.getId(), payment.getJobId(), pi.getId()
+            ));
+            paymentCompletedCounter.increment();
+            log.info("Payment {} verified and transitioned to FUNDED", payment.getId());
+        } else {
+            log.info("Payment {} Stripe status is '{}', not yet succeeded", payment.getId(), pi.getStatus());
+        }
+
+        return payment;
+    }
+
+    @Transactional
+    public Payment mockFundPayment(UUID jobId, UUID clientId, UUID freelancerId,
+                                    BigDecimal amount, String currency) {
+        String idempotencyKey = "dev-mock-" + UUID.randomUUID();
+        Payment payment = Payment.create(jobId, clientId, freelancerId, amount, currency,
+                idempotencyKey, "dev_mock_pi_" + UUID.randomUUID());
+        payment.transitionTo(PaymentStatus.FUNDED);
+        paymentRepository.save(payment);
+
+        ledgerEntryRepository.save(LedgerEntry.of(
+                payment.getId(), LedgerEntryType.ESCROW_FUND,
+                payment.getAmount(), payment.getCurrency(),
+                "DEV MOCK — escrow funded without Stripe"
+        ));
+
+        publishEvent(new PaymentCompletedEvent(
+                UUID.randomUUID(), "PaymentCompleted", Instant.now(),
+                payment.getId(), payment.getJobId(), payment.getStripePaymentIntentId()
+        ));
+        paymentCompletedCounter.increment();
+        log.warn("DEV MOCK: Payment {} created and immediately FUNDED for job {}", payment.getId(), jobId);
+        return payment;
     }
 
     public List<Payment> getPaymentsByJob(UUID jobId) {

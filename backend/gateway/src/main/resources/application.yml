@@ -22,61 +22,31 @@ spring:
               uri: http://job-service:8081
               predicates:
                 - Path=/api/v1/jobs,/api/v1/jobs/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: job-service
-                    fallbackUri: forward:/fallback/job-service
 
             - id: user-service
               uri: http://user-service:8082
               predicates:
                 - Path=/api/users/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: user-service
-                    fallbackUri: forward:/fallback/user-service
 
             - id: payment-service
               uri: http://payment-service:8083
               predicates:
                 - Path=/api/v1/payments,/api/v1/payments/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: payment-service
-                    fallbackUri: forward:/fallback/payment-service
 
             - id: matching-service
               uri: http://matching-service:8084
               predicates:
                 - Path=/api/v1/matches/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: matching-service
-                    fallbackUri: forward:/fallback/matching-service
 
             - id: messaging-service
               uri: http://messaging-service:8085
               predicates:
                 - Path=/api/v1/messages/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: messaging-service
-                    fallbackUri: forward:/fallback/messaging-service
 
             - id: notification-service
               uri: http://notification-service:8086
               predicates:
                 - Path=/api/v1/notifications/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: notification-service
-                    fallbackUri: forward:/fallback/notification-service
 
             - id: search-service
               uri: http://search-service:8087

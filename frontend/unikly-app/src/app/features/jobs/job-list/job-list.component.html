@@ -66,7 +66,7 @@
   }
 
   <!-- Loading state (shared) -->
-  @if (loading) {
+  @if (loading()) {
     <div class="card-panel flex justify-center py-12">
       <span class="inline-block h-8 w-8 animate-spin rounded-full border-2 border-ink-300 border-t-brand"></span>
     </div>
@@ -104,7 +104,7 @@
       </div>
     }
 
-    @if (!loading && totalElements > pageSize) {
+    @if (!loading() && totalElements > pageSize) {
       <div class="flex items-center justify-center gap-3">
         <button type="button" class="btn-secondary px-3 py-2" [disabled]="currentPage === 0" (click)="previousPage()">Previous</button>
         <span class="muted-text">Page {{ currentPage + 1 }} of {{ totalPages() }}</span>
@@ -145,6 +145,12 @@
                 <p class="text-xs text-ink-400">{{ job.createdAt | timeAgo }}</p>
               </div>
               <div class="flex items-center gap-2">
+                @if (job.status === 'DRAFT') {
+                  <a [routerLink]="['/jobs', job.id]"
+                     class="inline-flex items-center gap-1 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-dark">
+                    Publish →
+                  </a>
+                }
                 @if ((job.proposalCount ?? 0) > 0 && job.status === 'OPEN') {
                   <a [routerLink]="['/jobs', job.id]"
                      class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700">
@@ -159,7 +165,7 @@
       </div>
     }
 
-    @if (!loading && myJobsTotalElements > pageSize) {
+    @if (!loading() && myJobsTotalElements > pageSize) {
       <div class="flex items-center justify-center gap-3">
         <button type="button" class="btn-secondary px-3 py-2" [disabled]="myJobsPage === 0" (click)="previousMyPage()">Previous</button>
         <span class="muted-text">Page {{ myJobsPage + 1 }} of {{ myJobsTotalPages() }}</span>

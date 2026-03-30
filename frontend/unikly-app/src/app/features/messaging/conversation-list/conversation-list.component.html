@@ -26,22 +26,40 @@
           <a
             [routerLink]="['/messages', conversation.id]"
             class="flex items-center gap-3 px-4 py-4 transition hover:bg-ink-50 dark:hover:bg-white/5"
+            [class.bg-brand-soft/5]="conversation.unreadCount > 0"
           >
-            <!-- Avatar -->
-            <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-brand-dark">
+            <!-- Avatar with online dot -->
+            <span class="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-brand-dark">
               {{ getOtherParticipantInitials(conversation) }}
+              @if (isOnline(conversation)) {
+                <span class="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500"></span>
+              }
             </span>
 
             <!-- Content -->
             <div class="min-w-0 flex-1">
-              <p class="text-sm font-semibold text-ink-900">{{ getOtherParticipantLabel(conversation) }}</p>
-              <p class="mt-0.5 truncate text-sm text-[var(--ui-muted)]">
-                {{ lastPreviewMap()[conversation.id] || 'No messages yet' }}
+              <div class="flex items-center gap-2">
+                <p class="text-sm text-ink-900" [class.font-bold]="conversation.unreadCount > 0" [class.font-semibold]="conversation.unreadCount === 0">
+                  {{ getOtherParticipantLabel(conversation) }}
+                </p>
+                @if (isOnline(conversation)) {
+                  <span class="text-[11px] text-emerald-600">online</span>
+                }
+              </div>
+              <p class="mt-0.5 truncate text-sm" [class.text-ink-700]="conversation.unreadCount > 0" [class.font-medium]="conversation.unreadCount > 0" [class.text-[var(--ui-muted)]]="conversation.unreadCount === 0">
+                {{ getPreview(conversation) }}
               </p>
             </div>
 
-            <!-- Timestamp -->
-            <span class="shrink-0 text-xs text-ink-400">{{ conversation.lastMessageAt | timeAgo }}</span>
+            <!-- Timestamp + unread badge -->
+            <div class="flex shrink-0 flex-col items-end gap-1">
+              <span class="text-xs text-ink-400">{{ conversation.lastMessageAt | timeAgo }}</span>
+              @if (conversation.unreadCount > 0) {
+                <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-bold text-white">
+                  {{ conversation.unreadCount > 99 ? '99+' : conversation.unreadCount }}
+                </span>
+              }
+            </div>
           </a>
         }
       </div>

@@ -4,6 +4,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { KeycloakService } from '../../../core/auth/keycloak.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
 import { Job, JobSearchResult } from '../models/job.models';
 import { JobService } from '../services/job.service';
@@ -18,6 +19,7 @@ import { JobService } from '../services/job.service';
 export class JobListComponent implements OnInit, OnDestroy {
   private readonly jobService = inject(JobService);
   readonly keycloak = inject(KeycloakService);
+  private readonly toast = inject(ToastService);
   private readonly destroy$ = new Subject<void>();
   private readonly route = inject(ActivatedRoute);
 
@@ -26,7 +28,7 @@ export class JobListComponent implements OnInit, OnDestroy {
 
   // Browse tab state (JobSearchResult shape)
   browseJobs: JobSearchResult[] = [];
-  loading = false;
+  readonly loading = signal(false);
   totalElements = 0;
   currentPage = 0;
   readonly pageSize = 9;
@@ -180,7 +182,7 @@ export class JobListComponent implements OnInit, OnDestroy {
   }
 
   loadMyJobs(): void {
-    this.loading = true;
+    this.loading.set(true);
     const loader = this.isClient()
       ? this.jobService.getMyJobs(this.myJobsPage, this.pageSize)
       : this.jobService.getMyContracts(this.myJobsPage, this.pageSize);
@@ -189,14 +191,17 @@ export class JobListComponent implements OnInit, OnDestroy {
       next: (response) => {
         this.myJobs = response.content;
         this.myJobsTotalElements = response.totalElements;
-        this.loading = false;
+        this.loading.set(false);
       },
-      error: () => (this.loading = false),
+      error: () => {
+        this.loading.set(false);
+        this.toast.error('Failed to load your projects. Please try again.');
+      },
     });
   }
 
   private loadJobs(): void {
-    this.loading = true;
+    this.loading.set(true);
     const params: { q?: string; skills?: string; minBudget?: number; maxBudget?: number; page: number; size: number } = {
       page: this.currentPage,
       size: this.pageSize,
@@ -212,9 +217,12 @@ export class JobListComponent implements OnInit, OnDestroy {
       next: (response) => {
         this.browseJobs = response.content;
         this.totalElements = response.totalElements;
-        this.loading = false;
+        this.loading.set(false);
       },
-      error: () => (this.loading = false),
+      error: () => {
+        this.loading.set(false);
+        this.toast.error('Failed to load jobs. Please try again.');
+      },
     });
   }
 }

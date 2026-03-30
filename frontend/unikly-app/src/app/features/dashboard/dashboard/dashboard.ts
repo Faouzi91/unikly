@@ -46,6 +46,10 @@ export class Dashboard implements OnInit {
     () => this.myJobs().some((j) => j.status === 'OPEN' && (j.proposalCount ?? 0) > 0),
   );
 
+  readonly draftCount = computed(
+    () => this.myJobs().filter((j) => j.status === 'DRAFT').length,
+  );
+
   readonly username = computed(() => this.keycloak.getUsername() || 'there');
 
   readonly isClient = computed(

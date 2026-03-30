@@ -61,6 +61,19 @@ public class StripeClient {
         throw new PaymentProviderUnavailableException("Stripe temporarily unavailable");
     }
 
+    /**
+     * Retrieves the current status of a PaymentIntent from Stripe.
+     */
+    public PaymentIntent retrievePaymentIntent(String paymentIntentId) {
+        try {
+            com.stripe.Stripe.apiKey = secretKey;
+            return PaymentIntent.retrieve(paymentIntentId);
+        } catch (StripeException e) {
+            log.error("Stripe retrievePaymentIntent failed: {}", e.getMessage());
+            throw new PaymentProviderUnavailableException("Stripe error: " + e.getMessage());
+        }
+    }
+
     @CircuitBreaker(name = "stripe", fallbackMethod = "createRefundFallback")
     @Retry(name = "stripe")
     public Refund createRefund(String paymentIntentId) {

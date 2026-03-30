@@ -15,6 +15,7 @@ import { ReviewDialog, ReviewDialogData } from '../components/review-dialog/revi
 import { UserService } from '../../profile/services/user.service';
 import { ReviewRequest, UserProfile } from '../../profile/models/user.models';
 import { JobService } from '../services/job.service';
+import { MessagingService } from '../../messaging/services/messaging.service';
 
 @Component({
   selector: 'app-job-detail',
@@ -41,12 +42,13 @@ export class JobDetailComponent implements OnInit {
   private readonly paymentService = inject(PaymentService);
   private readonly userService = inject(UserService);
   private readonly toast = inject(ToastService);
+  private readonly messagingService = inject(MessagingService);
 
   job: Job | null = null;
   proposals: Proposal[] = [];
   matches: MatchEntry[] = [];
   payment: PaymentRecord | null = null;
-  loading = true;
+  readonly loading = signal(true);
   matchesLoading = false;
   readonly ownerConfirmedViaApi = signal(false);
   readonly freelancerProfiles = signal<Record<string, UserProfile>>({});
@@ -56,6 +58,7 @@ export class JobDetailComponent implements OnInit {
   readonly proposalSubmitting = signal(false);
   readonly showPaymentModal = signal(false);
   readonly showReviewModal = signal(false);
+  readonly showReviewClientModal = signal(false);
   readonly reviewSubmitting = signal(false);
 
   // Edit mode
@@ -156,8 +159,13 @@ export class JobDetailComponent implements OnInit {
     return (
       this.job?.status === 'OPEN' &&
       (this.keycloak.hasRole('ROLE_FREELANCER') || this.keycloak.hasRole('FREELANCER')) &&
-      !this.isJobOwner
+      !this.isJobOwner &&
+      !this.myProposal()
     );
+  }
+
+  get canPublish(): boolean {
+    return this.isJobOwner && this.job?.status === 'DRAFT';
   }
 
   get canEdit(): boolean {
@@ -172,6 +180,32 @@ export class JobDetailComponent implements OnInit {
       this.isJobOwner &&
       (this.job?.status === 'DRAFT' || this.job?.status === 'OPEN')
     );
+  }
+
+  get canSubmitDelivery(): boolean {
+    return (
+      this.job?.status === 'IN_PROGRESS' &&
+      (this.keycloak.hasRole('ROLE_FREELANCER') || this.keycloak.hasRole('FREELANCER')) &&
+      !this.isJobOwner &&
+      this.myProposal()?.status === 'ACCEPTED'
+    );
+  }
+
+  get canFreelancerLeaveReview(): boolean {
+    return (
+      this.job?.status === 'COMPLETED' &&
+      !this.isJobOwner &&
+      this.myProposal()?.status === 'ACCEPTED'
+    );
+  }
+
+  get reviewClientDialogData(): ReviewDialogData {
+    return {
+      jobId: this.job?.id ?? '',
+      jobTitle: this.job?.title ?? '',
+      revieweeId: this.job?.clientId ?? '',
+      revieweeName: 'Client',
+    };
   }
 
   /** True when the freelancer's own proposal is stale and needs resubmission */
@@ -216,8 +250,56 @@ export class JobDetailComponent implements OnInit {
     if (jobId) {
       this.loadJob(jobId);
     } else {
-      this.loading = false;
+      this.loading.set(false);
     }
+  }
+
+  publishJob(): void {
+    if (!this.job) return;
+    this.jobService.updateJobStatus(this.job.id, 'OPEN').subscribe({
+      next: (updated) => {
+        this.job = updated;
+        this.toast.success('Job published successfully.');
+      },
+      error: () => this.toast.error('Failed to publish job.'),
+    });
+  }
+
+  async confirmSubmitDelivery(): Promise<void> {
+    if (!this.job) return;
+
+    const result = await Swal.fire({
+      title: 'Submit delivery?',
+      text: 'Confirm that you have completed the work. The client will be notified.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Submit Delivery',
+      confirmButtonColor: '#14a800',
+    });
+
+    if (!result.isConfirmed) return;
+
+    this.jobService.submitDelivery(this.job.id).subscribe({
+      next: (updated) => {
+        this.job = updated;
+        this.toast.success('Delivery submitted. Waiting for client approval.');
+      },
+      error: () => this.toast.error('Failed to submit delivery.'),
+    });
+  }
+
+  submitReviewClientForm(payload: ReviewRequest): void {
+    const data = this.reviewClientDialogData;
+    if (!data.revieweeId) return;
+    this.reviewSubmitting.set(true);
+    this.userService.createReview(data.revieweeId, data.jobId, payload.rating, payload.comment).subscribe({
+      next: () => {
+        this.reviewSubmitting.set(false);
+        this.showReviewClientModal.set(false);
+        this.toast.success('Review submitted successfully.');
+      },
+      error: () => this.reviewSubmitting.set(false),
+    });
   }
 
   openProposalDialog(): void {
@@ -277,6 +359,7 @@ export class JobDetailComponent implements OnInit {
         this.toast.success('Proposal accepted.');
         this.loadJob(this.job!.id);
       },
+      error: () => this.toast.error('Failed to accept proposal. Please try again.'),
     });
   }
 
@@ -379,6 +462,9 @@ export class JobDetailComponent implements OnInit {
               ? 'Job updated. Affected proposals have been notified.'
               : 'Job updated successfully.';
             this.toast.success(msg);
+            if (confirmed) {
+              this.loadProposals(updated.id);
+            }
           },
           error: () => {
             this.editSaving.set(false);
@@ -424,6 +510,20 @@ export class JobDetailComponent implements OnInit {
     this.showPaymentModal.set(true);
   }
 
+  mockFundEscrow(): void {
+    const accepted = this.acceptedProposal;
+    if (!accepted || !this.job) return;
+    this.paymentService
+      .mockFundPayment(this.job.id, accepted.freelancerId, accepted.proposedBudget, this.job.currency)
+      .subscribe({
+        next: () => {
+          this.toast.success('DEV: Escrow funded (mock). Reloading...');
+          setTimeout(() => this.loadJob(this.job!.id), 2000);
+        },
+        error: () => this.toast.error('Mock fund failed.'),
+      });
+  }
+
   closePaymentDialog(): void {
     this.showPaymentModal.set(false);
   }
@@ -431,7 +531,8 @@ export class JobDetailComponent implements OnInit {
   onPaymentCompleted(): void {
     this.showPaymentModal.set(false);
     if (this.job) {
-      this.loadPayment(this.job.id);
+      const jobId = this.job.id;
+      setTimeout(() => this.loadJob(jobId), 2000);
     }
   }
 
@@ -454,6 +555,14 @@ export class JobDetailComponent implements OnInit {
         this.toast.success('Review submitted successfully.');
       },
       error: () => this.reviewSubmitting.set(false),
+    });
+  }
+
+  messageUser(userId: string): void {
+    const currentUserId = this.keycloak.getUserId();
+    if (!currentUserId) return;
+    this.messagingService.getOrCreateConversation([currentUserId, userId], this.job?.id).subscribe({
+      next: (conversation) => this.router.navigate(['/messages', conversation.id]),
     });
   }
 
@@ -501,18 +610,27 @@ export class JobDetailComponent implements OnInit {
   }
 
   private loadJob(jobId: string): void {
-    this.loading = true;
+    this.loading.set(true);
     this.jobService.getJob(jobId).subscribe({
       next: (job) => {
         this.job = job;
-        this.loading = false;
-        // Always attempt all three — backend enforces ownership via 403.
+        this.loading.set(false);
+        // Always attempt all — backend enforces ownership via 403.
         // A successful proposals response sets ownerConfirmedViaApi and reveals the tab.
         this.loadProposals(jobId);
         this.loadMatches(jobId);
         this.loadPayment(jobId);
+        this.loadMyProposal(jobId);
       },
-      error: () => (this.loading = false),
+      error: () => this.loading.set(false),
+    });
+  }
+
+  private loadMyProposal(jobId: string): void {
+    if (this.isJobOwner) return;
+    this.jobService.getMyProposal(jobId).subscribe({
+      next: (proposal) => this.myProposal.set(proposal),
+      error: () => { /* 404 = no proposal yet, silently ignore */ },
     });
   }
 
@@ -534,9 +652,8 @@ export class JobDetailComponent implements OnInit {
           this.activeTab.set('proposals');
         }
       },
-      error: (err) => {
-        console.error('Failed to load proposals:', err);
-        /* 403 for non-owners — tab stays hidden */
+      error: () => {
+        /* 403 for non-owners — tab stays hidden, no action needed */
       },
     });
   }

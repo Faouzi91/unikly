@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -166,6 +167,12 @@ public class ProposalService {
 
         log.info("Proposal {} rejected for job {}", proposalId, jobId);
         return proposalMapper.toResponse(proposal);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<ProposalResponse> getMyProposal(UUID jobId, UUID freelancerId) {
+        return proposalRepository.findByJobIdAndFreelancerId(jobId, freelancerId)
+                .map(proposalMapper::toResponse);
     }
 
     @Transactional

@@ -8,6 +8,7 @@ import com.unikly.common.events.PaymentCompletedEvent;
 import com.unikly.common.outbox.OutboxEvent;
 import com.unikly.common.outbox.OutboxRepository;
 import com.unikly.jobservice.domain.ContractStatus;
+import com.unikly.jobservice.domain.Job;
 import com.unikly.jobservice.domain.JobStatus;
 import com.unikly.jobservice.domain.JobStateMachine;
 import com.unikly.jobservice.domain.ProcessedEvent;
@@ -111,6 +112,28 @@ public class PaymentEventConsumer {
 
         log.info("EscrowReleasedEvent received: jobId={}, freelancerId={}, amount={} {}",
                 event.jobId(), event.freelancerId(), event.amount().amount(), event.amount().currency());
+
+        Job job = jobRepository.findById(event.jobId()).orElse(null);
+        if (job == null) {
+            log.warn("Job not found for EscrowReleasedEvent: jobId={}", event.jobId());
+            markProcessed(event.eventId());
+            return;
+        }
+
+        if (job.getStatus() != JobStatus.IN_PROGRESS) {
+            log.warn("EscrowReleasedEvent but job {} is in status {}, expected IN_PROGRESS. Skipping.",
+                    event.jobId(), job.getStatus());
+            markProcessed(event.eventId());
+            return;
+        }
+
+        JobStatus previousStatus = job.getStatus();
+        JobStateMachine.validateTransition(previousStatus, JobStatus.COMPLETED);
+        job.setStatus(JobStatus.COMPLETED);
+        job.setUpdatedAt(Instant.now());
+        jobRepository.save(job);
+        publishStatusChangedEvent(job, previousStatus);
+        log.info("Job transitioned to COMPLETED after escrow release: jobId={}", event.jobId());
 
         markProcessed(event.eventId());
     }

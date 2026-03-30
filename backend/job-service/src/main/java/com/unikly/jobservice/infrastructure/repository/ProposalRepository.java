@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ProposalRepository extends JpaRepository<Proposal, UUID> {
@@ -23,6 +24,8 @@ public interface ProposalRepository extends JpaRepository<Proposal, UUID> {
     List<Proposal> findByJobIdAndStatus(UUID jobId, ProposalStatus status);
 
     boolean existsByJobIdAndFreelancerId(UUID jobId, UUID freelancerId);
+
+    Optional<Proposal> findByJobIdAndFreelancerId(UUID jobId, UUID freelancerId);
 
     long countByJobIdAndStatusNotIn(UUID jobId, List<ProposalStatus> statuses);
 

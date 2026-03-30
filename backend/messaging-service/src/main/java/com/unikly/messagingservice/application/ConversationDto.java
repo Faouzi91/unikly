@@ -9,5 +9,7 @@ public record ConversationDto(
         UUID jobId,
         List<UUID> participantIds,
         Instant createdAt,
-        Instant lastMessageAt
+        Instant lastMessageAt,
+        long unreadCount,
+        String lastMessagePreview
 ) {}

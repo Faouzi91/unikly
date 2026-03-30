@@ -68,8 +68,27 @@ export class PaymentService {
     return this.api.get<PaymentRecord[]>('/v1/payments', { jobId });
   }
 
+  verifyPayment(paymentId: string): Observable<PaymentRecord> {
+    return this.api.post<PaymentRecord>(`/v1/payments/${paymentId}/verify`, {});
+  }
+
   releaseEscrow(paymentId: string): Observable<void> {
     return this.api.post<void>(`/v1/payments/${paymentId}/release`, {});
+  }
+
+  mockFundPayment(
+    jobId: string,
+    freelancerId: string,
+    amount: number,
+    currency: string,
+  ): Observable<PaymentRecord> {
+    return this.api.post<PaymentRecord>('/v1/payments/dev/mock-fund', {
+      jobId,
+      freelancerId,
+      amount,
+      currency,
+      idempotencyKey: crypto.randomUUID(),
+    });
   }
 
   requestRefund(paymentId: string): Observable<void> {

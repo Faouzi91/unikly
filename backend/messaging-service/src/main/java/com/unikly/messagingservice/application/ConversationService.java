@@ -2,6 +2,7 @@ package com.unikly.messagingservice.application;
 
 import com.unikly.messagingservice.domain.Conversation;
 import com.unikly.messagingservice.domain.ConversationRepository;
+import com.unikly.messagingservice.domain.MessageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -19,9 +20,10 @@ import java.util.UUID;
 public class ConversationService {
 
     private final ConversationRepository conversationRepository;
+    private final MessageRepository messageRepository;
 
     @Transactional
-    public ConversationDto getOrCreateConversation(GetOrCreateConversationRequest request) {
+    public ConversationDto getOrCreateConversation(GetOrCreateConversationRequest request, UUID currentUserId) {
         UUID p1 = request.participantIds().get(0);
         UUID p2 = request.participantIds().get(1);
 
@@ -36,14 +38,14 @@ public class ConversationService {
                     .orElseGet(() -> createConversation(request.participantIds(), null));
         }
 
-        return toDto(conversation);
+        return toDto(conversation, currentUserId);
     }
 
     @Transactional(readOnly = true)
     public Page<ConversationDto> getUserConversations(UUID userId, int page) {
         return conversationRepository
                 .findByParticipant(userId, PageRequest.of(page, 20))
-                .map(this::toDto);
+                .map(c -> toDto(c, userId));
     }
 
     @Transactional(readOnly = true)
@@ -55,7 +57,12 @@ public class ConversationService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to this conversation");
         }
 
-        return toDto(conversation);
+        return toDto(conversation, userId);
+    }
+
+    @Transactional(readOnly = true)
+    public long getTotalUnreadCount(UUID userId) {
+        return messageRepository.findConversationIdsWithUnread(userId).size();
     }
 
     private Conversation createConversation(java.util.List<UUID> participantIds, UUID jobId) {
@@ -67,8 +74,12 @@ public class ConversationService {
         return saved;
     }
 
-    private ConversationDto toDto(Conversation c) {
+    private ConversationDto toDto(Conversation c, UUID currentUserId) {
+        long unread = messageRepository.countUnread(c.getId(), currentUserId);
+        String preview = messageRepository.findTopByConversationIdOrderByCreatedAtDesc(c.getId())
+                .map(m -> m.getContent().length() > 80 ? m.getContent().substring(0, 80) + "…" : m.getContent())
+                .orElse(null);
         return new ConversationDto(c.getId(), c.getJobId(), c.getParticipantIds(),
-                c.getCreatedAt(), c.getLastMessageAt());
+                c.getCreatedAt(), c.getLastMessageAt(), unread, preview);
     }
 }

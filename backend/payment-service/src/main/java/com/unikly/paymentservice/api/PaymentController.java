@@ -67,6 +67,16 @@ public class PaymentController {
                 .toList();
     }
 
+    @PostMapping("/{id}/verify")
+    @Operation(summary = "Verify payment with Stripe", description = "Checks PaymentIntent status directly with Stripe and transitions to FUNDED if succeeded")
+    @ApiResponse(responseCode = "200", description = "Payment status verified")
+    @ApiResponse(responseCode = "404", description = "Payment not found")
+    public PaymentResponse verifyPayment(
+            @Parameter(description = "Payment UUID") @PathVariable UUID id) {
+        UUID clientId = UserContext.getUserId();
+        return PaymentResponse.from(paymentService.verifyPayment(id, clientId));
+    }
+
     @PostMapping("/{id}/release")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Release escrow", description = "Releases held funds to the freelancer after work completion")
@@ -89,6 +99,18 @@ public class PaymentController {
             @Parameter(description = "Payment UUID") @PathVariable UUID id) {
         UUID clientId = UserContext.getUserId();
         paymentService.requestRefund(id, clientId);
+    }
+
+    @PostMapping("/dev/mock-fund")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "DEV ONLY — mock-fund escrow without Stripe")
+    public PaymentResponse mockFundPayment(@Valid @RequestBody CreatePaymentRequest request) {
+        UUID clientId = UserContext.getUserId();
+        var payment = paymentService.mockFundPayment(
+                request.jobId(), clientId, request.freelancerId(),
+                request.amount(), request.currency()
+        );
+        return PaymentResponse.from(payment);
     }
 
     @GetMapping("/admin/stats")

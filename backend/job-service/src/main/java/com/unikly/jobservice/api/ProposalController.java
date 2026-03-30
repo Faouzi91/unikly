@@ -87,6 +87,19 @@ public class ProposalController {
                 proposalService.resubmitProposal(jobId, proposalId, freelancerId, request));
     }
 
+    @GetMapping("/mine")
+    @Operation(summary = "Get my proposal for a job",
+               description = "Returns the calling freelancer's own proposal for this job, or 404 if none exists.")
+    @ApiResponse(responseCode = "200", description = "Proposal found")
+    @ApiResponse(responseCode = "404", description = "No proposal from this freelancer")
+    public ResponseEntity<ProposalResponse> getMyProposal(
+            @Parameter(description = "Job UUID") @PathVariable UUID jobId) {
+        UUID freelancerId = UserContext.getUserId();
+        return proposalService.getMyProposal(jobId, freelancerId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PatchMapping("/{proposalId}/reject")
     @Operation(summary = "Reject a proposal")
     @ApiResponse(responseCode = "200", description = "Proposal rejected")

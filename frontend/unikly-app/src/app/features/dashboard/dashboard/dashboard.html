@@ -60,6 +60,20 @@
       </div>
     }
 
+    @if (draftCount() > 0) {
+      <div class="card-panel flex flex-wrap items-center justify-between gap-3 border-brand/20 bg-brand-soft/10 px-5 py-4">
+        <div class="flex items-center gap-3">
+          <svg class="h-5 w-5 shrink-0 text-brand-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+          </svg>
+          <p class="text-sm font-semibold text-ink-900">
+            You have {{ draftCount() }} unpublished project{{ draftCount() !== 1 ? 's' : '' }}
+          </p>
+        </div>
+        <a routerLink="/jobs" [queryParams]="{ view: 'mine' }" class="btn-primary shrink-0 text-xs">Publish now →</a>
+      </div>
+    }
+
     @if (myJobsLoading()) {
       <div class="card-panel flex justify-center py-6">
         <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-ink-300 border-t-brand"></span>

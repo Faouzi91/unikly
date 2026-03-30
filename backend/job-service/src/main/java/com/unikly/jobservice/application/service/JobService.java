@@ -12,6 +12,7 @@ import com.unikly.jobservice.application.JobEditRulesEngine;
 import com.unikly.jobservice.application.mapper.JobMapper;
 import com.unikly.jobservice.domain.EditConfirmationRequiredException;
 import com.unikly.jobservice.domain.EditDecision;
+import com.unikly.jobservice.domain.InvalidStateTransitionException;
 import com.unikly.jobservice.domain.Job;
 import com.unikly.jobservice.domain.JobNotEditableException;
 import com.unikly.jobservice.domain.JobStateMachine;
@@ -89,6 +90,12 @@ public class JobService {
     public Page<JobResponse> getJobsByClient(UUID clientId, Pageable pageable) {
         log.info("Fetching jobs for client {}", clientId);
         return jobRepository.findByClientId(clientId, pageable).map(jobMapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<JobResponse> getFreelancerContracts(UUID freelancerId, Pageable pageable) {
+        log.info("Fetching contracts for freelancer {}", freelancerId);
+        return jobRepository.findByFreelancerId(freelancerId, pageable).map(jobMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -196,6 +203,31 @@ public class JobService {
             outboxEventPublisher.publish("JOB", job.getId(), event);
         }
 
+        return jobMapper.toResponse(job);
+    }
+
+    @Transactional
+    public JobResponse submitDelivery(UUID jobId, UUID freelancerId, String note) {
+        log.info("Freelancer {} submitting delivery for job {}", freelancerId, jobId);
+        Job job = getJobOrThrow(jobId);
+
+        if (job.getStatus() != JobStatus.IN_PROGRESS) {
+            throw new InvalidStateTransitionException(job.getStatus(), JobStatus.COMPLETED);
+        }
+
+        // Verify caller is the accepted freelancer
+        boolean isAccepted = proposalRepository.findByJobIdAndStatus(jobId, ProposalStatus.ACCEPTED)
+                .stream().anyMatch(p -> p.getFreelancerId().equals(freelancerId));
+        if (!isAccepted) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Only the accepted freelancer may submit delivery");
+        }
+
+        JobStateMachine.validateTransition(job.getStatus(), JobStatus.COMPLETED);
+        job.setStatus(JobStatus.COMPLETED);
+        job = jobRepository.save(job);
+
+        log.info("Job {} marked COMPLETED by freelancer {}", jobId, freelancerId);
         return jobMapper.toResponse(job);
     }
 

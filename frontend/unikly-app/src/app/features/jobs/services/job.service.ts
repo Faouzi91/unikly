@@ -119,6 +119,14 @@ export class JobService {
     );
   }
 
+  getMyProposal(jobId: string): Observable<Proposal> {
+    return this.api.get<Proposal>(`/v1/jobs/${jobId}/proposals/mine`);
+  }
+
+  submitDelivery(jobId: string, note = ''): Observable<Job> {
+    return this.api.patch<Job>(`/v1/jobs/${jobId}/submit-delivery`, { note });
+  }
+
   getMatches(jobId: string): Observable<MatchEntry[]> {
     return this.api.get<MatchEntry[]>('/v1/matches', { jobId });
   }

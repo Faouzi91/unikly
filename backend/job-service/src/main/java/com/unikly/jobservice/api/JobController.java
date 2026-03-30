@@ -8,7 +8,6 @@ import com.unikly.jobservice.api.dto.StatusTransitionRequest;
 import com.unikly.jobservice.api.dto.UpdateJobRequest;
 import com.unikly.jobservice.application.service.JobService;
 import com.unikly.jobservice.domain.EditDecision;
-import com.unikly.jobservice.domain.JobStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -26,8 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.data.domain.PageRequest;
 import java.util.Map;
 import java.util.UUID;
 
@@ -51,22 +49,22 @@ public class JobController {
                 .body(jobService.createJob(clientId, request));
     }
 
-/*
     @GetMapping
-    @Operation(summary = "List jobs", description = "Returns a paginated list of jobs with optional filters")
+    @Operation(summary = "List my jobs", description = "Returns a paginated list of jobs owned by the current client")
     @ApiResponse(responseCode = "200", description = "Jobs retrieved")
-    public ResponseEntity<PageResponse<JobResponse>> listJobs(
-            @Parameter(description = "Filter by job status") @RequestParam(required = false) JobStatus status,
-            @Parameter(description = "Filter by required skill") @RequestParam(required = false) String skill,
-            @Parameter(description = "Minimum budget") @RequestParam(required = false) BigDecimal minBudget,
-            @Parameter(description = "Maximum budget") @RequestParam(required = false) BigDecimal maxBudget,
-            @Parameter(description = "Sort field") @RequestParam(defaultValue = "createdAt") String sort,
-            @Parameter(description = "Sort direction: asc or desc") @RequestParam(defaultValue = "desc") String direction,
+    public ResponseEntity<PageResponse<JobResponse>> listMyJobs(
             @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(jobService.listJobs(status, skill, minBudget, maxBudget, sort, direction, page, size));
+        UUID clientId = UserContext.getUserId();
+        var result = jobService.getJobsByClient(clientId, PageRequest.of(page, size));
+        return ResponseEntity.ok(new PageResponse<>(
+                result.getContent(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages()
+        ));
     }
-*/
 
     @GetMapping("/{id}")
     @Operation(summary = "Get a job by ID")
@@ -129,42 +127,35 @@ public class JobController {
         return ResponseEntity.ok(jobService.transitionStatus(id, userId, request.status()));
     }
 
-/*
-    @GetMapping("/admin/stats")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Get total active jobs for admin dashboard")
-    public ResponseEntity<Map<String, Long>> getAdminStats() {
-        return ResponseEntity.ok(Map.of("totalActiveJobs", jobService.getTotalActiveJobs()));
-    }
-
-    @PatchMapping("/admin/{id}/close")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @Operation(summary = "Admin force-close an inappropriate job")
-    public ResponseEntity<JobResponse> adminCloseJob(@PathVariable UUID id) {
-        UUID adminId = UserContext.getUserId();
-        return ResponseEntity.ok(jobService.adminCloseJob(id, adminId));
+    @GetMapping("/my-contracts")
+    @Operation(summary = "Get jobs where the current freelancer has an accepted proposal")
+    @ApiResponse(responseCode = "200", description = "Contracts retrieved")
+    public ResponseEntity<PageResponse<JobResponse>> getMyContracts(
+            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
+        UUID freelancerId = UserContext.getUserId();
+        var result = jobService.getFreelancerContracts(freelancerId, PageRequest.of(page, size));
+        return ResponseEntity.ok(new PageResponse<>(
+                result.getContent(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages()
+        ));
     }
 
     @PatchMapping("/{id}/submit-delivery")
-    @Operation(summary = "Submit work for delivery (freelancer)")
-    @ApiResponse(responseCode = "200", description = "Delivery submitted")
-    @ApiResponse(responseCode = "403", description = "Only the assigned freelancer may submit delivery")
+    @Operation(summary = "Submit work for delivery",
+               description = "Freelancer marks the job as completed. Only the accepted freelancer may call this.")
+    @ApiResponse(responseCode = "200", description = "Delivery submitted, job moved to COMPLETED")
+    @ApiResponse(responseCode = "403", description = "Forbidden — not the accepted freelancer")
+    @ApiResponse(responseCode = "404", description = "Job not found")
+    @ApiResponse(responseCode = "409", description = "Job is not IN_PROGRESS")
     public ResponseEntity<JobResponse> submitDelivery(
-            @PathVariable UUID id,
+            @Parameter(description = "Job UUID") @PathVariable UUID id,
             @RequestBody(required = false) Map<String, String> body) {
         UUID freelancerId = UserContext.getUserId();
         String note = body != null ? body.getOrDefault("note", "") : "";
         return ResponseEntity.ok(jobService.submitDelivery(id, freelancerId, note));
     }
-
-    @GetMapping("/my-contracts")
-    @Operation(summary = "Get active contracts for the current freelancer")
-    @ApiResponse(responseCode = "200", description = "Contracts retrieved")
-    public ResponseEntity<PageResponse<JobResponse>> getMyContracts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        UUID freelancerId = UserContext.getUserId();
-        return ResponseEntity.ok(jobService.getFreelancerContracts(freelancerId, page, size));
-    }
-*/
 }

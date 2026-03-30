@@ -2,12 +2,24 @@
   <header class="flex items-center justify-between border-b border-[var(--ui-border)] px-4 py-3">
     <div class="flex items-center gap-3">
       <a routerLink="/messages" class="btn-ghost px-2 py-1 text-xs">← Back</a>
-      <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-bold text-brand-dark">
+      <span class="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-bold text-brand-dark">
         {{ otherParticipantInitials() }}
+        @if (isOtherOnline()) {
+          <span class="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500"></span>
+        }
       </span>
       <div>
-        <p class="text-sm font-semibold text-ink-900">{{ otherParticipantLabel() }}</p>
-        <p class="text-xs text-[var(--ui-muted)]">Direct message</p>
+        <div class="flex items-center gap-2">
+          <p class="text-sm font-semibold text-ink-900">{{ otherParticipantLabel() }}</p>
+          @if (isOtherOnline()) {
+            <span class="text-[11px] text-emerald-600">online</span>
+          }
+        </div>
+        @if (jobId()) {
+          <a [routerLink]="['/jobs', jobId()]" class="text-xs text-brand hover:underline">View linked job</a>
+        } @else {
+          <p class="text-xs text-[var(--ui-muted)]">Direct message</p>
+        }
       </div>
     </div>
 
@@ -30,31 +42,44 @@
         </div>
       }
 
-      <div class="space-y-2">
-        @for (msg of messages(); track msg.id) {
-          <div class="flex" [ngClass]="msg.senderId === currentUserId ? 'justify-end' : 'justify-start'">
-            <article
-              class="max-w-xs rounded-2xl px-3 py-2 text-sm shadow-sm sm:max-w-md"
-              [ngClass]="
-                msg.senderId === currentUserId
-                  ? 'rounded-br-md bg-brand text-white'
-                  : 'rounded-bl-md bg-[var(--ui-surface)] text-ink-800 border border-[var(--ui-border)]'
-              "
-            >
-              <p class="whitespace-pre-wrap break-words">{{ msg.content }}</p>
-              <div
-                class="mt-1 flex items-center gap-1 text-[11px]"
-                [ngClass]="msg.senderId === currentUserId ? 'justify-end text-white/80' : 'text-ink-400'"
-              >
-                <span>{{ msg.createdAt | timeAgo }}</span>
-                @if (msg.senderId === currentUserId && msg.readAt) {
-                  <span class="font-semibold">Seen</span>
-                }
-              </div>
-            </article>
+      @if (messages().length === 0) {
+        <div class="flex flex-col items-center justify-center py-16 text-center">
+          <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-ink-100">
+            <svg class="h-7 w-7 text-ink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
           </div>
-        }
-      </div>
+          <p class="text-sm font-semibold text-ink-900">No messages yet</p>
+          <p class="mt-1 text-sm text-[var(--ui-muted)]">Send the first message to start the conversation.</p>
+        </div>
+      } @else {
+        <div class="space-y-2">
+          @for (msg of messages(); track msg.id) {
+            <div class="flex" [ngClass]="msg.senderId === currentUserId ? 'justify-end' : 'justify-start'">
+              <article
+                class="max-w-xs rounded-2xl px-3 py-2 text-sm shadow-sm sm:max-w-md"
+                [ngClass]="
+                  msg.senderId === currentUserId
+                    ? 'rounded-br-md bg-brand text-white'
+                    : 'rounded-bl-md bg-[var(--ui-surface)] text-ink-800 border border-[var(--ui-border)]'
+                "
+              >
+                <p class="whitespace-pre-wrap break-words">{{ msg.content }}</p>
+                <div
+                  class="mt-1 flex items-center gap-1 text-[11px]"
+                  [ngClass]="msg.senderId === currentUserId ? 'justify-end text-white/80' : 'text-ink-400'"
+                >
+                  <span>{{ msg.createdAt | timeAgo }}</span>
+                  @if (msg.senderId === currentUserId && msg.readAt) {
+                    <span class="font-semibold">Seen</span>
+                  }
+                </div>
+              </article>
+            </div>
+          }
+        </div>
+      }
 
       @if (isTyping()) {
         <div class="mt-2 flex justify-start">

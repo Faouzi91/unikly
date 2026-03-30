@@ -15,6 +15,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, Subscription, debounceTime } from 'rxjs';
 import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
 import { KeycloakService } from '../../../core/auth/keycloak.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { MessageWebSocketService } from '../../../core/services/message-websocket.service';
 import { MessageItem, MessagingService } from '../services/messaging.service';
 import { UserService } from '../../profile/services/user.service';
@@ -36,6 +37,7 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewChecke
   private readonly wsService = inject(MessageWebSocketService);
   private readonly keycloak = inject(KeycloakService);
   private readonly userService = inject(UserService);
+  private readonly toast = inject(ToastService);
   private readonly zone = inject(NgZone);
 
   readonly messages = signal<MessageItem[]>([]);
@@ -46,6 +48,8 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewChecke
   readonly otherParticipantLabel = signal('Conversation');
   readonly otherParticipantInitials = signal('?');
   readonly otherParticipantId = signal<string | null>(null);
+  readonly isOtherOnline = signal(false);
+  readonly jobId = signal<string | null>(null);
 
   currentUserId = '';
   newMessage = '';
@@ -67,6 +71,7 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewChecke
 
     this.wsService.activate();
     this.subscribeToWebSocket();
+    this.loadConversationMeta();
     this.loadMessages(true);
 
     this.typingSub = this.typingSubject.pipe(debounceTime(500)).subscribe(() => {
@@ -119,7 +124,35 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewChecke
       error: () => {
         this.newMessage = content;
         this.sending.set(false);
+        this.toast.error('Failed to send message. Please try again.');
       },
+    });
+  }
+
+  private loadConversationMeta(): void {
+    this.messagingService.getConversation(this.conversationId).subscribe({
+      next: (conv) => {
+        this.jobId.set(conv.jobId);
+        const otherId = conv.participantIds.find((id) => id !== this.currentUserId) ?? null;
+        this.otherParticipantId.set(otherId);
+        if (otherId) {
+          this.resolveParticipant(otherId);
+          this.messagingService.getPresence([otherId]).subscribe({
+            next: (status) => this.isOtherOnline.set(status[otherId] === true),
+          });
+        }
+      },
+    });
+  }
+
+  private resolveParticipant(userId: string): void {
+    this.userService.getProfile(userId).subscribe({
+      next: (profile) => {
+        this.otherParticipantLabel.set(profile.displayName);
+        const initials = profile.displayName.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+        this.otherParticipantInitials.set(initials || '?');
+      },
+      error: () => this.otherParticipantLabel.set(`User ${userId.slice(0, 8)}`),
     });
   }
 
@@ -134,22 +167,6 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewChecke
     this.messagingService.getMessages(this.conversationId, this.currentPage, 50).subscribe({
       next: (page) => {
         if (initial) {
-          if (page.content.length > 0) {
-            const ids = new Set(page.content.map((item) => item.senderId).filter((id) => id !== this.currentUserId));
-            const otherId = [...ids][0] ?? null;
-            this.otherParticipantId.set(otherId);
-            if (otherId) {
-              this.userService.getProfile(otherId).subscribe({
-                next: (profile) => {
-                  this.otherParticipantLabel.set(profile.displayName);
-                  const initials = profile.displayName.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
-                  this.otherParticipantInitials.set(initials || '?');
-                },
-                error: () => this.otherParticipantLabel.set(`User ${otherId.slice(0, 8)}`),
-              });
-            }
-          }
-
           this.messages.set(page.content);
           this.loading.set(false);
           this.shouldScrollToBottom = true;

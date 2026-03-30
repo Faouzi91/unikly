@@ -34,6 +34,11 @@ public class ReviewService {
             throw new IllegalArgumentException("You cannot review yourself");
         }
 
+        if (request.jobId() != null && reviewRepository.existsByReviewerIdAndRevieweeIdAndJobId(
+                reviewerId, revieweeId, request.jobId())) {
+            throw new IllegalStateException("You have already submitted a review for this job");
+        }
+
         var reviewee = profileRepository.findById(revieweeId)
                 .orElseThrow(() -> new EntityNotFoundException("User profile not found: " + revieweeId));
 

@@ -1,11 +1,13 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { StarRatingComponent } from '../../../shared/components/star-rating/star-rating.component';
 import { UserAvatarComponent } from '../../../shared/components/user-avatar/user-avatar.component';
 import { TimeAgoPipe } from '../../../shared/pipes/time-ago.pipe';
+import { KeycloakService } from '../../../core/auth/keycloak.service';
+import { MessagingService } from '../../messaging/services/messaging.service';
 import { JobService } from '../../jobs/services/job.service';
 import { FreelancerSearchResult, JobSearchResult } from '../../jobs/models/job.models';
 
@@ -25,6 +27,9 @@ import { FreelancerSearchResult, JobSearchResult } from '../../jobs/models/job.m
 })
 export class SearchComponent implements OnInit, OnDestroy {
   private readonly jobService = inject(JobService);
+  private readonly router = inject(Router);
+  private readonly keycloak = inject(KeycloakService);
+  private readonly messagingService = inject(MessagingService);
   private readonly destroy$ = new Subject<void>();
 
   readonly searchControl = new FormControl('');
@@ -71,6 +76,16 @@ export class SearchComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  messageFreelancer(userId: string, event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const currentUserId = this.keycloak.getUserId();
+    if (!currentUserId) return;
+    this.messagingService.getOrCreateConversation([currentUserId, userId]).subscribe({
+      next: (conversation) => this.router.navigate(['/messages', conversation.id]),
+    });
   }
 
   jobsTotalPages(): number {

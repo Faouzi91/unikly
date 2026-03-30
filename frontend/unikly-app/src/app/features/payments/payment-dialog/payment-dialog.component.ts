@@ -101,8 +101,25 @@ export class PaymentDialogComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.toast.success('Payment processing. Escrow funding will be confirmed shortly.');
-    this.paid.emit({ paymentId: this.paymentId });
+    // Verify payment status directly with Stripe (don't rely on webhooks)
+    if (this.paymentId) {
+      this.paymentService.verifyPayment(this.paymentId).subscribe({
+        next: (payment) => {
+          if (payment.status === 'FUNDED') {
+            this.toast.success('Escrow funded successfully.');
+          } else {
+            this.toast.success('Payment submitted. Confirming with Stripe...');
+          }
+          this.paid.emit({ paymentId: this.paymentId });
+        },
+        error: () => {
+          this.toast.success('Payment submitted. It may take a moment to confirm.');
+          this.paid.emit({ paymentId: this.paymentId });
+        },
+      });
+    } else {
+      this.paid.emit({ paymentId: this.paymentId });
+    }
   }
 
   onClose(): void {

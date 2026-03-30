@@ -10,6 +10,7 @@ import java.util.UUID;
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     boolean existsByIdempotencyKey(String idempotencyKey);
     Optional<Payment> findByStripePaymentIntentId(String stripePaymentIntentId);
+    List<Payment> findByJobIdAndStatus(UUID jobId, com.unikly.paymentservice.domain.PaymentStatus status);
     List<Payment> findByJobId(UUID jobId);
     List<Payment> findByClientIdOrFreelancerId(UUID clientId, UUID freelancerId);
 

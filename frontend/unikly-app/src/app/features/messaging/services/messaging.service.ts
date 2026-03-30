@@ -8,6 +8,8 @@ export interface ConversationSummary {
   participantIds: string[];
   createdAt: string;
   lastMessageAt: string;
+  unreadCount: number;
+  lastMessagePreview: string | null;
 }
 
 export interface MessageItem {
@@ -39,6 +41,10 @@ export class MessagingService {
     );
   }
 
+  getConversation(conversationId: string): Observable<ConversationSummary> {
+    return this.api.get<ConversationSummary>(`/v1/messages/conversations/${conversationId}`);
+  }
+
   getMessages(
     conversationId: string,
     page = 0,
@@ -68,6 +74,16 @@ export class MessagingService {
     return this.api.post<ConversationSummary>('/v1/messages/conversations', {
       participantIds,
       jobId: jobId ?? null,
+    });
+  }
+
+  getUnreadCount(): Observable<{ unreadCount: number }> {
+    return this.api.get<{ unreadCount: number }>('/v1/messages/conversations/unread-count');
+  }
+
+  getPresence(userIds: string[]): Observable<Record<string, boolean>> {
+    return this.api.get<Record<string, boolean>>('/v1/messages/conversations/presence', {
+      userIds: userIds.join(','),
     });
   }
 }

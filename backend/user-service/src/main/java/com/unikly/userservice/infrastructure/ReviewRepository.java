@@ -13,6 +13,8 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
     Page<Review> findByRevieweeId(UUID revieweeId, Pageable pageable);
 
+    boolean existsByReviewerIdAndRevieweeIdAndJobId(UUID reviewerId, UUID revieweeId, UUID jobId);
+
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.revieweeId = :revieweeId")
     BigDecimal calculateAverageRating(UUID revieweeId);
 

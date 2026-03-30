@@ -22,9 +22,9 @@ export class ConversationListComponent implements OnInit, OnDestroy {
 
   readonly loading = signal(true);
   readonly conversations = signal<ConversationSummary[]>([]);
-  readonly lastPreviewMap = signal<Record<string, string>>({});
   readonly participantNames = signal<Record<string, string>>({});
   readonly participantInitials = signal<Record<string, string>>({});
+  readonly onlineStatus = signal<Record<string, boolean>>({});
 
   private currentUserId = '';
   private wsSub?: Subscription;
@@ -55,6 +55,15 @@ export class ConversationListComponent implements OnInit, OnDestroy {
     return this.participantInitials()[otherId] ?? '?';
   }
 
+  isOnline(conversation: ConversationSummary): boolean {
+    const otherId = this.getOtherId(conversation);
+    return otherId ? this.onlineStatus()[otherId] === true : false;
+  }
+
+  getPreview(conversation: ConversationSummary): string {
+    return conversation.lastMessagePreview ?? 'No messages yet';
+  }
+
   private loadConversations(): void {
     this.loading.set(true);
     this.messagingService.getConversations(0).subscribe({
@@ -62,6 +71,7 @@ export class ConversationListComponent implements OnInit, OnDestroy {
         this.conversations.set(page.content);
         this.loading.set(false);
         this.resolveParticipantNames(page.content);
+        this.loadPresence(page.content);
       },
       error: () => this.loading.set(false),
     });
@@ -85,19 +95,31 @@ export class ConversationListComponent implements OnInit, OnDestroy {
     }
   }
 
+  private loadPresence(conversations: ConversationSummary[]): void {
+    const otherIds = conversations
+      .map((c) => this.getOtherId(c))
+      .filter((id): id is string => !!id);
+    if (otherIds.length === 0) return;
+    this.messagingService.getPresence(otherIds).subscribe({
+      next: (status) => this.onlineStatus.set(status),
+    });
+  }
+
   private subscribeToWebSocket(): void {
     this.wsSub = this.wsService.messages$.subscribe((message: IncomingMessage) => {
       this.conversations.update((current) => {
         const index = current.findIndex((item) => item.id === message.conversationId);
         if (index < 0) return current;
-        const updated = { ...current[index], lastMessageAt: message.createdAt };
+        const preview = message.content.length > 80 ? message.content.slice(0, 80) + '…' : message.content;
+        const updated = {
+          ...current[index],
+          lastMessageAt: message.createdAt,
+          lastMessagePreview: preview,
+          unreadCount: current[index].unreadCount + 1,
+        };
         const rest = current.filter((_, i) => i !== index);
         return [updated, ...rest];
       });
-      this.lastPreviewMap.update((map) => ({
-        ...map,
-        [message.conversationId]: message.content.slice(0, 80),
-      }));
     });
   }
 }

@@ -11,11 +11,16 @@ import {
 
 const TYPE_LABELS: Record<string, string> = {
   JOB_MATCHED: 'Job',
+  JOB_UPDATED: 'Job Updated',
+  JOB_CANCELLED: 'Job Cancelled',
+  JOB_COMPLETED: 'Completed',
   PROPOSAL_RECEIVED: 'Proposal',
   PROPOSAL_ACCEPTED: 'Accepted',
+  PROPOSAL_OUTDATED: 'Outdated',
   PAYMENT_FUNDED: 'Escrow',
   ESCROW_RELEASED: 'Released',
   MESSAGE_RECEIVED: 'Message',
+  REVIEW_RECEIVED: 'Review',
   SYSTEM: 'System',
 };
 
