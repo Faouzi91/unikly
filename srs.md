@@ -415,7 +415,9 @@ Browser (Angular 21) → Nginx (port 80) → API Gateway (8080) → Services
 | Role-based access control (CLIENT/FREELANCER/ADMIN) | ✅ |
 | Rate limiting (Redis, gateway level) | ✅ |
 | HTTPS enforced in production (Nginx TLS) | ✅ Config in `nginx/` |
-| Stripe secrets in env vars only | ✅ `.env` / `.env.example` |
+| Stripe secrets in env vars only — **no hardcoded fallbacks in source** | ✅ `application.yml` uses `${STRIPE_SECRET_KEY:}` / `${STRIPE_WEBHOOK_SECRET:}`; values must come from `.env` |
+| Build artifacts (`bin/`) excluded from VCS to prevent re-leaking config fallbacks | ✅ `.gitignore` |
+| MinIO/S3 credentials sourced exclusively from `.env` | ✅ `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` / `MINIO_BUCKET` |
 
 ### 7.5 Observability
 

@@ -7,6 +7,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security
+
+- **Removed hardcoded Stripe test credentials** from `payment-service/src/main/resources/application.yml` — `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` now have empty defaults; values must come from `.env`. Existing test keys must be rotated in the Stripe dashboard.
+- **Untracked Eclipse `bin/` build artifacts** (34 files) which mirrored `src/main/resources/` and re-exposed the same Stripe fallbacks. Added `bin/` to `.gitignore`.
+
+### Fixed
+
+- **`build.sh`** — chmod +x and skip-redundant note: the host-side gradle/npm steps are unnecessary because `Dockerfile.gateway` and `Dockerfile.frontend` already build inside multi-stage containers. Running `docker build infra/docker/Dockerfile.java-builder` then `docker compose build` is sufficient.
+- **Missing `gradle-wrapper.jar`** — the wrapper config referenced gradle 9.4.0 but the jar was absent; document fetching from `https://raw.githubusercontent.com/gradle/gradle/v9.4.0/gradle/wrapper/gradle-wrapper.jar`.
+- **`.env` location** — compose runs from `infra/`, so the repo-root `.env` must be symlinked into `infra/.env` (or copied). MinIO credentials (`MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `MINIO_BUCKET`, `MINIO_ENDPOINT`, `MINIO_PUBLIC_URL`) were missing from `.env` causing `user-service` to crash on `S3Client` init with `Access key ID cannot be blank`.
+- **Frontend port 80 conflict** — `infra/docker-compose.override.yml` (gitignored) can remap the host-side port (e.g. `8081:80`) when port 80 is in use.
+
 ---
 
 ## [7.0.0] - 2026-03-24

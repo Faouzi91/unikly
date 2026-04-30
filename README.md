@@ -91,11 +91,10 @@ Event-driven microservices with Domain-Driven Design (DDD) and **Feature-Based H
 
 ## Prerequisites
 
-- **Docker Desktop** (with Docker Compose v2)
-- **Java 25** (OpenJDK / Temurin)
-- **Node.js 22 LTS** + Angular CLI 21 (`npm install -g @angular/cli`)
-- **Gradle 9.4+** (wrapper included)
+- **Docker Desktop** (with Docker Compose v2 and BuildKit)
 - A **Stripe test account** with API keys
+
+> Java 25, Node 22, and Gradle 9.4 are **only needed for local (non-container) development**. The full stack is built end-to-end inside Docker using `eclipse-temurin:25-jdk` and `node:22` multi-stage images, so no host-side JDK or Node installation is required to run the project.
 
 ---
 
@@ -107,29 +106,50 @@ cd unikly
 
 # 1. Configure secrets
 cp .env.example .env
-# Edit .env — set STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, and Keycloak passwords
+# Edit .env — set STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, MINIO_ROOT_*, and Keycloak passwords.
+# `infra/docker-compose.yml` reads its env from `infra/.env`, so symlink it:
+ln -sf ../.env infra/.env
 
-# 2. Start all infrastructure + services
-docker compose up -d
+# 2. (One-time) build the Java builder base image, then all service images
+docker build -f infra/docker/Dockerfile.java-builder -t localhost/unikly/java-builder:latest .
+cd infra && docker compose build && cd ..
 
-# 3. Wait ~2 minutes for all services to start, then verify
-docker compose ps
+# 3. Start everything
+cd infra && docker compose up -d && cd ..
 
-# 4. Start the Angular dev server
-cd frontend/unikly-app
-npm install
-ng serve --proxy-config proxy.conf.json
+# 4. Verify (wait ~1–2 min for healthchecks)
+cd infra && docker compose ps && cd ..
 
 # 5. Open the application
-# http://localhost:4200
+# Frontend:   http://localhost:80     (or 8081 if port 80 is occupied — see override below)
+# Gateway:    http://localhost:8080
+# Keycloak:   http://localhost:8180
+# MinIO UI:   http://localhost:9001
+# Mailhog:    http://localhost:8025
 ```
+
+> **Port 80 already taken?** Create `infra/docker-compose.override.yml` (gitignored):
+> ```yaml
+> services:
+>   frontend:
+>     ports: !override
+>       - "8081:80"
+> ```
 
 > **With Makefile:**
 > ```bash
-> make dev       # Start everything
+> make dev       # Start everything (assumes images already built)
+> make build     # Run ./build.sh
 > make status    # Check service health
 > make test      # Run all tests
 > ```
+
+> **Gradle wrapper missing?** If `backend/gradle/wrapper/gradle-wrapper.jar` is absent, fetch it:
+> ```bash
+> curl -sSL -o backend/gradle/wrapper/gradle-wrapper.jar \
+>   https://raw.githubusercontent.com/gradle/gradle/v9.4.0/gradle/wrapper/gradle-wrapper.jar
+> ```
+> (Only needed for host-side Gradle invocations; the Docker build does not require it.)
 
 ---
 
