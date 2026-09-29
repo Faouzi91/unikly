@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 576" fill="none">
+  <rect width="640" height="576" fill="#eef2ee"/>
+  <rect x="241" y="196" width="158" height="146" rx="8" stroke="#789087" stroke-width="8"/>
+  <path d="m244 239 75 54 77-54M320 201v92" stroke="#789087" stroke-width="8" stroke-linejoin="round"/>
+  <text x="320" y="393" fill="#58685f" font-family="Arial,sans-serif" font-size="21" text-anchor="middle">Product image</text>
+</svg>

@@ -1,0 +1,77 @@
+<main class="storefront">
+    <section class="welcome-band" aria-label="Featured collection">
+        <div class="welcome-copy">
+            <p class="eyebrow">Thoughtful finds for everyday living</p>
+            <h1>Make room for better.</h1>
+            <p>Useful things, considered design, and fair prices for the spaces you call home.</p>
+            <a href="#shop" class="browse-link">Explore this week’s picks <span aria-hidden="true">→</span></a>
+        </div>
+        <img class="welcome-image"
+            src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1400&q=88"
+            alt="Calm, light-filled living room with simple, natural furnishings">
+    </section>
+
+    <section class="trust-strip" aria-label="Shopping information">
+        <div><strong>Free delivery</strong><span>on orders over $50</span></div>
+        <div><strong>Easy returns</strong><span>within 30 days</span></div>
+        <div><strong>Secure checkout</strong><span>your details stay protected</span></div>
+    </section>
+
+    <section id="shop" class="product-section" aria-labelledby="picks-title">
+        <div class="section-title-row">
+            <div>
+                <p class="eyebrow">The Unikly edit</p>
+                <h2 id="picks-title">Popular right now</h2>
+            </div>
+        </div>
+
+        <div class="category-tabs" role="group" aria-label="Filter products by category">
+            @for (category of categories; track category) {
+            <button type="button" [class.active]="activeCategory() === category" (click)="activeCategory.set(category)">
+                {{ category }}
+            </button>
+            }
+        </div>
+
+        @if (notice()) {
+        <p class="cart-notice" role="status">{{ notice() }}</p>
+        }
+
+        <label class="sort-control">
+            <span>Sort by</span>
+            <select [value]="sortOrder()" (change)="sortOrder.set($any($event.target).value)">
+                <option value="featured">Featured</option>
+                <option value="price-asc">Price: low to high</option>
+                <option value="price-desc">Price: high to low</option>
+            </select>
+        </label>
+
+        <div class="product-grid">
+            @for (product of sortedProducts(); track product.id) {
+            <article class="product-item">
+                <a class="product-image" [routerLink]="['/products', product.id]" [attr.aria-label]="'View ' + product.name">
+                    <img [src]="product.image" [alt]="product.name" loading="lazy">
+                    @if (product.badge) { <span class="product-badge">{{ product.badge }}</span> }
+                </a>
+                <div class="product-details">
+                    <p class="product-category">{{ product.category }}</p>
+                    <h3><a class="product-title-link" [routerLink]="['/products', product.id]">{{ product.name }}</a></h3>
+                    <p class="rating" [attr.aria-label]="product.rating + ' out of 5 stars'">
+                        <span aria-hidden="true">{{ stars(product.rating) }}</span>
+                        <small>({{ product.reviews }})</small>
+                    </p>
+                    <p class="price">${{ product.price.toFixed(2) }}</p>
+                    <p class="stock-status" [class.out-of-stock]="product.stockQuantity === 0">
+                        {{ product.stockQuantity === 0 ? 'Out of stock' : product.stockQuantity + ' in stock' }}
+                    </p>
+                    <button type="button" class="add-button" [disabled]="!canAdd(product)" (click)="addToCart(product)">
+                        {{ product.stockQuantity === 0 ? 'Out of stock' : canAdd(product) ? 'Add to basket' : 'Maximum in basket' }}
+                    </button>
+                </div>
+            </article>
+            } @empty {
+            <p class="empty-state">No items match that search. Try another term or category.</p>
+            }
+        </div>
+    </section>
+</main>

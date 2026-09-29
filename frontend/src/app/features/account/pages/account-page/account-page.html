@@ -1,0 +1,122 @@
+<main class="account-main">
+    <div class="page-heading">
+        <div>
+            <p class="eyebrow">Account</p>
+            <h1>Your profile</h1>
+            <p class="account-copy">Manage your contact and delivery details.</p>
+        </div>
+        <span class="role-label">{{ auth.user()?.role === 'ADMIN' ? 'Administrator' : auth.user()?.role === 'SELLER' ? 'Seller' : auth.user()?.role === 'BUYER' ? 'Buyer' : 'Buyer' }}</span>
+    </div>
+
+    @if (status()) {
+    <p class="notice success" role="status">{{ status() }}</p>
+    }
+    @if (error()) {
+    <p class="notice error" role="alert">{{ error() }}</p>
+    }
+
+    @if (loading()) {
+    <p class="loading" role="status">Loading your profile…</p>
+    } @else if (profile(); as customer) {
+    <section class="account-section" aria-labelledby="profile-title">
+        <div class="section-heading">
+            <div>
+                <h2 id="profile-title">Personal information</h2>
+                <p>Email address is used to sign in and cannot be changed here.</p>
+            </div>
+        </div>
+        <form (ngSubmit)="saveProfile()">
+            <div class="form-grid">
+                <label>
+                    Full name
+                    <input name="displayName" autocomplete="name" required minlength="2" maxlength="100"
+                        [ngModel]="customer.displayName" (ngModelChange)="updateField('displayName', $event)">
+                </label>
+                <label>
+                    Email address
+                    <input name="email" type="email" autocomplete="email" [value]="customer.email" disabled>
+                </label>
+                <label>
+                    Phone number
+                    <input name="phoneNumber" type="tel" autocomplete="tel" maxlength="32"
+                        [ngModel]="customer.phoneNumber ?? ''" (ngModelChange)="updateField('phoneNumber', $event)">
+                </label>
+            </div>
+
+            <h3 class="subheading">Default delivery address</h3>
+            <div class="form-grid">
+                <label>
+                    Address line 1
+                    <input name="addressLine1" autocomplete="address-line1" maxlength="120"
+                        [ngModel]="customer.addressLine1 ?? ''" (ngModelChange)="updateField('addressLine1', $event)">
+                </label>
+                <label>
+                    Address line 2
+                    <input name="addressLine2" autocomplete="address-line2" maxlength="120"
+                        [ngModel]="customer.addressLine2 ?? ''" (ngModelChange)="updateField('addressLine2', $event)">
+                </label>
+                <label>
+                    City
+                    <input name="city" autocomplete="address-level2" maxlength="80" [ngModel]="customer.city ?? ''"
+                        (ngModelChange)="updateField('city', $event)">
+                </label>
+                <label>
+                    State / region
+                    <input name="region" autocomplete="address-level1" maxlength="80" [ngModel]="customer.region ?? ''"
+                        (ngModelChange)="updateField('region', $event)">
+                </label>
+                <label>
+                    Postal code
+                    <input name="postalCode" autocomplete="postal-code" maxlength="24"
+                        [ngModel]="customer.postalCode ?? ''" (ngModelChange)="updateField('postalCode', $event)">
+                </label>
+                <label>
+                    Country code
+                    <input name="countryCode" autocomplete="country" maxlength="2" placeholder="US"
+                        [ngModel]="customer.countryCode ?? ''" (ngModelChange)="updateField('countryCode', $event)">
+                </label>
+            </div>
+            <button class="primary-button" type="submit" [disabled]="saving()">
+                {{ saving() ? 'Saving…' : 'Save changes' }}
+            </button>
+        </form>
+    </section>
+
+    <section class="account-section" aria-labelledby="password-title">
+        <div class="section-heading">
+            <div>
+                <h2 id="password-title">Sign-in security</h2>
+                <p>Changing your password signs out active sessions.</p>
+            </div>
+        </div>
+        <form class="password-form" (ngSubmit)="savePassword()" #passwordForm="ngForm">
+            <label>
+                Current password
+                <input name="currentPassword" type="password" autocomplete="current-password" required
+                    [(ngModel)]="currentPassword">
+            </label>
+            <div class="form-grid">
+                <label>
+                    New password
+                    <input name="newPassword" type="password" autocomplete="new-password" required minlength="12"
+                        maxlength="72" [(ngModel)]="newPassword">
+                </label>
+                <label>
+                    Confirm new password
+                    <input name="confirmPassword" type="password" autocomplete="new-password" required minlength="12"
+                        maxlength="72" [(ngModel)]="confirmPassword">
+                </label>
+            </div>
+            <button class="secondary-action" type="submit" [disabled]="passwordForm.invalid || passwordSaving()">
+                {{ passwordSaving() ? 'Updating…' : 'Update password' }}
+            </button>
+        </form>
+    </section>
+
+    <details class="permissions-section">
+        <summary>Account permissions</summary>
+        <p>{{ permissionSummary }}</p>
+        <small>Permissions shown here are assigned by the server and are not editable.</small>
+    </details>
+    }
+</main>

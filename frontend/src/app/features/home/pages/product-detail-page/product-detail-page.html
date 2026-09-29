@@ -1,0 +1,42 @@
+<main class="product-page">
+  <a class="back-link" routerLink="/" fragment="shop">← Back to shopping</a>
+
+  @if (product(); as item) {
+    <article class="product-detail">
+      <div class="detail-image-wrap">
+        <img class="detail-image" [src]="item.image" [alt]="item.name">
+        @if (item.badge) { <span class="detail-badge">{{ item.badge }}</span> }
+      </div>
+
+      <section class="detail-copy" aria-labelledby="product-title">
+        <p class="eyebrow">{{ item.category }}</p>
+        <h1 id="product-title">{{ item.name }}</h1>
+        <p class="rating" [attr.aria-label]="item.rating + ' out of 5 stars'">
+          <span aria-hidden="true">{{ stars(item.rating) }}</span>
+          <small>{{ item.rating.toFixed(1) }} · {{ item.reviews }} reviews</small>
+        </p>
+        <p class="price">${{ item.price.toFixed(2) }}</p>
+        <p class="description">{{ item.description }}</p>
+        <p class="stock-status" [class.out-of-stock]="item.stockQuantity === 0">
+          {{ item.stockQuantity === 0 ? 'Out of stock' : item.stockQuantity + ' in stock' }}
+        </p>
+        <button class="add-button" type="button" [disabled]="isAtStockLimit(item)" (click)="addToBasket()">
+          {{ item.stockQuantity === 0 ? 'Out of stock' : isAtStockLimit(item) ? 'Maximum in basket' : 'Add to basket' }}
+        </button>
+        @if (addedToBasket()) {
+          <p class="basket-confirmation" role="status">Added to your basket.</p>
+        } @if (isAtStockLimit(item) && item.stockQuantity > 0) {
+          <p class="stock-status out-of-stock" role="status">All available stock is already in your basket.</p>
+        }
+        <p class="demo-note">Product information shown here is part of the Unikly demo catalog.</p>
+      </section>
+    </article>
+  } @else {
+    <section class="not-found" aria-labelledby="not-found-title">
+      <p class="eyebrow">Product not found</p>
+      <h1 id="not-found-title">We couldn’t find that item.</h1>
+      <p>It may have been removed from this sample catalog.</p>
+      <a class="back-link" routerLink="/" fragment="shop">Browse products</a>
+    </section>
+  }
+</main>

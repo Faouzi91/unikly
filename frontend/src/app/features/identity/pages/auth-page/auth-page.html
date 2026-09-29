@@ -1,0 +1,60 @@
+<main class="auth-main">
+    <section class="auth-panel" aria-labelledby="auth-title">
+        <h1 id="auth-title">{{ mode === 'login' ? 'Sign in' : 'Create account' }}</h1>
+        <p class="auth-intro">
+            {{ mode === 'login' ? 'Access your Unikly account.' : 'Join Unikly as a buyer or seller.' }}
+        </p>
+
+        @if (error()) {
+        <div class="form-error" role="alert">{{ error() }}</div>
+        }
+
+        <form (ngSubmit)="submit()" #authForm="ngForm">
+            @if (mode === 'register') {
+            <label for="display-name">Your name</label>
+            <input id="display-name" name="displayName" type="text" autocomplete="name" required minlength="2"
+                maxlength="100" [(ngModel)]="displayName">
+
+            <label for="account-type">I want to</label>
+            <select id="account-type" name="accountType" required [(ngModel)]="accountType">
+                <option value="BUYER">Shop on Unikly</option>
+                <option value="SELLER">Sell products on Unikly</option>
+            </select>
+            }
+
+            <label for="email">Email address</label>
+            <input id="email" name="email" type="email" autocomplete="email" required maxlength="254"
+                [(ngModel)]="email">
+
+            <div class="password-label">
+                <label for="password">Password</label>
+                @if (mode === 'login') {
+                <button class="text-button" type="button" (click)="togglePassword()">
+                    {{ showPassword() ? 'Hide' : 'Show' }}
+                </button>
+                }
+            </div>
+            <input id="password" name="password" [type]="showPassword() ? 'text' : 'password'"
+                [attr.autocomplete]="mode === 'login' ? 'current-password' : 'new-password'" required
+                [minlength]="mode === 'register' ? 12 : 1" maxlength="72" [(ngModel)]="password">
+
+            @if (mode === 'register') {
+            <p class="field-hint">Use at least 12 characters.</p>
+            }
+
+            @if (mode === 'login') {
+            <a class="forgot-link" routerLink="/forgot-password">Forgot your password?</a>
+            }
+
+            <button class="primary-button" type="submit" [disabled]="authForm.invalid || busy()">
+                {{ busy() ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create your account' }}
+            </button>
+        </form>
+
+        <div class="auth-divider"><span>{{ mode === 'login' ? 'New to Unikly?' : 'Already have an account?' }}</span>
+        </div>
+        <a class="secondary-button" [routerLink]="mode === 'login' ? '/register' : '/login'">
+            {{ mode === 'login' ? 'Create your Unikly account' : 'Sign in instead' }}
+        </a>
+    </section>
+</main>

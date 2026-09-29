@@ -1,0 +1,47 @@
+<main class="orders-page">
+  <a class="back-link" routerLink="/account">← Your account</a>
+  <header class="page-heading">
+    <p class="eyebrow">Purchase history</p>
+    <h1>Your orders</h1>
+    <p>Review the items you ordered and their current status.</p>
+  </header>
+
+  @if (loading()) {
+    <p class="message" role="status">Loading your orders…</p>
+  } @else if (error()) {
+    <p class="message error" role="alert">{{ error() }}</p>
+    <button class="retry-button" type="button" (click)="loadOrders()">Try again</button>
+  } @else if (orders().length === 0) {
+    <section class="empty-orders">
+      <h2>No orders yet</h2>
+      <p>When you place an order, its items and status will appear here.</p>
+      <a class="primary-link" routerLink="/" fragment="shop">Browse products</a>
+    </section>
+  } @else {
+    <div class="order-list">
+      @for (order of orders(); track order.reference) {
+        <article class="order-card">
+          <header class="order-card-heading">
+            <div>
+              <p class="order-reference">Order {{ order.reference }}</p>
+              <time [dateTime]="order.createdAt">Placed {{ order.createdAt | date:'medium' }}</time>
+            </div>
+            <span class="order-status">{{ order.status }}</span>
+          </header>
+          <ul class="order-items">
+            @for (item of order.items; track item.productId) {
+              <li>
+                <span><strong>{{ item.productName }}</strong><small>Quantity: {{ item.quantity }}</small></span>
+                <span>{{ (item.unitPrice * item.quantity) | currency:'USD' }}</span>
+              </li>
+            }
+          </ul>
+          <footer class="order-card-footer">
+            <span>Order total</span><strong>{{ order.total | currency:'USD' }}</strong>
+          </footer>
+          <p class="tracking-note">Your order is recorded. Seller updates and shipment tracking will appear here when those features are added.</p>
+        </article>
+      }
+    </div>
+  }
+</main>

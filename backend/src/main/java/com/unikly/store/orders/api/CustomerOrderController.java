@@ -1,0 +1,33 @@
+package com.unikly.store.orders.api;
+
+import com.unikly.store.orders.application.CustomerOrderService;
+import com.unikly.store.orders.application.CustomerOrderService.OrderView;
+import com.unikly.store.orders.application.OrderRequests;
+import jakarta.validation.Valid;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/orders")
+public class CustomerOrderController {
+    private final CustomerOrderService orders;
+    public CustomerOrderController(CustomerOrderService orders) { this.orders = orders; }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public OrderView create(Authentication authentication, @Valid @RequestBody OrderRequests.Create request) {
+        return orders.create(authentication.getName(), request);
+    }
+
+    @GetMapping("/mine")
+    public List<OrderView> listMine(Authentication authentication) {
+        return orders.listMine(authentication.getName());
+    }
+}

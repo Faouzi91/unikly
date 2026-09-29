@@ -1,0 +1,108 @@
+<main class="checkout-page">
+  @if (placedOrder(); as order) {
+    <section class="confirmation-panel" aria-labelledby="confirmation-title">
+      <p class="eyebrow">Demo order complete</p>
+      <h1 id="confirmation-title">Thank you, {{ fullName }}.</h1>
+      <p>Order reference <strong>{{ order.reference }}</strong> is saved to your account.</p>
+      <p class="confirmation-status">Status: <strong>{{ order.status }}</strong>. This confirms the order and stock reservation; live shipment tracking is not connected yet.</p>
+      <a class="primary-link" routerLink="/orders">Track your order</a>
+      <a class="secondary-link" routerLink="/">Continue shopping</a>
+    </section>
+  } @else if (!buyerSignedIn()) {
+    <section class="empty-checkout">
+      <p class="eyebrow">{{ sessionExpired() ? 'Session expired' : 'Buyer account required' }}</p>
+      <h1>{{ sessionExpired() ? 'Sign in again to continue' : 'Sign in to place and track an order' }}</h1>
+      @if (sessionExpired()) {
+        <p>Your basket is still saved. Sign in again, then return to checkout.</p>
+        <a class="primary-link" routerLink="/login">Sign in again</a>
+      } @else if (auth.isAuthenticated()) {
+        <p>Sign out, then sign in with a buyer account to place and track orders.</p>
+      } @else {
+        <p>Orders are saved to a buyer account so you can return to their status and item details.</p>
+        <a class="primary-link" routerLink="/login">Sign in or create a buyer account</a>
+      }
+    </section>
+  } @else if (items().length === 0) {
+    <section class="empty-checkout">
+      <p class="eyebrow">Checkout</p>
+      <h1>Your basket is empty</h1>
+      <p>Add an item to your basket before checking out.</p>
+      <a class="primary-link" routerLink="/" fragment="shop">Browse products</a>
+    </section>
+  } @else {
+    <a class="back-link" routerLink="/basket">← Back to basket</a>
+    <header class="checkout-heading">
+      <p class="eyebrow">Almost there</p>
+      <h1>Delivery details</h1>
+      <p>Review your basket and enter where your demo order would be delivered.</p>
+    </header>
+
+    @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+
+    <div class="checkout-layout">
+      <form class="delivery-form" (ngSubmit)="placeDemoOrder(deliveryForm.invalid)" #deliveryForm="ngForm">
+        <h2>Contact information</h2>
+        <label for="full-name">Full name</label>
+        <input id="full-name" name="fullName" type="text" required minlength="2" maxlength="120"
+          autocomplete="name" [(ngModel)]="fullName">
+
+        <div class="form-row">
+          <div>
+            <label for="email">Email address</label>
+            <input id="email" name="email" type="email" required maxlength="254" autocomplete="email" [(ngModel)]="email">
+          </div>
+          <div>
+            <label for="phone">Phone number</label>
+            <input id="phone" name="phone" type="tel" required minlength="6" maxlength="30" autocomplete="tel" [(ngModel)]="phone">
+          </div>
+        </div>
+
+        <h2>Delivery address</h2>
+        <label for="address-line-1">Street address</label>
+        <input id="address-line-1" name="addressLine1" type="text" required maxlength="160" autocomplete="address-line1" [(ngModel)]="addressLine1">
+
+        <label for="address-line-2">Apartment, suite, etc. <span>(optional)</span></label>
+        <input id="address-line-2" name="addressLine2" type="text" maxlength="160" autocomplete="address-line2" [(ngModel)]="addressLine2">
+
+        <div class="form-row">
+          <div>
+            <label for="city">City</label>
+            <input id="city" name="city" type="text" required maxlength="100" autocomplete="address-level2" [(ngModel)]="city">
+          </div>
+          <div>
+            <label for="region">State / region</label>
+            <input id="region" name="region" type="text" required maxlength="100" autocomplete="address-level1" [(ngModel)]="region">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label for="postal-code">Postal code</label>
+            <input id="postal-code" name="postalCode" type="text" required maxlength="24" autocomplete="postal-code" [(ngModel)]="postalCode">
+          </div>
+          <div>
+            <label for="country">Country</label>
+            <input id="country" name="country" type="text" required maxlength="80" autocomplete="country-name" [(ngModel)]="country">
+          </div>
+        </div>
+
+        <p class="demo-disclosure">No payment is collected in this increment. Your delivery details are stored with this order so you can track it from your account.</p>
+        <button class="place-order-button" type="submit" [disabled]="deliveryForm.invalid || busy()">
+          {{ busy() ? 'Placing order…' : 'Place order · ' + (subtotal() | currency:'USD') }}
+        </button>
+      </form>
+
+      <aside class="order-summary" aria-labelledby="summary-title">
+        <h2 id="summary-title">Order summary</h2>
+        @for (item of items(); track item.productId) {
+          <div class="summary-item">
+            <div><strong>{{ item.name }}</strong><span>Qty {{ item.quantity }}</span></div>
+            <span>{{ (item.price * item.quantity) | currency:'USD' }}</span>
+          </div>
+        }
+        <p class="subtotal-row"><span>Subtotal</span><strong>{{ subtotal() | currency:'USD' }}</strong></p>
+        <p class="shipping-note">Payment is not processed. Stock is reserved when the order is placed.</p>
+      </aside>
+    </div>
+  }
+</main>

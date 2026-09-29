@@ -1,0 +1,25 @@
+.orders-page { max-width: 940px; min-height: 55vh; margin: 0 auto; padding: 32px 24px 64px; color: #202522; }
+.back-link { display: inline-block; margin-bottom: 20px; color: #214538; font-size: 13px; font-weight: 600; text-decoration: none; }
+.back-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.page-heading { margin-bottom: 24px; }
+.eyebrow { margin: 0 0 7px; color: #58685f; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+h1 { margin: 0; font-size: 30px; font-weight: 500; }
+.page-heading > p:last-child { margin: 8px 0 0; color: #59635d; font-size: 14px; }
+.order-list { display: grid; gap: 16px; }
+.order-card, .empty-orders { border: 1px solid #e0e3e0; background: #fff; }
+.order-card-heading { display: flex; justify-content: space-between; gap: 16px; padding: 18px; border-bottom: 1px solid #e7eae7; background: #f8faf8; }
+.order-reference { margin: 0 0 5px; color: #202522; font-size: 15px; font-weight: 700; }
+.order-card-heading time { color: #66716a; font-size: 12px; }
+.order-status { align-self: center; padding: 6px 9px; border-radius: 3px; background: #e9f3eb; color: #27613c; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.order-items { display: grid; gap: 0; margin: 0; padding: 0 18px; list-style: none; }
+.order-items li { display: flex; justify-content: space-between; gap: 14px; padding: 14px 0; border-bottom: 1px solid #edf0ed; font-size: 13px; }
+.order-items li > span:first-child { display: grid; gap: 5px; }
+.order-items small { color: #66716a; font-size: 12px; }
+.order-card-footer { display: flex; justify-content: space-between; padding: 15px 18px 8px; font-size: 14px; }
+.tracking-note { margin: 8px 18px 18px; color: #66716a; font-size: 12px; line-height: 1.5; }
+.empty-orders { padding: 30px; text-align: center; }
+.empty-orders h2 { margin: 0; color: #263a32; font-size: 20px; }
+.empty-orders p, .message { color: #59635d; font-size: 14px; line-height: 1.5; }
+.primary-link, .retry-button { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; padding: 0 14px; border: 1px solid #214c40; border-radius: 3px; background: #285c4e; color: #fff; font: inherit; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.error { color: #8b302b; }
+@media (max-width: 560px) { .orders-page { padding: 24px 14px 44px; } .order-card-heading { align-items: flex-start; flex-direction: column; } }

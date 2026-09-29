@@ -1,0 +1,42 @@
+<main class="basket-page">
+  <div class="basket-heading">
+    <div>
+      <p class="eyebrow">Your picks</p>
+      <h1>Your basket</h1>
+    </div>
+    @if (items().length) {
+      <div class="basket-heading-actions">
+        <a class="checkout-header-link" routerLink="/checkout">Continue to checkout</a>
+        <button class="clear-button" type="button" (click)="clear()">Remove all</button>
+      </div>
+    }
+  </div>
+
+  @if (items().length) {
+    <section class="basket-content" aria-label="Basket items">
+      <div class="basket-items">
+        @for (item of items(); track item.productId) {
+          <article class="basket-item">
+            <div>
+              <h2>{{ item.name }}</h2>
+              <p>Quantity: {{ item.quantity }}</p>
+            </div>
+            <strong>{{ item.price ? ('$' + (item.price * item.quantity).toFixed(2)) : '' }}</strong>
+            <button type="button" class="remove-button" (click)="remove(item.productId)"
+              [attr.aria-label]="'Remove ' + item.name + ' from basket'">Remove</button>
+          </article>
+        }
+      </div>
+      <aside class="basket-summary">
+        <p><span>Subtotal</span><strong>{{ '$' + subtotal().toFixed(2) }}</strong></p>
+        <small>Demo checkout is available. Payment and delivery processing are not connected.</small>
+        <a routerLink="/" fragment="shop">Continue shopping</a>
+      </aside>
+    </section>
+  } @else {
+    <section class="empty-basket">
+      <p>Your basket is empty.</p>
+      <a routerLink="/" fragment="shop">Explore the shop</a>
+    </section>
+  }
+</main>

@@ -1,0 +1,28 @@
+.seller-page { max-width: 780px; min-height: 55vh; margin: 0 auto; padding: 28px 24px 64px; }
+.back-link { display: inline-block; margin-bottom: 18px; color: #214538; font-size: 13px; font-weight: 600; text-decoration: none; }
+.back-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.seller-panel { padding: 28px; border: 1px solid #e0e3e0; background: #fff; }
+.eyebrow { margin: 0 0 7px; color: #58685f; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+h1 { margin: 0; color: #202522; font-size: 30px; font-weight: 500; }
+.intro { margin: 8px 0 24px; color: #59635d; font-size: 14px; line-height: 1.5; }
+form { display: grid; gap: 8px; }
+label { margin-top: 8px; color: #263a32; font-size: 13px; font-weight: 600; }
+input, select, textarea { width: 100%; min-height: 42px; padding: 9px 10px; border: 1px solid #aeb8b1; border-radius: 3px; background: #fff; color: #202522; font: inherit; font-size: 14px; }
+textarea { min-height: 118px; resize: vertical; line-height: 1.5; }
+input:focus, select:focus, textarea:focus { border-color: #285c4e; outline: 2px solid rgb(40 92 78 / 20%); outline-offset: 1px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-row > div { display: grid; gap: 8px; }
+.storage-note { margin: 8px 0; color: #66716a; font-size: 12px; line-height: 1.5; }
+form button { min-height: 42px; margin-top: 4px; border: 1px solid #214c40; border-radius: 3px; background: #285c4e; color: #fff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+form button:hover:not(:disabled) { background: #214c40; }
+form button:disabled { cursor: not-allowed; opacity: .55; }
+.success-note { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 18px; padding: 12px; border-left: 3px solid #32805c; background: #eff7f1; color: #234a35; font-size: 13px; }
+.success-note p { margin: 0; }
+.success-note a { flex: 0 0 auto; color: #214538; font-weight: 700; }
+@media (max-width: 560px) { .seller-page { padding: 20px 14px 44px; } .seller-panel { padding: 20px 16px; } .form-row { grid-template-columns: 1fr; gap: 4px; } .success-note { align-items: flex-start; flex-direction: column; } }
+
+label span { color: #66716a; font-weight: 400; }
+.image-preview { display: flex; align-items: center; gap: 12px; margin: 4px 0 8px; color: #66716a; font-size: 12px; }
+.image-preview img { width: 72px; height: 72px; border: 1px solid #e0e3e0; border-radius: 3px; background: #f3f5f3; object-fit: cover; }
+
+.form-error { margin: 0 0 16px; padding: 12px; border-left: 3px solid #a8433d; background: #fff2f1; color: #8b302b; font-size: 13px; }

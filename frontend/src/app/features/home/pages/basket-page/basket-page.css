@@ -1,0 +1,25 @@
+.basket-page { max-width: 1000px; min-height: 55vh; margin: 0 auto; padding: 42px 24px 64px; }
+.basket-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 22px; }
+.eyebrow { margin: 0 0 6px; color: #55635d; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+h1 { margin: 0; font-size: 30px; font-weight: 500; }
+.basket-content { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; align-items: start; }
+.basket-items, .basket-summary, .empty-basket { border: 1px solid #e0e3e0; background: #fff; }
+.basket-item { display: grid; grid-template-columns: 1fr auto auto; gap: 18px; align-items: center; padding: 18px; border-bottom: 1px solid #e7eae7; }
+.basket-item:last-child { border-bottom: 0; }
+.basket-item h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.basket-item p { margin: 7px 0 0; color: #626965; font-size: 13px; }
+.remove-button, .clear-button { padding: 7px 10px; border: 1px solid #b7c3bc; border-radius: 3px; background: #fff; color: #214538; font: inherit; font-size: 12px; cursor: pointer; }
+.remove-button:hover, .clear-button:hover { background: #eff4f0; }
+.basket-summary { display: grid; gap: 14px; padding: 18px; }
+.basket-summary p { display: flex; justify-content: space-between; margin: 0; }
+.basket-summary small { color: #626965; line-height: 1.5; }
+.basket-summary a, .empty-basket a { color: #214538; font-size: 13px; font-weight: 700; }
+.empty-basket { padding: 30px; text-align: center; }
+.empty-basket p { margin: 0 0 14px; color: #505a54; }
+@media (max-width: 640px) { .basket-page { padding: 28px 14px 44px; } .basket-content { grid-template-columns: 1fr; } .basket-item { grid-template-columns: 1fr auto; gap: 10px; } .basket-item strong { grid-column: 2; grid-row: 1; } .remove-button { grid-column: 1 / -1; justify-self: start; } }
+
+
+.basket-heading-actions { display: flex; align-items: center; gap: 12px; }
+.checkout-header-link { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; padding: 0 13px; border: 1px solid #214c40; border-radius: 3px; background: #285c4e; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; }
+.checkout-header-link:hover { background: #214c40; }
+@media (max-width: 520px) { .basket-heading { align-items: flex-start; flex-direction: column; gap: 14px; } .basket-heading-actions { width: 100%; justify-content: space-between; } }

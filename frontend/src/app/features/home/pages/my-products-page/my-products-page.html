@@ -1,0 +1,94 @@
+<main class="seller-page">
+  <a class="back-link" routerLink="/">← Back to shop</a>
+  <section class="seller-panel" aria-labelledby="products-title">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">Seller tools</p>
+        <h1 id="products-title">My products</h1>
+        <p class="intro">Review and manage your product listings.</p>
+      </div>
+      <a class="add-link" routerLink="/seller/products/new">Add a product</a>
+    </div>
+
+    @if (notice()) { <p class="notice" role="status">{{ notice() }}</p> }
+
+    @if (products().length === 0) {
+      <div class="empty-state">
+        <h2>You haven’t listed any products yet</h2>
+        <p>Once you add a product, it will appear here for you to manage.</p>
+        <a class="primary-link" routerLink="/seller/products/new">List your first product</a>
+      </div>
+    } @else {
+      <div class="product-list">
+        @for (product of products(); track product.id) {
+          <article class="product-card">
+            <img class="product-image" [src]="product.image" [alt]="product.name">
+            <div class="product-content">
+              @if (editingId() === product.id) {
+                <form (ngSubmit)="saveEdit(product.id, editForm.invalid)" #editForm="ngForm">
+                  <label [for]="'name-' + product.id">Product name</label>
+                  <input [id]="'name-' + product.id" name="name" required minlength="2" maxlength="120"
+                    [(ngModel)]="name">
+
+                  <label [for]="'description-' + product.id">Description</label>
+                  <textarea [id]="'description-' + product.id" name="description" rows="3" required minlength="10" maxlength="1000"
+                    [(ngModel)]="description"></textarea>
+
+                  <div class="form-row">
+                    <div>
+                      <label [for]="'category-' + product.id">Category</label>
+                      <select [id]="'category-' + product.id" name="category" required [(ngModel)]="category">
+                        @for (option of categories; track option) { <option [value]="option">{{ option }}</option> }
+                      </select>
+                    </div>
+                    <div>
+                      <label [for]="'price-' + product.id">Price (USD)</label>
+                      <input [id]="'price-' + product.id" name="price" type="number" required min="0.01"
+                        max="10000000" step="0.01" inputmode="decimal" [(ngModel)]="price">
+                    </div>
+                  </div>
+
+                  <label [for]="'stock-' + product.id">Quantity in stock</label>
+                  <input [id]="'stock-' + product.id" name="stockQuantity" type="number" required min="0"
+                    max="1000000" step="1" inputmode="numeric" [(ngModel)]="stockQuantity">
+
+                  <label [for]="'image-' + product.id">Product image URL <span>(optional)</span></label>
+                  <input [id]="'image-' + product.id" name="image" type="url" maxlength="2000" placeholder="https://example.com/product.jpg" [(ngModel)]="image">
+                  <div class="edit-image-preview"><img [src]="image || '/product-placeholder.svg'" alt="Product image preview" (error)="$any($event.target).src = '/product-placeholder.svg'"><span>Image preview</span></div>
+                  <div class="card-actions">
+                    <button class="primary-button" type="submit" [disabled]="editForm.invalid">Save changes</button>
+                    <button class="secondary-button" type="button" (click)="cancelEdit()">Cancel</button>
+                  </div>
+                </form>
+              } @else {
+                <div class="product-heading">
+                  <div>
+                    <p class="product-category">{{ product.category }}</p>
+                    <h2>{{ product.name }}</h2>
+                  </div>
+                  <strong class="product-price">{{ product.price | currency:'USD' }}</strong>
+                </div>
+                <p class="product-description">{{ product.description }}</p>
+                <p class="stock-status" [class.out-of-stock]="product.stockQuantity === 0">
+                  {{ product.stockQuantity === 0 ? 'Out of stock' : product.stockQuantity + ' in stock' }}
+                </p>
+                <div class="card-actions">
+                  <a class="text-link" [routerLink]="['/products', product.id]">View listing</a>
+                  <button class="secondary-button" type="button" (click)="startEdit(product)">Edit</button>
+                  <button class="remove-button" type="button" (click)="requestRemove(product.id)">Remove</button>
+                </div>
+                @if (pendingDeleteId() === product.id) {
+                  <div class="confirm-remove" role="group" aria-label="Confirm product removal">
+                    <p>Remove this listing from the shared catalog?</p>
+                    <button class="remove-button" type="button" (click)="confirmRemove(product.id)">Yes, remove</button>
+                    <button class="secondary-button" type="button" (click)="cancelRemove()">Keep listing</button>
+                  </div>
+                }
+              }
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</main>

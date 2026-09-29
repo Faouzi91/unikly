@@ -1,0 +1,50 @@
+<main class="seller-page">
+  <a class="back-link" routerLink="/" fragment="shop">← Back to shop</a>
+  <section class="seller-panel" aria-labelledby="seller-title">
+    <p class="eyebrow">Seller tools</p>
+    <h1 id="seller-title">Add a product</h1>
+    <p class="intro">Share the basics so buyers can find your product in the catalog.</p>
+
+    @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+    @if (createdProduct(); as product) {
+      <div class="success-note" role="status">
+        <p><strong>{{ product.name }}</strong> was added to the shared catalog.</p>
+        <a [routerLink]="['/products', product.id]">View product</a>
+      </div>
+    }
+
+    <form (ngSubmit)="submit()" #productForm="ngForm">
+      <label for="product-name">Product name</label>
+      <input id="product-name" name="name" type="text" required minlength="2" maxlength="120"
+        autocomplete="off" [(ngModel)]="name">
+
+      <label for="product-description">Description</label>
+      <textarea id="product-description" name="description" rows="5" required minlength="10" maxlength="1000"
+        [(ngModel)]="description"></textarea>
+
+      <div class="form-row">
+        <div>
+          <label for="product-category">Category</label>
+          <select id="product-category" name="category" required [(ngModel)]="category">
+            @for (option of categories; track option) { <option [value]="option">{{ option }}</option> }
+          </select>
+        </div>
+        <div>
+          <label for="product-price">Price (USD)</label>
+          <input id="product-price" name="price" type="number" required min="0.01" max="10000000" step="0.01"
+            inputmode="decimal" [(ngModel)]="price">
+        </div>
+      </div>
+
+      <label for="product-stock">Quantity in stock</label>
+      <input id="product-stock" name="stockQuantity" type="number" required min="0" max="1000000" step="1"
+        inputmode="numeric" [(ngModel)]="stockQuantity">
+
+      <label for="product-image">Product image URL <span>(optional)</span></label>
+      <input id="product-image" name="image" type="url" maxlength="2000" placeholder="https://example.com/product.jpg" [(ngModel)]="image">
+      <p class="storage-note">Paste a publicly accessible image URL. Leave it blank to use the default image. Listings are saved to the shared catalog.</p>
+      <div class="image-preview"><img [src]="image || '/product-placeholder.svg'" alt="Product image preview" (error)="$any($event.target).src = '/product-placeholder.svg'"><span>Image preview</span></div>
+      <button type="submit" [disabled]="productForm.invalid">Add product to catalog</button>
+    </form>
+  </section>
+</main>
