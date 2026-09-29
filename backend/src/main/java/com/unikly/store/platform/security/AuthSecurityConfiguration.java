@@ -83,6 +83,8 @@ public class AuthSecurityConfiguration {
                     .requestMatchers(HttpMethod.GET, "/api/profile/me").hasAuthority(StorePermission.ACCOUNT_READ_SELF.authority())
                     .requestMatchers(HttpMethod.POST, "/api/orders").hasAuthority(StorePermission.ORDER_CREATE_SELF.authority())
                     .requestMatchers(HttpMethod.GET, "/api/orders/mine").hasAuthority(StorePermission.ORDER_READ_SELF.authority())
+                    .requestMatchers(HttpMethod.GET, "/api/orders/seller").hasAuthority(StorePermission.ORDER_FULFILL_OWN.authority())
+                    .requestMatchers(HttpMethod.PUT, "/api/orders/seller/**").hasAuthority(StorePermission.ORDER_FULFILL_OWN.authority())
                     .requestMatchers(HttpMethod.PUT, "/api/profile/me").hasAuthority(StorePermission.ACCOUNT_UPDATE_SELF.authority())
                     .requestMatchers(HttpMethod.GET, "/api/products/mine").hasRole("SELLER")
                     .requestMatchers(HttpMethod.POST, "/api/products").hasRole("SELLER")

@@ -2,6 +2,13 @@
 
 Progress notes for the Unikly project. Payment collection and live shipment tracking remain out of scope for the current demo checkout.
 
+## 2026-09-29 — Seller order fulfillment
+
+- Add a seller-only order inbox that includes delivery details and only the seller's own order lines.
+- Let sellers advance their items through placed, processing, shipped, and delivered states.
+- Show buyers the order's least-complete fulfillment state across all sellers.
+- Enforce seller ownership and one-step status transitions on the server.
+
 ## 2026-09-29 — Remove committed development passwords
 
 - Require local environment configuration for the database password and optional seeded development accounts.

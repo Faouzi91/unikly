@@ -14,7 +14,8 @@ public enum StoreRole {
     SELLER(Set.of(
             StorePermission.ACCOUNT_READ_SELF,
             StorePermission.ACCOUNT_UPDATE_SELF,
-            StorePermission.CATALOG_READ)),
+            StorePermission.CATALOG_READ,
+            StorePermission.ORDER_FULFILL_OWN)),
     ADMIN(Set.of(
             StorePermission.ACCOUNT_READ_SELF,
             StorePermission.ACCOUNT_UPDATE_SELF,

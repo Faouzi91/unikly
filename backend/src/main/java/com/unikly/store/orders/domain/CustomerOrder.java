@@ -48,6 +48,7 @@ public class CustomerOrder {
     public String getReference() { return reference; }
     public Long getBuyerId() { return buyerId; }
     public String getStatus() { return status; }
+    public void updateStatus(String status) { this.status = status; }
     public String getFullName() { return fullName; }
     public String getEmail() { return email; }
     public String getPhone() { return phone; }

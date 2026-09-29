@@ -7,6 +7,7 @@ import com.unikly.store.identity.domain.StoreUser;
 import com.unikly.store.identity.persistence.StoreUserRepository;
 import com.unikly.store.orders.domain.CustomerOrder;
 import com.unikly.store.orders.domain.CustomerOrderItem;
+import com.unikly.store.orders.domain.OrderFulfillmentStatus;
 import com.unikly.store.orders.persistence.CustomerOrderRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -77,10 +78,71 @@ public class CustomerOrderService {
         return orders.findAllByBuyerIdOrderByCreatedAtDesc(buyer.getId()).stream().map(this::view).toList();
     }
 
+    public List<SellerOrderView> listForSeller(String email) {
+        StoreUser seller = seller(email);
+        return orders.findAllForSeller(seller.getId()).stream()
+                .map(order -> sellerView(order, seller.getId()))
+                .toList();
+    }
+
+    public SellerOrderView updateSellerFulfillment(
+            String email, String reference, OrderFulfillmentStatus targetStatus) {
+        StoreUser seller = seller(email);
+        CustomerOrder order = orders.findByReference(reference)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+        List<CustomerOrderItem> sellerItems = order.getItems().stream()
+                .filter(item -> seller.getId().equals(item.getSellerId()))
+                .toList();
+        if (sellerItems.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found");
+        }
+        OrderFulfillmentStatus currentStatus = sellerItems.getFirst().getFulfillmentStatus();
+        if (sellerItems.stream().anyMatch(item -> item.getFulfillmentStatus() != currentStatus)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Seller order items have different fulfillment statuses");
+        }
+        if (currentStatus.next() != targetStatus) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Fulfillment must advance one step at a time");
+        }
+        sellerItems.forEach(item -> item.advanceFulfillmentStatus(targetStatus));
+        OrderFulfillmentStatus overallStatus = order.getItems().stream()
+                .map(CustomerOrderItem::getFulfillmentStatus)
+                .min(java.util.Comparator.comparingInt(OrderFulfillmentStatus::ordinal))
+                .orElse(OrderFulfillmentStatus.PLACED);
+        order.updateStatus(overallStatus.name());
+        orders.save(order);
+        return sellerView(order, seller.getId());
+    }
+
+    private StoreUser seller(String email) {
+        StoreUser user = users.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        if (user.getRole() != StoreRole.SELLER) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        return user;
+    }
+
     private StoreUser buyer(String email) {
         StoreUser user = users.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
         if (user.getRole() != StoreRole.BUYER) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         return user;
+    }
+
+    private SellerOrderView sellerView(CustomerOrder order, Long sellerId) {
+        List<CustomerOrderItem> sellerItems = order.getItems().stream()
+                .filter(item -> sellerId.equals(item.getSellerId()))
+                .toList();
+        List<SellerOrderItemView> items = sellerItems.stream()
+                .map(item -> new SellerOrderItemView(item.getProductId(), item.getProductName(), item.getQuantity(),
+                        item.getUnitPrice(), item.getFulfillmentStatus().name()))
+                .toList();
+        BigDecimal subtotal = sellerItems.stream()
+                .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        OrderFulfillmentStatus status = sellerItems.stream()
+                .map(CustomerOrderItem::getFulfillmentStatus)
+                .min(java.util.Comparator.comparingInt(OrderFulfillmentStatus::ordinal))
+                .orElse(OrderFulfillmentStatus.PLACED);
+        return new SellerOrderView(order.getReference(), order.getCreatedAt(), status.name(), order.getFullName(),
+                order.getEmail(), order.getPhone(), order.getAddressLine1(), order.getAddressLine2(),
+                order.getCity(), order.getRegion(), order.getPostalCode(), order.getCountry(), subtotal, items);
     }
 
     private OrderView view(CustomerOrder order) {
@@ -98,4 +160,10 @@ public class CustomerOrderService {
                             List<OrderItemView> items) {}
     public record OrderItemView(String productId, String productName, int quantity, BigDecimal unitPrice,
                                 Long sellerId) {}
+    public record SellerOrderView(String reference, Instant createdAt, String status, String fullName, String email,
+                                  String phone, String addressLine1, String addressLine2, String city, String region,
+                                  String postalCode, String country, BigDecimal subtotal,
+                                  List<SellerOrderItemView> items) {}
+    public record SellerOrderItemView(String productId, String productName, int quantity, BigDecimal unitPrice,
+                                      String status) {}
 }

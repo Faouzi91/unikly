@@ -10,12 +10,37 @@ export interface OrderItem {
   sellerId: number;
 }
 
+export type FulfillmentStatus = 'PLACED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED';
+
 export interface CustomerOrder {
   reference: string;
-  status: string;
+  status: FulfillmentStatus;
   createdAt: string;
   total: number;
   items: OrderItem[];
+}
+
+export interface SellerOrder {
+  reference: string;
+  createdAt: string;
+  status: FulfillmentStatus;
+  fullName: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  region: string;
+  postalCode: string;
+  country: string;
+  subtotal: number;
+  items: Array<{
+    productId: string;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    status: FulfillmentStatus;
+  }>;
 }
 
 export interface PlaceOrderDetails {
@@ -41,5 +66,15 @@ export class OrdersService {
 
   async mine(): Promise<CustomerOrder[]> {
     return firstValueFrom(this.http.get<CustomerOrder[]>('/api/orders/mine'));
+  }
+
+  async forSeller(): Promise<SellerOrder[]> {
+    return firstValueFrom(this.http.get<SellerOrder[]>('/api/orders/seller'));
+  }
+
+  async updateSellerStatus(reference: string, status: FulfillmentStatus): Promise<SellerOrder> {
+    return firstValueFrom(
+      this.http.put<SellerOrder>(`/api/orders/seller/${encodeURIComponent(reference)}/status`, { status }),
+    );
   }
 }

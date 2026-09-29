@@ -1,6 +1,6 @@
 # Unikly
 
-Unikly is an e-commerce product store with buyer and seller accounts, profile management, a persistent product catalog, stock-aware checkout, and buyer order history. Payments and live shipment tracking are not integrated. The active product-store requirements are in [UNIKLY_SRS_v3.docx](UNIKLY_SRS_v3.docx). The preserved [UNIKLY_SRS_v2.docx](UNIKLY_SRS_v2.docx) and onboarding guide document the superseded freelance services marketplace direction.
+Unikly is an e-commerce product store with buyer and seller accounts, profile management, a persistent product catalog, stock-aware checkout, buyer order history, and seller fulfillment updates for their own products. Payment collection and carrier tracking are not integrated. The active product-store requirements are in [UNIKLY_SRS_v3.docx](UNIKLY_SRS_v3.docx). The preserved [UNIKLY_SRS_v2.docx](UNIKLY_SRS_v2.docx) and onboarding guide document the superseded freelance services marketplace direction.
 
 ## Current authentication slice
 

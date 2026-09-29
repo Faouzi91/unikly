@@ -1,0 +1,68 @@
+<main class="seller-orders-page">
+  <a class="back-link" routerLink="/seller/products">← My products</a>
+  <header class="page-heading">
+    <p class="eyebrow">Seller tools</p>
+    <h1>Orders to fulfill</h1>
+    <p>Review delivery details for orders containing your products and update your fulfillment progress.</p>
+  </header>
+
+  @if (notice()) { <p class="notice" role="status">{{ notice() }}</p> }
+  @if (error()) { <p class="message error" role="alert">{{ error() }}</p> }
+
+  @if (loading()) {
+    <p class="message" role="status">Loading your orders…</p>
+  } @else if (orders().length === 0) {
+    <section class="empty-state">
+      <h2>No orders to fulfill</h2>
+      <p>Orders that include one of your products will appear here.</p>
+      <a class="primary-link" routerLink="/seller/products">Review your products</a>
+    </section>
+  } @else {
+    <div class="order-list">
+      @for (order of orders(); track order.reference) {
+        <article class="order-card">
+          <header class="order-heading">
+            <div>
+              <p class="order-reference">Order {{ order.reference }}</p>
+              <time [dateTime]="order.createdAt">Placed {{ order.createdAt | date:'medium' }}</time>
+            </div>
+            <span class="status">{{ order.status }}</span>
+          </header>
+
+          <section class="delivery-details" aria-label="Delivery details">
+            <h2>Ship to</h2>
+            <p><strong>{{ order.fullName }}</strong></p>
+            <p>{{ order.email }} · {{ order.phone }}</p>
+            <p>{{ order.addressLine1 }}@if (order.addressLine2) {, {{ order.addressLine2 }}}</p>
+            <p>{{ order.city }}, {{ order.region }} {{ order.postalCode }}</p>
+            <p>{{ order.country }}</p>
+          </section>
+
+          <ul class="order-items">
+            @for (item of order.items; track item.productId) {
+              <li>
+                <span><strong>{{ item.productName }}</strong><small>Quantity: {{ item.quantity }}</small></span>
+                <span>{{ (item.unitPrice * item.quantity) | currency:'USD' }}</span>
+              </li>
+            }
+          </ul>
+          <footer class="order-footer">
+            <span>Your items subtotal</span>
+            <strong>{{ order.subtotal | currency:'USD' }}</strong>
+          </footer>
+          <div class="fulfillment-actions">
+            <p>Move this order one step at a time: processing, shipped, then delivered.</p>
+            @if (nextStatus(order.status)) {
+              <button type="button" [disabled]="updatingReference() === order.reference"
+                (click)="advance(order)">
+                {{ updatingReference() === order.reference ? 'Updating…' : actionLabel(order.status) }}
+              </button>
+            } @else {
+              <span class="complete-note">Seller fulfillment is complete.</span>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+</main>

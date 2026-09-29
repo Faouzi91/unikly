@@ -12,6 +12,14 @@ export const routes: Routes = [
   ...ACCOUNT_ROUTES,
   ...IDENTITY_ROUTES,
   {
+    path: 'seller/orders',
+    canActivate: [sellerGuard],
+    loadComponent: () =>
+      import('@features/home/pages/seller-orders-page/seller-orders-page').then(
+        (module) => module.SellerOrdersPage,
+      ),
+  },
+  {
     path: 'seller/products/new',
     canActivate: [sellerGuard],
     loadComponent: () =>

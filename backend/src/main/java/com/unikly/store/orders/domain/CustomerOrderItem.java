@@ -3,6 +3,8 @@ package com.unikly.store.orders.domain;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -22,11 +24,15 @@ public class CustomerOrderItem {
     @Column(name = "seller_id", nullable = false) private Long sellerId;
     @Column(nullable = false) private int quantity;
     @Column(name = "unit_price", nullable = false, precision = 12, scale = 2) private BigDecimal unitPrice;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fulfillment_status", nullable = false, length = 24)
+    private OrderFulfillmentStatus fulfillmentStatus;
 
     protected CustomerOrderItem() {}
     public CustomerOrderItem(String productId, String productName, Long sellerId, int quantity, BigDecimal unitPrice) {
         this.productId = productId; this.productName = productName; this.sellerId = sellerId;
         this.quantity = quantity; this.unitPrice = unitPrice;
+        this.fulfillmentStatus = OrderFulfillmentStatus.PLACED;
     }
     void setOrder(CustomerOrder order) { this.order = order; }
     public String getProductId() { return productId; }
@@ -34,4 +40,11 @@ public class CustomerOrderItem {
     public Long getSellerId() { return sellerId; }
     public int getQuantity() { return quantity; }
     public BigDecimal getUnitPrice() { return unitPrice; }
+    public OrderFulfillmentStatus getFulfillmentStatus() { return fulfillmentStatus; }
+    public void advanceFulfillmentStatus(OrderFulfillmentStatus nextStatus) {
+        if (fulfillmentStatus.next() != nextStatus) {
+            throw new IllegalArgumentException("Fulfillment status must advance one step at a time");
+        }
+        fulfillmentStatus = nextStatus;
+    }
 }

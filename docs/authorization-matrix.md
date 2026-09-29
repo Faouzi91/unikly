@@ -10,6 +10,7 @@ Authorization is enforced by Spring Security on the server. Angular route guards
 | Browse catalog | Yes | Yes | No by default |
 | Manage own cart | Yes | No by default | No by default |
 | Create, read, and cancel own orders | Yes | No by default | No by default |
+| Read and fulfill orders containing own products | No | Yes | No by default |
 | Read any account | No | No | Yes |
 | Suspend accounts | No | No | Yes |
 | Manage catalog | No | No | Yes |
@@ -32,6 +33,7 @@ Authorization is enforced by Spring Security on the server. Angular route guards
 | `ORDER_CREATE_SELF` | Submit own checkout/order |
 | `ORDER_READ_SELF` | Read own order history and status |
 | `ORDER_CANCEL_SELF` | Cancel own eligible order |
+| `ORDER_FULFILL_OWN` | Read orders containing the seller's products and advance their fulfillment status one step at a time |
 | `PLATFORM_ADMIN` | Platform administration capability; not a default substitute for narrower checks |
 | `ACCOUNT_READ_ANY` | Read any customer account in admin workflows |
 | `ACCOUNT_SUSPEND` | Suspend or restore accounts |
@@ -48,6 +50,7 @@ Authorization is enforced by Spring Security on the server. Angular route guards
 - Authenticated with `ACCOUNT_READ_SELF`: `GET /api/auth/me`.
 - Authenticated with `ACCOUNT_READ_SELF`: `GET /api/profile/me`.
 - Authenticated with `ACCOUNT_UPDATE_SELF`: `PUT /api/profile/me` and `POST /api/auth/password`.
+- Authenticated with `ORDER_FULFILL_OWN`: `GET /api/orders/seller` and `PUT /api/orders/seller/{reference}/status`; the service scopes every order to the authenticated seller's order items.
 - Authenticated with `PLATFORM_REPORT_READ`: `GET /api/admin/access-check`.
 - Every other `/api/**` endpoint is denied until it is explicitly assigned a permission.
 - Registration accepts only `BUYER` or `SELLER` as `accountType`; arbitrary roles, including `ADMIN`, cannot be assigned through public registration. No public role-change endpoint exists.

@@ -29,7 +29,7 @@
     <a routerLink="/" fragment="shop">Shop</a>
     <a routerLink="/basket">Basket</a>
     @if (auth.user()?.role === 'BUYER') { <a routerLink="/orders">Your orders</a> }
-    @if (auth.user()?.role === 'SELLER') { <a routerLink="/seller/products">My products</a><a routerLink="/seller/products/new">Sell a product</a> }
+    @if (auth.user()?.role === 'SELLER') { <a routerLink="/seller/orders">Seller orders</a><a routerLink="/seller/products">My products</a><a routerLink="/seller/products/new">Sell a product</a> }
     @if (auth.isAuthenticated()) { <a routerLink="/account">Your account</a> } @else { <a routerLink="/login">Sign in</a> }
   </div>
 </nav>
