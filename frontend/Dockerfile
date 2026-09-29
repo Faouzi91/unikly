@@ -1,4 +1,4 @@
-FROM node:24.21.0-alpine AS build
+FROM node:26.10.0-alpine AS build
 WORKDIR /workspace
 COPY package*.json ./
 RUN npm ci --no-audit --no-fund
