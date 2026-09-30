@@ -7,7 +7,8 @@ export interface OrderItem {
   productName: string;
   quantity: number;
   unitPrice: number;
-  sellerId: number;
+  sellerId: number | null;
+  status: FulfillmentStatus;
 }
 
 export type FulfillmentStatus = 'PLACED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED';

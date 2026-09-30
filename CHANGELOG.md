@@ -2,6 +2,11 @@
 
 Progress notes for the Unikly project. Payment collection and live shipment tracking remain out of scope for the current demo checkout.
 
+## 2026-09-30 — Buyer item fulfillment visibility
+
+- Include each item's seller fulfillment status in buyer order history.
+- Clarify the seller's progress separately for items in mixed-seller orders.
+
 ## 2026-09-29 — Seller order fulfillment
 
 - Add a seller-only order inbox that includes delivery details and only the seller's own order lines.

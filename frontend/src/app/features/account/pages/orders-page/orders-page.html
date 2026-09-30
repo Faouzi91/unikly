@@ -3,7 +3,7 @@
   <header class="page-heading">
     <p class="eyebrow">Purchase history</p>
     <h1>Your orders</h1>
-    <p>Review the items you ordered and their current status.</p>
+    <p>Review each seller’s progress on the items in your order.</p>
   </header>
 
   @if (loading()) {
@@ -31,7 +31,11 @@
           <ul class="order-items">
             @for (item of order.items; track item.productId) {
               <li>
-                <span><strong>{{ item.productName }}</strong><small>Quantity: {{ item.quantity }}</small></span>
+                <span class="item-details">
+                  <strong>{{ item.productName }}</strong>
+                  <small>Quantity: {{ item.quantity }}</small>
+                  <small class="item-status">Fulfillment: {{ item.status }}</small>
+                </span>
                 <span>{{ (item.unitPrice * item.quantity) | currency:'USD' }}</span>
               </li>
             }

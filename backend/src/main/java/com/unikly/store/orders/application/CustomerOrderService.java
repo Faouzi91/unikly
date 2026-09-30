@@ -148,7 +148,7 @@ public class CustomerOrderService {
     private OrderView view(CustomerOrder order) {
         List<OrderItemView> items = order.getItems().stream()
                 .map(item -> new OrderItemView(item.getProductId(), item.getProductName(), item.getQuantity(),
-                        item.getUnitPrice(), item.getSellerId()))
+                        item.getUnitPrice(), item.getSellerId(), item.getFulfillmentStatus().name()))
                 .toList();
         return new OrderView(order.getReference(), order.getStatus(), order.getCreatedAt(), order.getTotal(), items);
     }
@@ -159,7 +159,7 @@ public class CustomerOrderService {
     public record OrderView(String reference, String status, Instant createdAt, BigDecimal total,
                             List<OrderItemView> items) {}
     public record OrderItemView(String productId, String productName, int quantity, BigDecimal unitPrice,
-                                Long sellerId) {}
+                                Long sellerId, String status) {}
     public record SellerOrderView(String reference, Instant createdAt, String status, String fullName, String email,
                                   String phone, String addressLine1, String addressLine2, String city, String region,
                                   String postalCode, String country, BigDecimal subtotal,
