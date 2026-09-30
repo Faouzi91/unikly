@@ -2,6 +2,11 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
+## 2026-09-30 — Allow buyer delivery confirmation
+
+- Authorize the order delivery confirmation route for buyers with order read access.
+- Keep the endpoint protected by buyer ownership checks in the order service.
+
 ## 2026-09-30 — Buyer delivery confirmation
 
 - Let buyers confirm delivery after every item in their order has shipped.
