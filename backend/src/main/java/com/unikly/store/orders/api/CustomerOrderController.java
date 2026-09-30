@@ -44,6 +44,6 @@ public class CustomerOrderController {
             Authentication authentication,
             @PathVariable String reference,
             @Valid @RequestBody OrderRequests.UpdateFulfillmentStatus request) {
-        return orders.updateSellerFulfillment(authentication.getName(), reference, request.status());
+        return orders.updateSellerFulfillment(authentication.getName(), reference, request);
     }
 }

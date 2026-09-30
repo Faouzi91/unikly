@@ -27,6 +27,8 @@ public class CustomerOrderItem {
     @Enumerated(EnumType.STRING)
     @Column(name = "fulfillment_status", nullable = false, length = 24)
     private OrderFulfillmentStatus fulfillmentStatus;
+    @Column(name = "carrier_name", length = 80) private String carrierName;
+    @Column(name = "tracking_url", length = 2048) private String trackingUrl;
 
     protected CustomerOrderItem() {}
     public CustomerOrderItem(String productId, String productName, Long sellerId, int quantity, BigDecimal unitPrice) {
@@ -41,6 +43,12 @@ public class CustomerOrderItem {
     public int getQuantity() { return quantity; }
     public BigDecimal getUnitPrice() { return unitPrice; }
     public OrderFulfillmentStatus getFulfillmentStatus() { return fulfillmentStatus; }
+    public String getCarrierName() { return carrierName; }
+    public String getTrackingUrl() { return trackingUrl; }
+    public void setShippingDetails(String carrierName, String trackingUrl) {
+        this.carrierName = carrierName;
+        this.trackingUrl = trackingUrl;
+    }
     public void advanceFulfillmentStatus(OrderFulfillmentStatus nextStatus) {
         if (fulfillmentStatus.next() != nextStatus) {
             throw new IllegalArgumentException("Fulfillment status must advance one step at a time");

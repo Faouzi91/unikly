@@ -16,6 +16,9 @@ export class SellerOrdersPage {
   readonly error = signal('');
   readonly notice = signal('');
   readonly updatingReference = signal<string | null>(null);
+  readonly shippingReference = signal<string | null>(null);
+  readonly carrierName = signal('');
+  readonly trackingUrl = signal('');
 
   constructor() {
     void this.loadOrders();
@@ -54,15 +57,26 @@ export class SellerOrdersPage {
   async advance(order: SellerOrder): Promise<void> {
     const status = this.nextStatus(order.status);
     if (!status) return;
+    if (status === 'SHIPPED' && this.shippingReference() !== order.reference) {
+      this.shippingReference.set(order.reference);
+      this.error.set('');
+      return;
+    }
     this.updatingReference.set(order.reference);
     this.error.set('');
     this.notice.set('');
     try {
-      const updated = await this.ordersService.updateSellerStatus(order.reference, status);
+      const shipping = status === 'SHIPPED'
+        ? { carrierName: this.carrierName().trim(), trackingUrl: this.trackingUrl().trim() }
+        : undefined;
+      const updated = await this.ordersService.updateSellerStatus(order.reference, status, shipping);
       this.orders.update((orders) =>
         orders.map((current) => current.reference === updated.reference ? updated : current),
       );
       this.notice.set(`Order ${updated.reference} updated to ${updated.status.toLowerCase()}.`);
+      this.shippingReference.set(null);
+      this.carrierName.set('');
+      this.trackingUrl.set('');
     } catch {
       this.error.set('We could not update this order. Refresh the page and try again.');
     } finally {

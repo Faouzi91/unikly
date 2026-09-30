@@ -41,7 +41,9 @@
           <ul class="order-items">
             @for (item of order.items; track item.productId) {
               <li>
-                <span><strong>{{ item.productName }}</strong><small>Quantity: {{ item.quantity }}</small></span>
+                <span><strong>{{ item.productName }}</strong><small>Quantity: {{ item.quantity }}</small>
+                  @if (item.trackingUrl) { <small>Shipment: {{ item.carrierName }} · <a [href]="item.trackingUrl" target="_blank" rel="noopener noreferrer">Tracking link</a></small> }
+                </span>
                 <span>{{ (item.unitPrice * item.quantity) | currency:'USD' }}</span>
               </li>
             }
@@ -52,10 +54,16 @@
           </footer>
           <div class="fulfillment-actions">
             <p>Move this order one step at a time: processing, shipped, then delivered.</p>
+            @if (shippingReference() === order.reference) {
+              <label>Carrier<input type="text" required maxlength="80" [value]="carrierName()"
+                (input)="carrierName.set($any($event.target).value)" placeholder="e.g. DHL" /></label>
+              <label>Tracking link<input type="url" required maxlength="2048" [value]="trackingUrl()"
+                (input)="trackingUrl.set($any($event.target).value)" placeholder="https://…" /></label>
+            }
             @if (nextStatus(order.status)) {
               <button type="button" [disabled]="updatingReference() === order.reference"
                 (click)="advance(order)">
-                {{ updatingReference() === order.reference ? 'Updating…' : actionLabel(order.status) }}
+                {{ updatingReference() === order.reference ? 'Updating…' : (shippingReference() === order.reference ? 'Confirm shipment' : actionLabel(order.status)) }}
               </button>
             } @else {
               <span class="complete-note">Seller fulfillment is complete.</span>

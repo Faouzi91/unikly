@@ -9,6 +9,8 @@ export interface OrderItem {
   unitPrice: number;
   sellerId: number | null;
   status: FulfillmentStatus;
+  carrierName: string | null;
+  trackingUrl: string | null;
 }
 
 export type FulfillmentStatus = 'PLACED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED';
@@ -41,6 +43,8 @@ export interface SellerOrder {
     quantity: number;
     unitPrice: number;
     status: FulfillmentStatus;
+    carrierName: string | null;
+    trackingUrl: string | null;
   }>;
 }
 
@@ -73,9 +77,10 @@ export class OrdersService {
     return firstValueFrom(this.http.get<SellerOrder[]>('/api/orders/seller'));
   }
 
-  async updateSellerStatus(reference: string, status: FulfillmentStatus): Promise<SellerOrder> {
+  async updateSellerStatus(reference: string, status: FulfillmentStatus,
+                           shipping?: { carrierName: string; trackingUrl: string }): Promise<SellerOrder> {
     return firstValueFrom(
-      this.http.put<SellerOrder>(`/api/orders/seller/${encodeURIComponent(reference)}/status`, { status }),
+      this.http.put<SellerOrder>(`/api/orders/seller/${encodeURIComponent(reference)}/status`, { status, ...shipping }),
     );
   }
 }

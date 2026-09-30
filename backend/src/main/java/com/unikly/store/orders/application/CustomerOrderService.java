@@ -86,7 +86,8 @@ public class CustomerOrderService {
     }
 
     public SellerOrderView updateSellerFulfillment(
-            String email, String reference, OrderFulfillmentStatus targetStatus) {
+            String email, String reference, OrderRequests.UpdateFulfillmentStatus request) {
+        OrderFulfillmentStatus targetStatus = request.status();
         StoreUser seller = seller(email);
         CustomerOrder order = orders.findByReference(reference)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
@@ -102,6 +103,24 @@ public class CustomerOrderService {
         }
         if (currentStatus.next() != targetStatus) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Fulfillment must advance one step at a time");
+        }
+        String carrier = optional(request.carrierName());
+        String trackingUrl = optional(request.trackingUrl());
+        if (targetStatus == OrderFulfillmentStatus.SHIPPED) {
+            if (carrier == null || trackingUrl == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Carrier and tracking link are required when shipping");
+            }
+            try {
+                java.net.URI uri = java.net.URI.create(trackingUrl);
+                String scheme = uri.getScheme();
+                if (!uri.isAbsolute() || uri.getHost() == null ||
+                        !("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme))) {
+                    throw new IllegalArgumentException();
+                }
+            } catch (IllegalArgumentException exception) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tracking link must be a valid HTTP or HTTPS URL");
+            }
+            sellerItems.forEach(item -> item.setShippingDetails(carrier, trackingUrl));
         }
         sellerItems.forEach(item -> item.advanceFulfillmentStatus(targetStatus));
         OrderFulfillmentStatus overallStatus = order.getItems().stream()
@@ -131,7 +150,7 @@ public class CustomerOrderService {
                 .toList();
         List<SellerOrderItemView> items = sellerItems.stream()
                 .map(item -> new SellerOrderItemView(item.getProductId(), item.getProductName(), item.getQuantity(),
-                        item.getUnitPrice(), item.getFulfillmentStatus().name()))
+                        item.getUnitPrice(), item.getFulfillmentStatus().name(), item.getCarrierName(), item.getTrackingUrl()))
                 .toList();
         BigDecimal subtotal = sellerItems.stream()
                 .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
@@ -148,7 +167,8 @@ public class CustomerOrderService {
     private OrderView view(CustomerOrder order) {
         List<OrderItemView> items = order.getItems().stream()
                 .map(item -> new OrderItemView(item.getProductId(), item.getProductName(), item.getQuantity(),
-                        item.getUnitPrice(), item.getSellerId(), item.getFulfillmentStatus().name()))
+                        item.getUnitPrice(), item.getSellerId(), item.getFulfillmentStatus().name(),
+                        item.getCarrierName(), item.getTrackingUrl()))
                 .toList();
         return new OrderView(order.getReference(), order.getStatus(), order.getCreatedAt(), order.getTotal(), items);
     }
@@ -159,11 +179,11 @@ public class CustomerOrderService {
     public record OrderView(String reference, String status, Instant createdAt, BigDecimal total,
                             List<OrderItemView> items) {}
     public record OrderItemView(String productId, String productName, int quantity, BigDecimal unitPrice,
-                                Long sellerId, String status) {}
+                                Long sellerId, String status, String carrierName, String trackingUrl) {}
     public record SellerOrderView(String reference, Instant createdAt, String status, String fullName, String email,
                                   String phone, String addressLine1, String addressLine2, String city, String region,
                                   String postalCode, String country, BigDecimal subtotal,
                                   List<SellerOrderItemView> items) {}
     public record SellerOrderItemView(String productId, String productName, int quantity, BigDecimal unitPrice,
-                                      String status) {}
+                                      String status, String carrierName, String trackingUrl) {}
 }

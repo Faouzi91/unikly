@@ -1,6 +1,12 @@
 # Changelog
 
-Progress notes for the Unikly project. Payment collection and live shipment tracking remain out of scope for the current demo checkout.
+Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
+
+## 2026-09-30 — Seller shipment tracking details
+
+- Ask sellers for a carrier and tracking URL when they mark an order as shipped.
+- Validate tracking URLs as absolute HTTP or HTTPS links and save details with the seller's order items.
+- Show buyers a Track package link for shipped items in order history.
 
 ## 2026-09-30 — Honor API port in Angular dev proxy
 

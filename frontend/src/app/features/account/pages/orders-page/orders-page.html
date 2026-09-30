@@ -35,6 +35,9 @@
                   <strong>{{ item.productName }}</strong>
                   <small>Quantity: {{ item.quantity }}</small>
                   <small class="item-status">Fulfillment: {{ item.status }}</small>
+                  @if (item.trackingUrl) {
+                    <small>{{ item.carrierName }} · <a [href]="item.trackingUrl" target="_blank" rel="noopener noreferrer">Track package</a></small>
+                  }
                 </span>
                 <span>{{ (item.unitPrice * item.quantity) | currency:'USD' }}</span>
               </li>
@@ -43,7 +46,6 @@
           <footer class="order-card-footer">
             <span>Order total</span><strong>{{ order.total | currency:'USD' }}</strong>
           </footer>
-          <p class="tracking-note">Sellers update each order as they prepare and send your items. Carrier tracking is not integrated yet.</p>
         </article>
       }
     </div>
