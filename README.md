@@ -55,7 +55,7 @@ npm run build
 
 Frontend tests compile and run with Karma. A Chrome/Chromium installation is required for the browser execution phase.
 
-For Angular dev server work, start PostgreSQL/API with Compose or locally, then run `npm start` inside `frontend`; Compose exposes the API on `127.0.0.1:8080` and the dev server proxies `/api` there.
+For Angular dev server work, start PostgreSQL/API with Compose or locally, then run `npm start` inside `frontend`. The dev server proxies `/api` to `127.0.0.1` using `API_HOST_PORT` from the root `.env` file, defaulting to port `8080`.
 
 ## API endpoints
 

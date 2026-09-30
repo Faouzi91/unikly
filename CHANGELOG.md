@@ -2,6 +2,11 @@
 
 Progress notes for the Unikly project. Payment collection and live shipment tracking remain out of scope for the current demo checkout.
 
+## 2026-09-30 — Honor API port in Angular dev proxy
+
+- Read the API port from the ignored root `.env` file so Angular dev requests follow the Compose port mapping.
+- Avoid sending authenticated API requests to a stale default port when `API_HOST_PORT` is customized.
+
 ## 2026-09-30 — Buyer item fulfillment visibility
 
 - Include each item's seller fulfillment status in buyer order history.
