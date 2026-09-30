@@ -14,9 +14,29 @@ export class OrdersPage {
   readonly orders = signal<CustomerOrder[]>([]);
   readonly loading = signal(true);
   readonly error = signal('');
+  readonly notice = signal('');
+  readonly deliveryError = signal('');
+  readonly confirmingReference = signal<string | null>(null);
 
   constructor() {
     void this.loadOrders();
+  }
+
+  async confirmDelivery(order: CustomerOrder): Promise<void> {
+    this.confirmingReference.set(order.reference);
+    this.deliveryError.set('');
+    this.notice.set('');
+    try {
+      const updated = await this.ordersService.confirmDelivery(order.reference);
+      this.orders.update((orders) => orders.map((current) =>
+        current.reference === updated.reference ? updated : current,
+      ));
+      this.notice.set(`Delivery confirmed for order ${updated.reference}.`);
+    } catch {
+      this.deliveryError.set('We could not confirm delivery. Refresh your orders and try again.');
+    } finally {
+      this.confirmingReference.set(null);
+    }
   }
 
   async loadOrders(): Promise<void> {

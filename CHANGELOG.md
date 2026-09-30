@@ -2,6 +2,12 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
+## 2026-09-30 — Buyer delivery confirmation
+
+- Let buyers confirm delivery after every item in their order has shipped.
+- Update all shipped items to delivered so the buyer and each seller see the completed order state.
+- Restrict confirmation to the buyer who placed the order and reject premature confirmations.
+
 ## 2026-09-30 — Seller shipment tracking details
 
 - Ask sellers for a carrier and tracking URL when they mark an order as shipped.

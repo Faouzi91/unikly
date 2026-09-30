@@ -18,10 +18,13 @@ h1 { margin: 0; font-size: 30px; font-weight: 500; }
 .order-items .item-status { color: #27613c; font-weight: 600; }
 .item-details a { color: #245947; font-weight: 600; text-underline-offset: 2px; }
 .order-card-footer { display: flex; justify-content: space-between; padding: 15px 18px 8px; font-size: 14px; }
-.tracking-note { margin: 8px 18px 18px; color: #66716a; font-size: 12px; line-height: 1.5; }
+.delivery-confirmation { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 18px 16px; }
+.delivery-confirmation p { margin: 0; color: #59635d; font-size: 12px; line-height: 1.5; }
+.retry-button:disabled { cursor: wait; opacity: .65; }
 .empty-orders { padding: 30px; text-align: center; }
 .empty-orders h2 { margin: 0; color: #263a32; font-size: 20px; }
 .empty-orders p, .message { color: #59635d; font-size: 14px; line-height: 1.5; }
 .primary-link, .retry-button { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; padding: 0 14px; border: 1px solid #214c40; border-radius: 3px; background: #285c4e; color: #fff; font: inherit; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; }
 .error { color: #8b302b; }
-@media (max-width: 560px) { .orders-page { padding: 24px 14px 44px; } .order-card-heading { align-items: flex-start; flex-direction: column; } }
+.notice { padding: 10px 12px; background: #eff7f1; color: #234a35; }
+@media (max-width: 560px) { .orders-page { padding: 24px 14px 44px; } .order-card-heading, .delivery-confirmation { align-items: stretch; flex-direction: column; } }

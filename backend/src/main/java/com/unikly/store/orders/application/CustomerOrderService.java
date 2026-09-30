@@ -78,6 +78,25 @@ public class CustomerOrderService {
         return orders.findAllByBuyerIdOrderByCreatedAtDesc(buyer.getId()).stream().map(this::view).toList();
     }
 
+    public OrderView confirmDelivery(String email, String reference) {
+        StoreUser buyer = buyer(email);
+        CustomerOrder order = orders.findByReference(reference)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+        if (!buyer.getId().equals(order.getBuyerId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found");
+        }
+        if (order.getItems().isEmpty() || order.getItems().stream()
+                .anyMatch(item -> item.getFulfillmentStatus().ordinal() < OrderFulfillmentStatus.SHIPPED.ordinal())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Delivery can be confirmed after every item in the order has shipped");
+        }
+        order.getItems().stream()
+                .filter(item -> item.getFulfillmentStatus() == OrderFulfillmentStatus.SHIPPED)
+                .forEach(item -> item.advanceFulfillmentStatus(OrderFulfillmentStatus.DELIVERED));
+        order.updateStatus(OrderFulfillmentStatus.DELIVERED.name());
+        return view(orders.save(order));
+    }
+
     public List<SellerOrderView> listForSeller(String email) {
         StoreUser seller = seller(email);
         return orders.findAllForSeller(seller.getId()).stream()

@@ -34,6 +34,11 @@ public class CustomerOrderController {
         return orders.listMine(authentication.getName());
     }
 
+    @PutMapping("/mine/{reference}/confirm-delivery")
+    public OrderView confirmDelivery(Authentication authentication, @PathVariable String reference) {
+        return orders.confirmDelivery(authentication.getName(), reference);
+    }
+
     @GetMapping("/seller")
     public List<SellerOrderView> listForSeller(Authentication authentication) {
         return orders.listForSeller(authentication.getName());

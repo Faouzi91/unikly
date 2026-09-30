@@ -73,6 +73,12 @@ export class OrdersService {
     return firstValueFrom(this.http.get<CustomerOrder[]>('/api/orders/mine'));
   }
 
+  async confirmDelivery(reference: string): Promise<CustomerOrder> {
+    return firstValueFrom(
+      this.http.put<CustomerOrder>(`/api/orders/mine/${encodeURIComponent(reference)}/confirm-delivery`, {}),
+    );
+  }
+
   async forSeller(): Promise<SellerOrder[]> {
     return firstValueFrom(this.http.get<SellerOrder[]>('/api/orders/seller'));
   }
