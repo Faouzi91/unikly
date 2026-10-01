@@ -30,7 +30,50 @@ This file contains foundational project rules and architectural constraints for 
 
 ---
 
-## 2. Backend Architecture (Spring Boot & Java 25)
+## 2. Project Structure & Code Placement Guide
+
+Anyone joining or contributing to Unikly must follow this clean layout:
+
+```text
+unikly/
+├── .agents/skills/         # Specialized AI agent skills and runbooks
+├── backend/                # Spring Boot 4.x / Java 25 Modular Monolith
+│   ├── src/main/java/com/unikly/store/
+│   │   ├── catalog/        # Product catalog, stock, seller inventory
+│   │   ├── identity/       # Users, auth, password hashing, session/CSRF, RBAC
+│   │   ├── orders/         # Orders, line items, delivery options, fulfillment
+│   │   ├── profile/        # Customer delivery address & contact details
+│   │   └── platform/       # Cross-cutting security & HTTP configuration
+│   └── src/main/resources/db/migration/ # Flyway SQL migrations (V1__ to V<N>__)
+├── frontend/               # Angular 22.2 Standalone Client (Node 24 Alpine)
+│   ├── public/             # Static assets (SVGs, logos, placeholders)
+│   └── src/app/
+│       ├── core/           # Singleton services, state management, HTTP APIs
+│       └── features/       # Screen-level views (account, home, identity)
+├── docs/                   # Product SRS (v2/v3) and architecture specs
+├── AGENTS.md               # Foundational agent rules & engineering constraints
+├── CHANGELOG.md            # Verified increment & bugfix journal
+├── docker-compose.yml      # Local multi-container topology (Postgres, API, Web)
+└── UNIKLY_BUILD_AND_ONBOARDING_GUIDE.md # SRS implementation roadmap
+```
+
+### Where Does My Code Go?
+
+| I need to add / modify... | Target Location | Placement Rule |
+| :--- | :--- | :--- |
+| **New DB Table / Column** | `backend/src/main/resources/db/migration/` | Add a new immutable forward migration `V<N+1>__<name>.sql`. |
+| **JPA Entity / Enum** | `backend/.../<domain>/domain/` | Keep entities rich with domain validation and invariants. |
+| **Data Repository** | `backend/.../<domain>/persistence/` | Extend `JpaRepository<Entity, ID>`. |
+| **Business Service / Flow** | `backend/.../<domain>/application/` | Annotate with `@Transactional`. Use `readOnly = true` for queries. |
+| **Request / Response DTO** | `backend/.../<domain>/application/` | Define as immutable Java **records** with `@Valid` constraints. |
+| **REST Controller** | `backend/.../<domain>/api/` | Map under `/api/<domain>`. Return records or standard status codes. |
+| **Shared State / API Service** | `frontend/src/app/core/<domain>/` | Use `providedIn: 'root'`. Expose reactive state via Signals. |
+| **Page / Route View** | `frontend/src/app/features/<domain>/pages/`| Create standalone component with `@if` and `@for (...; track ...)`. |
+| **Static SVG / Image** | `frontend/public/` | Place SVG here; always attach `(error)` fallback handlers to `<img>`. |
+
+---
+
+## 3. Backend Architecture (Spring Boot & Java 25)
 
 1. **Modular Monolith by Domain**:
    - Organize code into clean domain packages under `com.unikly.store.*` (`identity`, `catalog`, `orders`, `profile`).
@@ -49,7 +92,7 @@ This file contains foundational project rules and architectural constraints for 
 
 ---
 
-## 3. Frontend Architecture (Angular 22.x & TypeScript)
+## 4. Frontend Architecture (Angular 22.x & TypeScript)
 
 1. **Standalone Components**:
    - All components, pipes, and directives must be standalone. No `NgModules`.
@@ -65,7 +108,7 @@ This file contains foundational project rules and architectural constraints for 
 
 ---
 
-## 4. Database & Migrations (PostgreSQL 18 & Flyway)
+## 5. Database & Migrations (PostgreSQL 18 & Flyway)
 
 1. **Immutable Migrations**:
    - Place migrations in `backend/src/main/resources/db/migration/` as `V<N>__<description>.sql`.
@@ -75,7 +118,7 @@ This file contains foundational project rules and architectural constraints for 
 
 ---
 
-## 5. Documentation & Communication
+## 6. Documentation & Communication
 
 - Maintain [`CHANGELOG.md`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/CHANGELOG.md) with concise bullet points for every increment and bugfix.
 - Preserve existing comments and docstrings.
