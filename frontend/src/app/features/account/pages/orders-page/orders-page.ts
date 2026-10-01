@@ -16,7 +16,9 @@ export class OrdersPage {
   readonly error = signal('');
   readonly notice = signal('');
   readonly deliveryError = signal('');
+  readonly cancellationError = signal('');
   readonly confirmingReference = signal<string | null>(null);
+  readonly cancelingReference = signal<string | null>(null);
 
   constructor() {
     void this.loadOrders();
@@ -36,6 +38,23 @@ export class OrdersPage {
       this.deliveryError.set('We could not confirm delivery. Refresh your orders and try again.');
     } finally {
       this.confirmingReference.set(null);
+    }
+  }
+
+  async cancel(order: CustomerOrder): Promise<void> {
+    this.cancelingReference.set(order.reference);
+    this.cancellationError.set('');
+    this.notice.set('');
+    try {
+      const updated = await this.ordersService.cancel(order.reference);
+      this.orders.update((orders) => orders.map((current) =>
+        current.reference === updated.reference ? updated : current,
+      ));
+      this.notice.set(`Order ${updated.reference} was canceled.`);
+    } catch {
+      this.cancellationError.set('We could not cancel this order. It may already be processing.');
+    } finally {
+      this.cancelingReference.set(null);
     }
   }
 

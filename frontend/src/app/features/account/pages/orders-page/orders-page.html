@@ -8,6 +8,7 @@
 
   @if (notice()) { <p class="message notice" role="status">{{ notice() }}</p> }
   @if (deliveryError()) { <p class="message error" role="alert">{{ deliveryError() }}</p> }
+  @if (cancellationError()) { <p class="message error" role="alert">{{ cancellationError() }}</p> }
   @if (loading()) {
     <p class="message" role="status">Loading your orders…</p>
   } @else if (error()) {
@@ -55,6 +56,16 @@
                 [disabled]="confirmingReference() === order.reference"
                 (click)="confirmDelivery(order)">
                 {{ confirmingReference() === order.reference ? 'Confirming…' : 'Confirm delivery' }}
+              </button>
+            </div>
+          }
+          @if (order.status === 'PLACED') {
+            <div class="order-cancellation">
+              <p>Changed your mind? You can cancel before a seller starts processing the order.</p>
+              <button class="secondary-button" type="button"
+                [disabled]="cancelingReference() === order.reference"
+                (click)="cancel(order)">
+                {{ cancelingReference() === order.reference ? 'Canceling…' : 'Cancel order' }}
               </button>
             </div>
           }

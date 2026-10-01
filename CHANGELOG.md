@@ -2,6 +2,12 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
+## 2026-10-01 — Buyer order cancellation
+
+- Let buyers cancel only their own orders while every item is still waiting to be processed.
+- Restore the canceled items' inventory and expose cancellation in buyer order history.
+- Mark the order and its items as canceled, and protect the endpoint with `ORDER_CANCEL_SELF` plus buyer ownership checks.
+
 ## 2026-09-30 — Allow buyer delivery confirmation
 
 - Authorize the order delivery confirmation route for buyers with order read access.

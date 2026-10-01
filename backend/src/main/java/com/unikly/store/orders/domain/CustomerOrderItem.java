@@ -55,4 +55,10 @@ public class CustomerOrderItem {
         }
         fulfillmentStatus = nextStatus;
     }
+    public void cancel() {
+        if (fulfillmentStatus != OrderFulfillmentStatus.PLACED) {
+            throw new IllegalStateException("Only placed order items can be canceled");
+        }
+        fulfillmentStatus = OrderFulfillmentStatus.CANCELED;
+    }
 }

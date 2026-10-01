@@ -97,6 +97,26 @@ public class CustomerOrderService {
         return view(orders.save(order));
     }
 
+    public OrderView cancel(String email, String reference) {
+        StoreUser buyer = buyer(email);
+        CustomerOrder order = orders.findByReference(reference)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+        if (!buyer.getId().equals(order.getBuyerId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found");
+        }
+        if (order.getItems().isEmpty() || order.getItems().stream()
+                .anyMatch(item -> item.getFulfillmentStatus() != OrderFulfillmentStatus.PLACED)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Only orders that have not entered processing can be canceled");
+        }
+        for (CustomerOrderItem item : order.getItems()) {
+            products.findByIdForUpdate(item.getProductId()).ifPresent(product -> product.increaseStock(item.getQuantity()));
+            item.cancel();
+        }
+        order.updateStatus(OrderFulfillmentStatus.CANCELED.name());
+        return view(orders.save(order));
+    }
+
     public List<SellerOrderView> listForSeller(String email) {
         StoreUser seller = seller(email);
         return orders.findAllForSeller(seller.getId()).stream()

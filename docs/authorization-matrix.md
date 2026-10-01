@@ -51,6 +51,7 @@ Authorization is enforced by Spring Security on the server. Angular route guards
 - Authenticated with `ACCOUNT_READ_SELF`: `GET /api/profile/me`.
 - Authenticated with `ACCOUNT_UPDATE_SELF`: `PUT /api/profile/me` and `POST /api/auth/password`.
 - Authenticated with `ORDER_FULFILL_OWN`: `GET /api/orders/seller` and `PUT /api/orders/seller/{reference}/status`; the service scopes every order to the authenticated seller's order items.
+- Authenticated with `ORDER_CANCEL_SELF`: `PUT /api/orders/mine/{reference}/cancel`; the service scopes the order to its buyer and permits cancellation only before any item begins processing.
 - Authenticated with `PLATFORM_REPORT_READ`: `GET /api/admin/access-check`.
 - Every other `/api/**` endpoint is denied until it is explicitly assigned a permission.
 - Registration accepts only `BUYER` or `SELLER` as `accountType`; arbitrary roles, including `ADMIN`, cannot be assigned through public registration. No public role-change endpoint exists.

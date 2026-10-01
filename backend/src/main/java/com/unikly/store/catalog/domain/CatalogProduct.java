@@ -71,4 +71,9 @@ public class CatalogProduct {
         stockQuantity -= quantity;
         updatedAt = Instant.now();
     }
+    public void increaseStock(int quantity) {
+        if (quantity < 1) throw new IllegalArgumentException("Restocked quantity must be positive");
+        stockQuantity += quantity;
+        updatedAt = Instant.now();
+    }
 }

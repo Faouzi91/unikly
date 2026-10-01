@@ -13,7 +13,7 @@ export interface OrderItem {
   trackingUrl: string | null;
 }
 
-export type FulfillmentStatus = 'PLACED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED';
+export type FulfillmentStatus = 'PLACED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELED';
 
 export interface CustomerOrder {
   reference: string;
@@ -76,6 +76,12 @@ export class OrdersService {
   async confirmDelivery(reference: string): Promise<CustomerOrder> {
     return firstValueFrom(
       this.http.put<CustomerOrder>(`/api/orders/mine/${encodeURIComponent(reference)}/confirm-delivery`, {}),
+    );
+  }
+
+  async cancel(reference: string): Promise<CustomerOrder> {
+    return firstValueFrom(
+      this.http.put<CustomerOrder>(`/api/orders/mine/${encodeURIComponent(reference)}/cancel`, {}),
     );
   }
 

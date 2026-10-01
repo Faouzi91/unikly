@@ -39,6 +39,11 @@ public class CustomerOrderController {
         return orders.confirmDelivery(authentication.getName(), reference);
     }
 
+    @PutMapping("/mine/{reference}/cancel")
+    public OrderView cancel(Authentication authentication, @PathVariable String reference) {
+        return orders.cancel(authentication.getName(), reference);
+    }
+
     @GetMapping("/seller")
     public List<SellerOrderView> listForSeller(Authentication authentication) {
         return orders.listForSeller(authentication.getName());

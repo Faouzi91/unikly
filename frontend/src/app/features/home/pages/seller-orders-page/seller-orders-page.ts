@@ -41,7 +41,8 @@ export class SellerOrdersPage {
       case 'PLACED': return 'PROCESSING';
       case 'PROCESSING': return 'SHIPPED';
       case 'SHIPPED': return 'DELIVERED';
-      case 'DELIVERED': return null;
+      case 'DELIVERED':
+      case 'CANCELED': return null;
     }
   }
 
@@ -51,6 +52,7 @@ export class SellerOrdersPage {
       case 'PROCESSING': return 'Mark as shipped';
       case 'SHIPPED': return 'Mark delivered';
       case 'DELIVERED': return 'Fulfillment complete';
+      case 'CANCELED': return 'Order canceled';
     }
   }
 
