@@ -7,6 +7,7 @@ import com.unikly.store.identity.domain.StoreUser;
 import com.unikly.store.identity.persistence.StoreUserRepository;
 import com.unikly.store.orders.domain.CustomerOrder;
 import com.unikly.store.orders.domain.CustomerOrderItem;
+import com.unikly.store.orders.domain.DeliveryMethod;
 import com.unikly.store.orders.domain.OrderFulfillmentStatus;
 import com.unikly.store.orders.persistence.CustomerOrderRepository;
 import java.math.BigDecimal;
@@ -44,7 +45,7 @@ public class CustomerOrderService {
         }
 
         List<CatalogProduct> lockedProducts = new ArrayList<>();
-        BigDecimal total = BigDecimal.ZERO;
+        BigDecimal subtotal = BigDecimal.ZERO;
         for (Map.Entry<String, Integer> line : requested.entrySet()) {
             CatalogProduct product = products.findByIdForUpdate(line.getKey())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "A product is no longer available"));
@@ -52,16 +53,20 @@ public class CustomerOrderService {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
                         product.getName() + " has only " + product.getStockQuantity() + " left in stock");
             }
-            total = total.add(product.getPrice().multiply(BigDecimal.valueOf(line.getValue())));
+            subtotal = subtotal.add(product.getPrice().multiply(BigDecimal.valueOf(line.getValue())));
             lockedProducts.add(product);
         }
+
+        DeliveryMethod method = parseDeliveryMethod(request.deliveryMethod());
+        BigDecimal deliveryFee = method.calculateFee(subtotal);
+        BigDecimal total = subtotal.add(deliveryFee);
 
         String id = UUID.randomUUID().toString();
         String reference = "UK-" + id.substring(0, 8).replace("-", "").toUpperCase();
         CustomerOrder order = new CustomerOrder(id, reference, buyer.getId(), clean(request.fullName()),
                 clean(request.email()).toLowerCase(), clean(request.phone()), clean(request.addressLine1()),
                 optional(request.addressLine2()), clean(request.city()), clean(request.region()),
-                clean(request.postalCode()), clean(request.country()), total);
+                clean(request.postalCode()), clean(request.country()), method.name(), deliveryFee, total);
         for (int index = 0; index < lockedProducts.size(); index++) {
             CatalogProduct product = lockedProducts.get(index);
             int quantity = requested.get(product.getId());
@@ -200,7 +205,8 @@ public class CustomerOrderService {
                 .orElse(OrderFulfillmentStatus.PLACED);
         return new SellerOrderView(order.getReference(), order.getCreatedAt(), status.name(), order.getFullName(),
                 order.getEmail(), order.getPhone(), order.getAddressLine1(), order.getAddressLine2(),
-                order.getCity(), order.getRegion(), order.getPostalCode(), order.getCountry(), subtotal, items);
+                order.getCity(), order.getRegion(), order.getPostalCode(), order.getCountry(),
+                order.getDeliveryMethod(), subtotal, items);
     }
 
     private OrderView view(CustomerOrder order) {
@@ -209,19 +215,32 @@ public class CustomerOrderService {
                         item.getUnitPrice(), item.getSellerId(), item.getFulfillmentStatus().name(),
                         item.getCarrierName(), item.getTrackingUrl()))
                 .toList();
-        return new OrderView(order.getReference(), order.getStatus(), order.getCreatedAt(), order.getTotal(), items);
+        return new OrderView(order.getReference(), order.getStatus(), order.getCreatedAt(),
+                order.getDeliveryMethod(), order.getDeliveryFee(), order.getTotal(), items);
+    }
+
+    private DeliveryMethod parseDeliveryMethod(String deliveryMethod) {
+        if (deliveryMethod == null || deliveryMethod.isBlank()) {
+            return DeliveryMethod.STANDARD;
+        }
+        try {
+            return DeliveryMethod.valueOf(deliveryMethod.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Unsupported delivery method. Allowed methods: STANDARD, EXPRESS");
+        }
     }
 
     private static String clean(String value) { return value.trim(); }
     private static String optional(String value) { return value == null || value.isBlank() ? null : value.trim(); }
 
-    public record OrderView(String reference, String status, Instant createdAt, BigDecimal total,
-                            List<OrderItemView> items) {}
+    public record OrderView(String reference, String status, Instant createdAt, String deliveryMethod,
+                            BigDecimal deliveryFee, BigDecimal total, List<OrderItemView> items) {}
     public record OrderItemView(String productId, String productName, int quantity, BigDecimal unitPrice,
                                 Long sellerId, String status, String carrierName, String trackingUrl) {}
     public record SellerOrderView(String reference, Instant createdAt, String status, String fullName, String email,
                                   String phone, String addressLine1, String addressLine2, String city, String region,
-                                  String postalCode, String country, BigDecimal subtotal,
+                                  String postalCode, String country, String deliveryMethod, BigDecimal subtotal,
                                   List<SellerOrderItemView> items) {}
     public record SellerOrderItemView(String productId, String productName, int quantity, BigDecimal unitPrice,
                                       String status, String carrierName, String trackingUrl) {}

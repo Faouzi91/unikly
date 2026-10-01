@@ -14,7 +14,8 @@ h1 { margin: 0; font-size: 30px; font-weight: 500; }
 time { color: #66716a; font-size: 12px; }
 .status { padding: 6px 9px; border-radius: 3px; background: #e9f3eb; color: #27613c; font-size: 11px; font-weight: 700; text-transform: uppercase; }
 .delivery-details { padding: 16px 18px 10px; border-bottom: 1px solid #edf0ed; font-size: 13px; line-height: 1.4; }
-.delivery-details h2 { margin: 0 0 8px; color: #59635d; font-size: 11px; text-transform: uppercase; }
+.delivery-details h2 { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; color: #59635d; font-size: 11px; text-transform: uppercase; }
+.delivery-method-label { color: #214538; font-weight: 700; text-transform: none; }
 .delivery-details p { margin: 3px 0; }
 .order-items { display: grid; margin: 0; padding: 0 18px; list-style: none; }
 .order-items li { display: flex; justify-content: space-between; gap: 14px; padding: 14px 0; border-bottom: 1px solid #edf0ed; font-size: 13px; }

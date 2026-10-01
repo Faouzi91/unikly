@@ -2,6 +2,17 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
+## 2026-10-01 — Delivery options and profile address auto-fill
+
+- Auto-fill buyer delivery contact and address details from saved customer profile upon entering checkout.
+- Added delivery method options (Standard Delivery with free shipping over $50 vs. Express Delivery for $15.00).
+- Authoritatively calculate delivery fees and order totals on the server.
+- Persist delivery method and fee with the order; expose delivery method in buyer and seller order management views.
+- Seed catalog products for the dev seller account (`seller@unikly.local`) and reassign sample items to prevent order item seller foreign key constraint violations.
+- Scoped `AuthExceptionHandler` to `AuthController` to avoid obscuring unrelated database constraint errors.
+- Fixed 404 Unsplash image URL for the Anodized Aluminum Mechanical Pencil Set product via migration V13 and `DevelopmentUserSeeder`.
+- Added image load error fallback handlers across product grid, detail view, and seller cards to gracefully fall back to `/product-placeholder.svg`.
+
 ## 2026-10-01 — Buyer order cancellation
 
 - Let buyers cancel only their own orders while every item is still waiting to be processed.

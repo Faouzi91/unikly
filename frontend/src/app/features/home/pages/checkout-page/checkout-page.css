@@ -21,7 +21,21 @@ h1 { margin: 0; font-size: 30px; font-weight: 500; }
 .summary-item div { display: grid; gap: 4px; }
 .summary-item strong { font-weight: 600; }
 .summary-item div span, .shipping-note { color: #66716a; font-size: 12px; }
-.subtotal-row { display: flex; justify-content: space-between; margin: 0; font-size: 14px; }
+.delivery-options { display: grid; gap: 10px; margin: 4px 0 10px; }
+.delivery-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid #d1d7d2; border-radius: 4px; background: #fafbfa; cursor: pointer; transition: border-color .15s ease, background-color .15s ease; }
+.delivery-option:hover { border-color: #799a8c; background: #fff; }
+.delivery-option.selected { border-color: #285c4e; background: #f2f7f4; }
+.delivery-option input[type="radio"] { width: 18px; min-height: 18px; accent-color: #285c4e; cursor: pointer; margin: 0; }
+.delivery-option-body { display: grid; gap: 2px; flex: 1; }
+.delivery-option-name { font-size: 14px; font-weight: 600; color: #202522; }
+.delivery-option-desc { font-size: 12px; color: #59635d; }
+.delivery-option-fee { font-size: 14px; color: #202522; }
+.free-fee, .free-tag { color: #1e7046; font-weight: 700; }
+.summary-breakdown { display: grid; gap: 8px; padding-top: 6px; border-top: 1px solid #e7eae7; }
+.summary-row { display: flex; justify-content: space-between; margin: 0; font-size: 13px; color: #59635d; }
+.summary-row strong { color: #202522; font-weight: 600; }
+.total-row { padding-top: 8px; border-top: 1px dashed #d1d7d2; margin-top: 4px; font-size: 15px; font-weight: 700; color: #202522; }
+.total-row strong { font-size: 16px; color: #1e4f3f; }
 .shipping-note { margin: 0; line-height: 1.5; }
 .demo-disclosure { margin: 8px 0; padding: 11px 12px; border-left: 3px solid #c18a32; background: #fff9eb; color: #614d26; font-size: 12px; line-height: 1.5; }
 .place-order-button, .primary-link { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 0 16px; border: 1px solid #214c40; border-radius: 3px; background: #285c4e; color: #fff; font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; }

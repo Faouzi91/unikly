@@ -30,7 +30,7 @@
           </header>
 
           <section class="delivery-details" aria-label="Delivery details">
-            <h2>Ship to</h2>
+            <h2>Ship to · <span class="delivery-method-label">{{ order.deliveryMethod === 'EXPRESS' ? 'Express Delivery' : 'Standard Delivery' }}</span></h2>
             <p><strong>{{ order.fullName }}</strong></p>
             <p>{{ order.email }} · {{ order.phone }}</p>
             <p>{{ order.addressLine1 }}@if (order.addressLine2) {, {{ order.addressLine2 }}}</p>

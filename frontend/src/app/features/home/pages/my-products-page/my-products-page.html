@@ -22,7 +22,7 @@
       <div class="product-list">
         @for (product of products(); track product.id) {
           <article class="product-card">
-            <img class="product-image" [src]="product.image" [alt]="product.name">
+            <img class="product-image" [src]="product.image" [alt]="product.name" (error)="$any($event.target).src = '/product-placeholder.svg'">
             <div class="product-content">
               @if (editingId() === product.id) {
                 <form (ngSubmit)="saveEdit(product.id, editForm.invalid)" #editForm="ngForm">

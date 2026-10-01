@@ -16,8 +16,9 @@ h1 { margin: 0; font-size: 30px; font-weight: 500; }
 .order-items li > span:first-child { display: grid; gap: 5px; }
 .order-items small { color: #66716a; font-size: 12px; }
 .order-items .item-status { color: #27613c; font-weight: 600; }
-.item-details a { color: #245947; font-weight: 600; text-underline-offset: 2px; }
-.order-card-footer { display: flex; justify-content: space-between; padding: 15px 18px 8px; font-size: 14px; }
+.order-card-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 15px 18px 8px; font-size: 14px; }
+.delivery-badge { font-size: 12px; color: #58685f; font-weight: 500; }
+.order-total-block { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .delivery-confirmation, .order-cancellation { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 18px 16px; }
 .delivery-confirmation p, .order-cancellation p { margin: 0; color: #59635d; font-size: 12px; line-height: 1.5; }
 .retry-button:disabled, .secondary-button:disabled { cursor: wait; opacity: .65; }

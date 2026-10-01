@@ -6,7 +6,7 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/identity/auth.service';
 import { CartService } from '@core/cart/cart.service';
 import { ProductCatalogService } from '../../data/product-catalog.service';
-import { CustomerOrder, OrdersService } from '@core/orders/orders.service';
+import { CustomerOrder, DeliveryMethod, OrdersService } from '@core/orders/orders.service';
 
 @Component({
   selector: 'app-checkout-page',
@@ -30,6 +30,28 @@ export class CheckoutPage {
     };
   }));
   readonly subtotal = computed(() => this.items().reduce((sum, item) => sum + item.price * item.quantity, 0));
+  readonly deliveryMethod = signal<DeliveryMethod>('STANDARD');
+  readonly deliveryOptions = [
+    {
+      id: 'STANDARD' as const,
+      title: 'Standard Delivery',
+      estimate: '3–5 business days',
+      baseFee: 5,
+    },
+    {
+      id: 'EXPRESS' as const,
+      title: 'Express Delivery',
+      estimate: '1–2 business days',
+      baseFee: 15,
+    },
+  ];
+  readonly deliveryFee = computed(() => {
+    if (this.deliveryMethod() === 'STANDARD') {
+      return this.subtotal() >= 50 ? 0 : 5;
+    }
+    return 15;
+  });
+  readonly total = computed(() => this.subtotal() + this.deliveryFee());
   readonly buyerSignedIn = computed(() => this.auth.user()?.role === 'BUYER');
   readonly placedOrder = signal<CustomerOrder | null>(null);
   readonly busy = signal(false);
@@ -49,6 +71,26 @@ export class CheckoutPage {
   constructor() {
     this.email = this.auth.user()?.email ?? '';
     this.fullName = this.auth.user()?.displayName ?? '';
+    void this.loadProfileAddress();
+  }
+
+  async loadProfileAddress(): Promise<void> {
+    if (this.auth.user()?.role !== 'BUYER') return;
+    try {
+      const profile = await this.auth.getProfile();
+      if (profile) {
+        if (!this.fullName && profile.displayName) this.fullName = profile.displayName;
+        if (!this.phone && profile.phoneNumber) this.phone = profile.phoneNumber;
+        if (!this.addressLine1 && profile.addressLine1) this.addressLine1 = profile.addressLine1;
+        if (!this.addressLine2 && profile.addressLine2) this.addressLine2 = profile.addressLine2;
+        if (!this.city && profile.city) this.city = profile.city;
+        if (!this.region && profile.region) this.region = profile.region;
+        if (!this.postalCode && profile.postalCode) this.postalCode = profile.postalCode;
+        if (!this.country && profile.countryCode) this.country = profile.countryCode;
+      }
+    } catch {
+      // Profile prefill is best-effort
+    }
   }
 
   async placeDemoOrder(invalid: boolean | null): Promise<void> {
@@ -66,6 +108,7 @@ export class CheckoutPage {
         addressLine1: this.addressLine1.trim(), addressLine2: this.addressLine2.trim(),
         city: this.city.trim(), region: this.region.trim(), postalCode: this.postalCode.trim(),
         country: this.country.trim(),
+        deliveryMethod: this.deliveryMethod(),
         items: this.items().map(({ productId, quantity }) => ({ productId, quantity })),
       });
       this.placedOrder.set(order);

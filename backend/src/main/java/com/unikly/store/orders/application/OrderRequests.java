@@ -23,7 +23,13 @@ public final class OrderRequests {
             @NotBlank @Size(max = 100) String region,
             @NotBlank @Size(max = 24) String postalCode,
             @NotBlank @Size(max = 80) String country,
-            @NotEmpty @Size(max = 50) List<@Valid Item> items) {}
+            @Size(max = 32) String deliveryMethod,
+            @NotEmpty @Size(max = 50) List<@Valid Item> items) {
+        public Create(String fullName, String email, String phone, String addressLine1, String addressLine2,
+                      String city, String region, String postalCode, String country, List<Item> items) {
+            this(fullName, email, phone, addressLine1, addressLine2, city, region, postalCode, country, "STANDARD", items);
+        }
+    }
     public record Item(@NotBlank @Size(max = 36) String productId, @NotNull @Min(1) @Max(1000) Integer quantity) {}
     public record UpdateFulfillmentStatus(@NotNull OrderFulfillmentStatus status,
                                          @Size(max = 80) String carrierName,

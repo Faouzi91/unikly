@@ -50,7 +50,7 @@
             @for (product of sortedProducts(); track product.id) {
             <article class="product-item">
                 <a class="product-image" [routerLink]="['/products', product.id]" [attr.aria-label]="'View ' + product.name">
-                    <img [src]="product.image" [alt]="product.name" loading="lazy">
+                    <img [src]="product.image" [alt]="product.name" loading="lazy" (error)="$any($event.target).src = '/product-placeholder.svg'">
                     @if (product.badge) { <span class="product-badge">{{ product.badge }}</span> }
                 </a>
                 <div class="product-details">

@@ -4,7 +4,7 @@
   @if (product(); as item) {
     <article class="product-detail">
       <div class="detail-image-wrap">
-        <img class="detail-image" [src]="item.image" [alt]="item.name">
+        <img class="detail-image" [src]="item.image" [alt]="item.name" (error)="$any($event.target).src = '/product-placeholder.svg'">
         @if (item.badge) { <span class="detail-badge">{{ item.badge }}</span> }
       </div>
 

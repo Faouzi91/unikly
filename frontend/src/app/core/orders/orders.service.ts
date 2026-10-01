@@ -14,11 +14,14 @@ export interface OrderItem {
 }
 
 export type FulfillmentStatus = 'PLACED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELED';
+export type DeliveryMethod = 'STANDARD' | 'EXPRESS';
 
 export interface CustomerOrder {
   reference: string;
   status: FulfillmentStatus;
   createdAt: string;
+  deliveryMethod?: DeliveryMethod;
+  deliveryFee?: number;
   total: number;
   items: OrderItem[];
 }
@@ -36,6 +39,7 @@ export interface SellerOrder {
   region: string;
   postalCode: string;
   country: string;
+  deliveryMethod?: DeliveryMethod;
   subtotal: number;
   items: Array<{
     productId: string;
@@ -58,6 +62,7 @@ export interface PlaceOrderDetails {
   region: string;
   postalCode: string;
   country: string;
+  deliveryMethod?: DeliveryMethod;
   items: Array<{ productId: string; quantity: number }>;
 }
 

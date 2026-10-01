@@ -4,7 +4,7 @@
       <p class="eyebrow">Demo order complete</p>
       <h1 id="confirmation-title">Thank you, {{ fullName }}.</h1>
       <p>Order reference <strong>{{ order.reference }}</strong> is saved to your account.</p>
-      <p class="confirmation-status">Status: <strong>{{ order.status }}</strong>. This confirms the order and stock reservation; live shipment tracking is not connected yet.</p>
+      <p class="confirmation-status">Status: <strong>{{ order.status }}</strong> · {{ order.deliveryMethod === 'EXPRESS' ? 'Express Delivery' : 'Standard Delivery' }} ({{ (order.deliveryFee ?? 0) === 0 ? 'Free' : ((order.deliveryFee ?? 0) | currency:'USD') }}). This confirms the order and stock reservation; live shipment tracking is not connected yet.</p>
       <a class="primary-link" routerLink="/orders">Track your order</a>
       <a class="secondary-link" routerLink="/">Continue shopping</a>
     </section>
@@ -86,9 +86,31 @@
           </div>
         </div>
 
+        <h2>Delivery method</h2>
+        <div class="delivery-options" role="radiogroup" aria-label="Delivery options">
+          @for (option of deliveryOptions; track option.id) {
+            <label class="delivery-option" [class.selected]="deliveryMethod() === option.id">
+              <input type="radio" name="deliveryMethod" [value]="option.id"
+                [checked]="deliveryMethod() === option.id"
+                (change)="deliveryMethod.set(option.id)">
+              <div class="delivery-option-body">
+                <span class="delivery-option-name">{{ option.title }}</span>
+                <span class="delivery-option-desc">{{ option.estimate }}</span>
+              </div>
+              <span class="delivery-option-fee">
+                @if (option.id === 'STANDARD' && subtotal() >= 50) {
+                  <strong class="free-fee">FREE</strong>
+                } @else {
+                  <strong>{{ option.baseFee | currency:'USD' }}</strong>
+                }
+              </span>
+            </label>
+          }
+        </div>
+
         <p class="demo-disclosure">No payment is collected in this increment. Your delivery details are stored with this order so you can track it from your account.</p>
         <button class="place-order-button" type="submit" [disabled]="deliveryForm.invalid || busy()">
-          {{ busy() ? 'Placing order…' : 'Place order · ' + (subtotal() | currency:'USD') }}
+          {{ busy() ? 'Placing order…' : 'Place order · ' + (total() | currency:'USD') }}
         </button>
       </form>
 
@@ -100,7 +122,14 @@
             <span>{{ (item.price * item.quantity) | currency:'USD' }}</span>
           </div>
         }
-        <p class="subtotal-row"><span>Subtotal</span><strong>{{ subtotal() | currency:'USD' }}</strong></p>
+        <div class="summary-breakdown">
+          <p class="summary-row"><span>Subtotal</span><strong>{{ subtotal() | currency:'USD' }}</strong></p>
+          <p class="summary-row">
+            <span>Delivery ({{ deliveryMethod() === 'EXPRESS' ? 'Express' : 'Standard' }})</span>
+            <strong>{{ deliveryFee() === 0 ? 'FREE' : (deliveryFee() | currency:'USD') }}</strong>
+          </p>
+          <p class="summary-row total-row"><span>Total</span><strong>{{ total() | currency:'USD' }}</strong></p>
+        </div>
         <p class="shipping-note">Payment is not processed. Stock is reserved when the order is placed.</p>
       </aside>
     </div>

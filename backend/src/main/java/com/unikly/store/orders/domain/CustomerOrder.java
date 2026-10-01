@@ -27,6 +27,8 @@ public class CustomerOrder {
     @Column(nullable = false, length = 100) private String region;
     @Column(name = "postal_code", nullable = false, length = 24) private String postalCode;
     @Column(nullable = false, length = 80) private String country;
+    @Column(name = "delivery_method", nullable = false, length = 32) private String deliveryMethod;
+    @Column(name = "delivery_fee", nullable = false, precision = 12, scale = 2) private BigDecimal deliveryFee;
     @Column(nullable = false, precision = 12, scale = 2) private BigDecimal total;
     @Column(name = "created_at", nullable = false, updatable = false) private Instant createdAt;
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -36,11 +38,19 @@ public class CustomerOrder {
 
     public CustomerOrder(String id, String reference, Long buyerId, String fullName, String email, String phone,
                          String addressLine1, String addressLine2, String city, String region, String postalCode,
-                         String country, BigDecimal total) {
+                         String country, String deliveryMethod, BigDecimal deliveryFee, BigDecimal total) {
         this.id = id; this.reference = reference; this.buyerId = buyerId; this.status = "PLACED";
         this.fullName = fullName; this.email = email; this.phone = phone; this.addressLine1 = addressLine1;
         this.addressLine2 = addressLine2; this.city = city; this.region = region; this.postalCode = postalCode;
-        this.country = country; this.total = total; this.createdAt = Instant.now();
+        this.country = country; this.deliveryMethod = deliveryMethod; this.deliveryFee = deliveryFee;
+        this.total = total; this.createdAt = Instant.now();
+    }
+
+    public CustomerOrder(String id, String reference, Long buyerId, String fullName, String email, String phone,
+                         String addressLine1, String addressLine2, String city, String region, String postalCode,
+                         String country, BigDecimal total) {
+        this(id, reference, buyerId, fullName, email, phone, addressLine1, addressLine2, city, region,
+                postalCode, country, "STANDARD", BigDecimal.ZERO.setScale(2), total);
     }
 
     public void addItem(CustomerOrderItem item) { items.add(item); item.setOrder(this); }
@@ -58,6 +68,8 @@ public class CustomerOrder {
     public String getRegion() { return region; }
     public String getPostalCode() { return postalCode; }
     public String getCountry() { return country; }
+    public String getDeliveryMethod() { return deliveryMethod; }
+    public BigDecimal getDeliveryFee() { return deliveryFee; }
     public BigDecimal getTotal() { return total; }
     public Instant getCreatedAt() { return createdAt; }
     public List<CustomerOrderItem> getItems() { return items; }

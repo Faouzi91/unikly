@@ -58,6 +58,11 @@ public class CatalogProduct {
         this.updatedAt = Instant.now();
     }
 
+    public void assignSeller(Long sellerId) {
+        this.sellerId = sellerId;
+        this.updatedAt = Instant.now();
+    }
+
     public String getId() { return id; }
     public Long getSellerId() { return sellerId; }
     public String getName() { return name; }

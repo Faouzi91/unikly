@@ -47,7 +47,15 @@
             }
           </ul>
           <footer class="order-card-footer">
-            <span>Order total</span><strong>{{ order.total | currency:'USD' }}</strong>
+            <span class="delivery-badge">
+              {{ order.deliveryMethod === 'EXPRESS' ? 'Express Delivery' : 'Standard Delivery' }}
+              @if (order.deliveryFee !== undefined && order.deliveryFee !== null) {
+                · {{ order.deliveryFee === 0 ? 'Free delivery' : (order.deliveryFee | currency:'USD') }}
+              }
+            </span>
+            <span class="order-total-block">
+              <span>Order total</span><strong>{{ order.total | currency:'USD' }}</strong>
+            </span>
           </footer>
           @if (order.status === 'SHIPPED') {
             <div class="delivery-confirmation">

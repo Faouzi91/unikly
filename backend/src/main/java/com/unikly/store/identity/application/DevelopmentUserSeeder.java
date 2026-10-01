@@ -1,8 +1,11 @@
 package com.unikly.store.identity.application;
 
+import com.unikly.store.catalog.domain.CatalogProduct;
+import com.unikly.store.catalog.persistence.CatalogProductRepository;
 import com.unikly.store.identity.domain.StoreRole;
 import com.unikly.store.identity.domain.StoreUser;
 import com.unikly.store.identity.persistence.StoreUserRepository;
+import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -19,6 +22,7 @@ class DevelopmentUserSeeder {
     ApplicationRunner seedDevelopmentUsers(
             StoreUserRepository users,
             PasswordEncoder passwords,
+            CatalogProductRepository products,
             @Value("${unikly.dev-users.customer.email}") String customerEmail,
             @Value("${unikly.dev-users.customer.password}") String customerPassword,
             @Value("${unikly.dev-users.admin.email}") String adminEmail,
@@ -31,8 +35,67 @@ class DevelopmentUserSeeder {
             requirePassword(sellerPassword, "DEV_SELLER_PASSWORD");
             configureDevelopmentUser(users, passwords, customerEmail, customerPassword, "Demo Buyer", StoreRole.BUYER);
             configureDevelopmentUser(users, passwords, adminEmail, adminPassword, "Development Admin", StoreRole.ADMIN);
-            configureDevelopmentUser(users, passwords, sellerEmail, sellerPassword, "Demo Seller", StoreRole.SELLER);
+            StoreUser seller = configureDevelopmentUser(users, passwords, sellerEmail, sellerPassword, "Demo Seller", StoreRole.SELLER);
+
+            for (CatalogProduct p : products.findAll()) {
+                if (p.getSellerId() == null) {
+                    p.assignSeller(seller.getId());
+                    products.save(p);
+                }
+            }
+
+            seedProduct(products, seller.getId(), "ceramic-pour-over",
+                    "Ceramic Pour-Over Coffee Dripper",
+                    "A handcrafted ceramic coffee dripper designed for precise water flow and even extraction.",
+                    "Kitchen", new BigDecimal("32.00"),
+                    "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=720&q=85",
+                    20);
+            seedProduct(products, seller.getId(), "matte-desk-clock",
+                    "Matte Black Minimalist Desk Clock",
+                    "A silent sweep movement clock with a matte powder-coated steel casing and clean dial.",
+                    "Home", new BigDecimal("45.00"),
+                    "https://images.unsplash.com/photo-1563861826100-9cb868fdbe1c?auto=format&fit=crop&w=720&q=85",
+                    15);
+            seedProduct(products, seller.getId(), "waffle-bath-towel",
+                    "Waffle Weave Organic Cotton Bath Towel",
+                    "Ultra-absorbent, fast-drying 100% organic cotton bath towel with textured honeycomb weave.",
+                    "Home", new BigDecimal("38.50"),
+                    "https://images.unsplash.com/photo-1616627547584-bf28cee262db?auto=format&fit=crop&w=720&q=85",
+                    25);
+            seedProduct(products, seller.getId(), "walnut-cutting-board",
+                    "Handcrafted Walnut Cutting Board",
+                    "Solid American black walnut cutting board with beveled edge grips and food-safe mineral oil finish.",
+                    "Kitchen", new BigDecimal("54.00"),
+                    "https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?auto=format&fit=crop&w=720&q=85",
+                    12);
+            seedProduct(products, seller.getId(), "trailhead-duffle",
+                    "Trailhead Canvas & Leather Duffle",
+                    "Heavyweight waxed canvas weekender duffle bag with vegetable-tanned leather straps and brass hardware.",
+                    "Outdoor", new BigDecimal("88.00"),
+                    "https://images.unsplash.com/photo-1547949003-9792a18a2601?auto=format&fit=crop&w=720&q=85",
+                    10);
+            seedProduct(products, seller.getId(), "aluminum-pencil-set",
+                    "Anodized Aluminum Mechanical Pencil Set",
+                    "Precision-machined matte aluminum drafting pencils with knurled grip and balanced weight.",
+                    "Home", new BigDecimal("29.00"),
+                    "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=720&q=85",
+                    30);
         };
+    }
+
+    private static void seedProduct(
+            CatalogProductRepository products,
+            Long sellerId,
+            String id,
+            String name,
+            String description,
+            String category,
+            BigDecimal price,
+            String image,
+            int stockQuantity) {
+        if (products.findById(id).isEmpty()) {
+            products.save(new CatalogProduct(id, sellerId, name, description, category, price, image, stockQuantity));
+        }
     }
 
     private static void requirePassword(String password, String variableName) {
@@ -41,7 +104,7 @@ class DevelopmentUserSeeder {
         }
     }
 
-    private static void configureDevelopmentUser(
+    private static StoreUser configureDevelopmentUser(
             StoreUserRepository users,
             PasswordEncoder passwords,
             String email,
@@ -54,6 +117,6 @@ class DevelopmentUserSeeder {
         user.updatePasswordHash(passwords.encode(password));
         user.updateDisplayName(displayName);
         user.updateRole(role);
-        users.save(user);
+        return users.save(user);
     }
 }
