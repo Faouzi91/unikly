@@ -208,16 +208,30 @@
 .product-title-link:hover { color: #174d42; text-decoration: underline; text-underline-offset: 3px; }
 .product-title-link:focus-visible { outline: 2px solid #285c4e; outline-offset: 2px; }
 .rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin: 7px 0 8px;
-  color: #b56b18;
-  font-size: 13px;
-  letter-spacing: 1px;
+}
+.card-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+.card-star-svg {
+  width: 14px;
+  height: 14px;
+  fill: #e2e8f0;
+  stroke: #cbd5e1;
+  stroke-width: 1;
+}
+.card-star-svg.filled {
+  fill: #f59e0b;
+  stroke: #d97706;
 }
 .rating small {
-  margin-left: 5px;
   color: #67706b;
   font-size: 11px;
-  letter-spacing: 0;
 }
 .price {
   margin: 0 0 12px;

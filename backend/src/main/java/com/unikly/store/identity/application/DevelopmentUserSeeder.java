@@ -23,6 +23,7 @@ class DevelopmentUserSeeder {
             StoreUserRepository users,
             PasswordEncoder passwords,
             CatalogProductRepository products,
+            com.unikly.store.reviews.persistence.ProductReviewRepository reviews,
             @Value("${unikly.dev-users.customer.email}") String customerEmail,
             @Value("${unikly.dev-users.customer.password}") String customerPassword,
             @Value("${unikly.dev-users.admin.email}") String adminEmail,
@@ -33,7 +34,7 @@ class DevelopmentUserSeeder {
             requirePassword(customerPassword, "DEV_CUSTOMER_PASSWORD");
             requirePassword(adminPassword, "DEV_ADMIN_PASSWORD");
             requirePassword(sellerPassword, "DEV_SELLER_PASSWORD");
-            configureDevelopmentUser(users, passwords, customerEmail, customerPassword, "Demo Buyer", StoreRole.BUYER);
+            StoreUser buyer = configureDevelopmentUser(users, passwords, customerEmail, customerPassword, "Demo Buyer", StoreRole.BUYER);
             configureDevelopmentUser(users, passwords, adminEmail, adminPassword, "Development Admin", StoreRole.ADMIN);
             StoreUser seller = configureDevelopmentUser(users, passwords, sellerEmail, sellerPassword, "Demo Seller", StoreRole.SELLER);
 
@@ -80,7 +81,35 @@ class DevelopmentUserSeeder {
                     "Home", new BigDecimal("29.00"),
                     "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=720&q=85",
                     30);
+
+            seedReview(reviews, "aluminum-pencil-set", buyer.getId(), buyer.getDisplayName(), 5,
+                    "Incredible weight and precision",
+                    "The balance and grip knurling are exceptional. It feels indestructible and writes like a dream.",
+                    true);
+            seedReview(reviews, "ceramic-pour-over", buyer.getId(), buyer.getDisplayName(), 5,
+                    "Smooth brewing experience",
+                    "The interior ribs guide the water flow evenly. A gorgeous centerpiece for my morning coffee.",
+                    true);
+            seedReview(reviews, "trailhead-duffle", buyer.getId(), buyer.getDisplayName(), 4,
+                    "Rugged and spacious weekender",
+                    "Quality canvas and solid brass hardware. Fits easily into overhead bins with room to spare.",
+                    false);
         };
+    }
+
+    private static void seedReview(
+            com.unikly.store.reviews.persistence.ProductReviewRepository reviews,
+            String productId,
+            Long buyerId,
+            String authorName,
+            int rating,
+            String title,
+            String comment,
+            boolean isVerifiedPurchase) {
+        if (!reviews.existsByProductIdAndBuyerId(productId, buyerId)) {
+            reviews.save(new com.unikly.store.reviews.domain.ProductReview(
+                    productId, buyerId, authorName, rating, title, comment, isVerifiedPurchase));
+        }
     }
 
     private static void seedProduct(

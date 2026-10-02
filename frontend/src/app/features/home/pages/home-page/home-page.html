@@ -57,7 +57,13 @@
                     <p class="product-category">{{ product.category }}</p>
                     <h3><a class="product-title-link" [routerLink]="['/products', product.id]">{{ product.name }}</a></h3>
                     <p class="rating" [attr.aria-label]="product.rating + ' out of 5 stars'">
-                        <span aria-hidden="true">{{ stars(product.rating) }}</span>
+                        <span class="card-stars" aria-hidden="true">
+                            @for (star of [1, 2, 3, 4, 5]; track star) {
+                                <svg viewBox="0 0 24 24" class="card-star-svg" [class.filled]="product.rating >= star" aria-hidden="true">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                </svg>
+                            }
+                        </span>
                         <small>({{ product.reviews }})</small>
                     </p>
                     <p class="price">${{ product.price.toFixed(2) }}</p>

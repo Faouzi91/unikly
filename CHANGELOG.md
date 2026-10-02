@@ -2,6 +2,47 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
+## 2026-10-02 — Product Reviews & Ratings domain and SVG vector icon design system
+
+### Database Schema & Migrations
+- Added Flyway migration [`V16__create_product_reviews.sql`](backend/src/main/resources/db/migration/V16__create_product_reviews.sql):
+  - Created `product_reviews` table with foreign keys `product_id REFERENCES catalog_products(id) ON DELETE CASCADE` and `buyer_id REFERENCES store_users(id) ON DELETE CASCADE`.
+  - Added constraints: rating check (`rating >= 1 AND rating <= 5`), unique buyer constraint `uq_product_reviews_product_buyer (product_id, buyer_id)` for single review per buyer/product, and author name/text fields.
+  - Added relational performance indexes `ix_product_reviews_product_id`, `ix_product_reviews_buyer_id`, and `ix_product_reviews_product_created`.
+
+### Domain Model, Persistence & Security
+- Created [`ProductReview`](backend/src/main/java/com/unikly/store/reviews/domain/ProductReview.java) domain entity with rating domain validation and review update logic.
+- Created [`ProductReviewRepository`](backend/src/main/java/com/unikly/store/reviews/persistence/ProductReviewRepository.java) providing review queries, buyer existence checks, and aggregate rating grouping (`findAggregateRatings`).
+- Added `hasPurchasedProduct` query to [`CustomerOrderRepository`](backend/src/main/java/com/unikly/store/orders/persistence/CustomerOrderRepository.java) to authoritatively verify buyer purchase status against placed orders.
+- Updated [`StorePermission`](backend/src/main/java/com/unikly/store/identity/domain/StorePermission.java) and [`StoreRole`](backend/src/main/java/com/unikly/store/identity/domain/StoreRole.java) with `REVIEW_CREATE_SELF`.
+- Configured [`AuthSecurityConfiguration`](backend/src/main/java/com/unikly/store/platform/security/AuthSecurityConfiguration.java):
+  - Public `GET /api/products/*/reviews`
+  - Authenticated buyer `POST /api/products/*/reviews` and `DELETE /api/products/*/reviews/mine` with `REVIEW_CREATE_SELF`
+  - Admin moderation `DELETE /api/reviews/*` with `REVIEW_MODERATE`
+
+### Application Layer & Controllers
+- Created [`ReviewRequests`](backend/src/main/java/com/unikly/store/reviews/application/ReviewRequests.java) and [`ReviewViews`](backend/src/main/java/com/unikly/store/reviews/application/ReviewViews.java) immutable record DTOs.
+- Created [`ProductReviewService`](backend/src/main/java/com/unikly/store/reviews/application/ProductReviewService.java) providing review summaries with star breakdowns (1-5 stars), verified purchase detection, upsert semantics, and moderation.
+- Updated [`CatalogProductService`](backend/src/main/java/com/unikly/store/catalog/application/CatalogProductService.java) to dynamically aggregate real star ratings and review counts from `product_reviews`.
+- Seeded realistic verified reviews in [`DevelopmentUserSeeder`](backend/src/main/java/com/unikly/store/identity/application/DevelopmentUserSeeder.java).
+- Created REST controllers [`ProductReviewController`](backend/src/main/java/com/unikly/store/reviews/api/ProductReviewController.java) and [`AdminReviewModerationController`](backend/src/main/java/com/unikly/store/reviews/api/AdminReviewModerationController.java).
+
+### Frontend UI & Vector Icon System
+- Codified strict vector icon rule in [`AGENTS.md`](AGENTS.md): all unicode emojis replaced with accessible inline SVG vector icons across the web client.
+- Replaced emojis and text steppers across [`BasketPage`](frontend/src/app/features/home/pages/basket-page), [`HomePage`](frontend/src/app/features/home/pages/home-page), and [`ProductDetailPage`](frontend/src/app/features/home/pages/product-detail-page) with crisp SVG vector icons.
+- Created [`ReviewsService`](frontend/src/app/core/reviews/reviews.service.ts) Angular core HTTP service.
+- Completely enhanced [`ProductDetailPage`](frontend/src/app/features/home/pages/product-detail-page):
+  - Authoritative average rating header with smooth anchor link scroll to reviews section.
+  - Overall score banner, star breakdown bars (5★ down to 1★) with counts and percentages.
+  - "Verified Purchase" badges for confirmed buyers.
+  - Interactive review submission and editing form with interactive SVG star rating selector.
+  - Buyer review management (edit/delete own review) and prompt for unauthenticated shoppers.
+
+### Verification
+- Added 5 comprehensive integration tests in [`ProductReviewTests`](backend/src/test/java/com/unikly/store/reviews/ProductReviewTests.java); all 24 backend tests passing in Docker toolchain.
+- Verified Angular frontend compiles cleanly in Docker with 0 errors and 0 warnings (`docker build -t unikly-web-test ./frontend`).
+- Verified 13/13 live end-to-end smoke tests against running Docker Compose topology, validating CSRF, cart persistence, verified purchase detection, and review publishing.
+
 ## 2026-10-02 — Interactive cart controls and ecommerce value-add features
 
 ### Frontend UX & Reactive State Management

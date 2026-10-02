@@ -21,4 +21,7 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, St
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @EntityGraph(attributePaths = "items")
     Optional<CustomerOrder> findByReference(String reference);
+
+    @Query("select count(o) > 0 from CustomerOrder o join o.items item where o.buyerId = :buyerId and item.productId = :productId and o.status <> 'CANCELED'")
+    boolean hasPurchasedProduct(@Param("buyerId") Long buyerId, @Param("productId") String productId);
 }

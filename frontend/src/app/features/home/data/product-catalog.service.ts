@@ -36,7 +36,9 @@ export class ProductCatalogService {
         const persisted = remoteById.get(sample.id);
         if (!persisted) return sample;
         remoteById.delete(sample.id);
-        return { ...sample, ...persisted, rating: sample.rating, reviews: sample.reviews, badge: sample.badge };
+        const rating = (persisted.rating && persisted.rating > 0) ? persisted.rating : sample.rating;
+        const reviews = (persisted.reviews && persisted.reviews > 0) ? persisted.reviews : sample.reviews;
+        return { ...sample, ...persisted, rating, reviews, badge: sample.badge };
       });
       this.productsState.set([...mergedSamples, ...remoteById.values()]);
       await this.migrateCurrentSellersLocalProducts();

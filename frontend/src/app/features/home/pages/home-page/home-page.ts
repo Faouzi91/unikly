@@ -90,8 +90,4 @@ export class HomePage {
       this.notice.set(`${product.name} removed from your basket.`);
     }
   }
-
-  stars(rating: number): string {
-    return `${'★'.repeat(Math.floor(rating))}${'☆'.repeat(5 - Math.floor(rating))}`;
-  }
 }

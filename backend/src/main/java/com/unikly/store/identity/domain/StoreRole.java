@@ -10,7 +10,8 @@ public enum StoreRole {
             StorePermission.CART_MANAGE_SELF,
             StorePermission.ORDER_CREATE_SELF,
             StorePermission.ORDER_READ_SELF,
-            StorePermission.ORDER_CANCEL_SELF)),
+            StorePermission.ORDER_CANCEL_SELF,
+            StorePermission.REVIEW_CREATE_SELF)),
     SELLER(Set.of(
             StorePermission.ACCOUNT_READ_SELF,
             StorePermission.ACCOUNT_UPDATE_SELF,
@@ -25,6 +26,7 @@ public enum StoreRole {
             StorePermission.CATALOG_MANAGE,
             StorePermission.ORDER_MANAGE,
             StorePermission.ORDER_REFUND,
+            StorePermission.REVIEW_CREATE_SELF,
             StorePermission.REVIEW_MODERATE,
             StorePermission.ROLE_ASSIGN,
             StorePermission.PLATFORM_REPORT_READ));
