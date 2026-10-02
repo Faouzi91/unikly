@@ -2,17 +2,42 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
-## 2026-10-02 — Server-side cart persistence and guest-to-buyer sync
+## 2026-10-02 — Server-side cart persistence and guest-to-buyer sync (`CART_MANAGE_SELF`)
 
-- Implemented database-backed shopping cart domain (`customer_carts`, `customer_cart_items`) with Flyway migration [`V15__create_customer_carts.sql`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/resources/db/migration/V15__create_customer_carts.sql).
-- Added domain entities [`CustomerCart`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/java/com/unikly/store/cart/domain/CustomerCart.java) and [`CustomerCartItem`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/java/com/unikly/store/cart/domain/CustomerCartItem.java) with quantity constraints and unique product index.
-- Created [`CustomerCartRepository`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/java/com/unikly/store/cart/persistence/CustomerCartRepository.java) using `@EntityGraph` eager loading to avoid N+1 query overhead.
-- Implemented [`CustomerCartService`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/java/com/unikly/store/cart/application/CustomerCartService.java) with real-time stock validation, batch product mapping, line item subtotal calculations, and graceful guest-to-buyer merge.
-- Added REST endpoints in [`CustomerCartController`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/java/com/unikly/store/cart/api/CustomerCartController.java) (`GET`, `POST`, `PUT`, `DELETE` on `/api/cart/**`), protected by `StorePermission.CART_MANAGE_SELF` in [`AuthSecurityConfiguration`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/java/com/unikly/store/platform/security/AuthSecurityConfiguration.java).
-- Integrated automatic cart clearing into [`CustomerOrderService.create`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/java/com/unikly/store/orders/application/CustomerOrderService.java) upon successful order creation.
-- Enhanced Angular [`CartService`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/frontend/src/app/core/cart/cart.service.ts) to synchronize with `/api/cart` for authenticated buyers and merge guest items from `localStorage` upon login.
-- Added unit and integration tests in [`CustomerCartTests`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/test/java/com/unikly/store/cart/CustomerCartTests.java) and updated [`cart.service.spec.ts`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/frontend/src/app/core/cart/cart.service.spec.ts).
-- Validated full request lifecycle with 12 passing end-to-end smoke tests against live Docker Compose services.
+### Database Schema & Migrations
+- Added Flyway migration [`V15__create_customer_carts.sql`](backend/src/main/resources/db/migration/V15__create_customer_carts.sql):
+  - Created `customer_carts` table keyed by UUID with foreign key `buyer_id UNIQUE REFERENCES store_users(id) ON DELETE CASCADE`.
+  - Created `customer_cart_items` table with foreign key `cart_id REFERENCES customer_carts(id) ON DELETE CASCADE`, `product_id`, positive quantity constraint (`quantity > 0`), and unique constraint `uq_cart_product (cart_id, product_id)`.
+  - Added relational indexes `ix_customer_carts_buyer_id`, `ix_customer_cart_items_cart_id`, and `ix_customer_cart_items_product_id`.
+
+### Domain Entities & Persistence
+- Created [`CustomerCart`](backend/src/main/java/com/unikly/store/cart/domain/CustomerCart.java) and [`CustomerCartItem`](backend/src/main/java/com/unikly/store/cart/domain/CustomerCartItem.java) encapsulating domain invariants, item lookups, and quantity updates.
+- Created [`CustomerCartRepository`](backend/src/main/java/com/unikly/store/cart/persistence/CustomerCartRepository.java) using `@EntityGraph(attributePaths = "items")` to fetch cart items eagerly without N+1 query overhead.
+
+### Application Services & Authoritative Calculations
+- Defined immutable request records in [`CartRequests`](backend/src/main/java/com/unikly/store/cart/application/CartRequests.java) (`AddItem`, `UpdateItem`, `MergeItem`, `MergeRequest`) with Jakarta `@Valid` constraints.
+- Defined response view records in [`CartViews`](backend/src/main/java/com/unikly/store/cart/application/CartViews.java) (`CartView`, `CartItemView`) with batch product resolution (`products.findAllById`) and exact `BigDecimal` line totals.
+- Implemented [`CustomerCartService`](backend/src/main/java/com/unikly/store/cart/application/CustomerCartService.java):
+  - Real-time stock validation: rejects additions when $Q_{cart} + Q_{add} > \text{stockQuantity}$ with `409 CONFLICT`.
+  - Graceful guest cart merge: caps merged item quantities to available inventory without breaking buyer authentication.
+  - Cart clearing: provides `clearCart` and `clearCartByBuyerId`.
+
+### Order Placement & Security Configuration
+- Configured [`AuthSecurityConfiguration`](backend/src/main/java/com/unikly/store/platform/security/AuthSecurityConfiguration.java) to guard `/api/cart/**` endpoints with `StorePermission.CART_MANAGE_SELF.authority()`.
+- Exposed REST controller [`CustomerCartController`](backend/src/main/java/com/unikly/store/cart/api/CustomerCartController.java) (`GET`, `POST`, `PUT`, `DELETE` operations).
+- Connected cart lifecycle to [`CustomerOrderService.create`](backend/src/main/java/com/unikly/store/orders/application/CustomerOrderService.java), automatically clearing the buyer's persistent database cart upon successful order placement.
+
+### Frontend Reactive Synchronization
+- Modernized Angular [`CartService`](frontend/src/app/core/cart/cart.service.ts) using constructor-less `inject()` and Angular Signals.
+- Implemented reactive `effect()`: automatically synchronizes buyer carts with `/api/cart`, merges any guest `localStorage` items upon sign-in, and maintains local storage fallback for unauthenticated visitors.
+
+### Automated & Live Verification
+- Added 5 comprehensive integration tests in [`CustomerCartTests`](backend/src/test/java/com/unikly/store/cart/CustomerCartTests.java) (19/19 backend tests passing in isolated Docker container).
+- Updated [`cart.service.spec.ts`](frontend/src/app/core/cart/cart.service.spec.ts) with `provideHttpClientTesting()`.
+- Verified production build with `docker build -t unikly-web-test ./frontend`.
+- Executed 12-step live smoke test suite against running Docker Compose stack, verifying full end-to-end lifecycle including CSRF, cart persistence, merge, order placement, and database auto-clearing.
+
+## 2026-10-02 — Architecture and best practice audit refinements
 
 - Completed end-to-end architecture and implementation review against `AGENTS.md` and industry best practice skills.
 - Optimized backend seller order queries with `@Transactional(readOnly = true)` on `CustomerOrderService.listForSeller`.

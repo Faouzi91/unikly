@@ -120,6 +120,7 @@ unikly/
 
 ## 6. Documentation & Communication
 
-- Maintain [`CHANGELOG.md`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/CHANGELOG.md) with concise bullet points for every increment and bugfix.
+- Maintain [`CHANGELOG.md`](CHANGELOG.md) with structured, domain-categorized summaries for every increment and bugfix.
+- In repository documentation and committed markdown files, always use clean relative paths—never leak absolute local filesystem paths or usernames.
 - Preserve existing comments and docstrings.
-- Always provide clickable GitHub-style markdown links with the `file://` scheme for modified files.
+- In interactive chat responses, provide clickable GitHub-style markdown links with the `file://` scheme for modified files for direct local editor navigation.
