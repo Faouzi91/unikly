@@ -7,6 +7,19 @@ import { map, firstValueFrom } from 'rxjs';
 import { CartService } from '@core/cart/cart.service';
 import { AuthService } from '@core/identity/auth.service';
 import { ReviewsService, ProductReviewSummary, ReviewItem } from '@core/reviews/reviews.service';
+import {
+  LucideCheck,
+  LucideCircleAlert,
+  LucideMessageSquare,
+  LucideMinus,
+  LucidePlus,
+  LucideShieldCheck,
+  LucideSquarePen,
+  LucideStar,
+  LucideTrash,
+  LucideUser,
+  LucideX,
+} from '@lucide/angular';
 import { StoreProduct } from '../../data/sample-products';
 import { ProductCatalogService } from '../../data/product-catalog.service';
 
@@ -18,7 +31,23 @@ export interface StarBreakdownRow {
 
 @Component({
   selector: 'app-product-detail-page',
-  imports: [RouterLink, FormsModule, DatePipe, DecimalPipe],
+  imports: [
+    RouterLink,
+    FormsModule,
+    DatePipe,
+    DecimalPipe,
+    LucideCheck,
+    LucideCircleAlert,
+    LucideMessageSquare,
+    LucideMinus,
+    LucidePlus,
+    LucideShieldCheck,
+    LucideSquarePen,
+    LucideStar,
+    LucideTrash,
+    LucideUser,
+    LucideX,
+  ],
   templateUrl: './product-detail-page.html',
   styleUrl: './product-detail-page.css',
 })

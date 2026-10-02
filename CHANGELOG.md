@@ -2,7 +2,21 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
-## 2026-10-02 — Product Reviews & Ratings domain and SVG vector icon design system
+## 2026-10-02 — Standardized frontend on @lucide/angular icon library
+
+### Frontend Architecture & Icon Standard
+- Standardized the entire Angular web client on [`@lucide/angular`](https://lucide.dev) standalone components, eliminating unicode emojis and verbose raw SVG boilerplate.
+- Re-architected icons across all root and feature components with clean tree-shaken imports:
+  - [`App`](frontend/src/app/app.ts): Replaced search, account, and header cart icons with `LucideSearch`, `LucideUser`, and `LucideShoppingCart`.
+  - [`HomePage`](frontend/src/app/features/home/pages/home-page): Replaced catalog card rating stars and stepper controls with `LucideStar`, `LucideTrash`, `LucideMinus`, and `LucidePlus`.
+  - [`BasketPage`](frontend/src/app/features/home/pages/basket-page): Replaced delivery threshold icons, basket item stepper buttons, trust guarantee checkmarks, and empty state cart graphics with `LucideCheck`, `LucideTruck`, `LucideTrash`, `LucideMinus`, `LucidePlus`, and `LucideShoppingCart`.
+  - [`ProductDetailPage`](frontend/src/app/features/home/pages/product-detail-page): Replaced rating header stars, rating breakdown charts, interactive star rating picker, verified buyer shield badges, review author avatars, empty feedback indicators, and action buttons with `LucideStar`, `LucideSquarePen`, `LucideShieldCheck`, `LucideCheck`, `LucideCircleAlert`, `LucideMessageSquare`, `LucideUser`, and `LucideX`.
+- Updated CSS styling across [`home-page.css`](frontend/src/app/features/home/pages/home-page/home-page.css) and [`product-detail-page.css`](frontend/src/app/features/home/pages/product-detail-page/product-detail-page.css) ensuring SVG path elements inherit fill and stroke values dynamically for rating states.
+- Formalized Rule 6 in [`AGENTS.md`](AGENTS.md) mandating `@lucide/angular` standalone components with SVG attribute selectors (`<svg lucideName>`) for all icons across the repository.
+
+### Verification
+- Verified Angular client compiles cleanly with 0 errors and 0 warnings via isolated Docker build (`docker build -t unikly-web-test ./frontend`).
+- Verified all 13 end-to-end smoke tests pass with 100% success against live Docker Compose topology.
 
 ### Database Schema & Migrations
 - Added Flyway migration [`V16__create_product_reviews.sql`](backend/src/main/resources/db/migration/V16__create_product_reviews.sql):

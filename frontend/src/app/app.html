@@ -3,23 +3,23 @@
   <form class="header-search" role="search" (ngSubmit)="search()">
     <label class="visually-hidden" for="site-search">Search Unikly</label>
     <input id="site-search" name="search" type="search" placeholder="Search Unikly" [(ngModel)]="searchTerm">
-    <button type="submit" aria-label="Search products"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
+    <button type="submit" aria-label="Search products"><svg lucideSearch [size]="21" [strokeWidth]="2" aria-hidden="true"></svg></button>
   </form>
   <nav class="header-actions" aria-label="Account navigation">
     @if (auth.isAuthenticated()) {
       <a class="account-action" routerLink="/account">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c.7-3.6 3.2-5.5 7.5-5.5s6.8 1.9 7.5 5.5"/></svg>
+        <svg lucideUser [size]="25" [strokeWidth]="1.7" aria-hidden="true"></svg>
         <span class="action-copy"><small>Hello, {{ auth.user()?.displayName }}</small><strong>Account</strong></span>
       </a>
       <button class="sign-out-action" type="button" (click)="signOut()">Sign out</button>
     } @else {
       <a class="account-action" routerLink="/login">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c.7-3.6 3.2-5.5 7.5-5.5s6.8 1.9 7.5 5.5"/></svg>
+        <svg lucideUser [size]="25" [strokeWidth]="1.7" aria-hidden="true"></svg>
         <span class="action-copy"><small>Sign in</small><strong>Account</strong></span>
       </a>
     }
     <a class="basket-link" routerLink="/basket" [attr.aria-label]="'Basket (' + cart.itemCount() + ')'">
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 1.9-1.4L22 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
+      <svg lucideShoppingCart [size]="23" [strokeWidth]="1.7" aria-hidden="true"></svg>
       <span>{{ cart.itemCount() }}</span>
     </a>
   </nav>

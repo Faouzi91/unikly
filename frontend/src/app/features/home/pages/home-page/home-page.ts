@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CartService } from '@core/cart/cart.service';
+import { LucideMinus, LucidePlus, LucideStar, LucideTrash } from '@lucide/angular';
 import { StoreProduct } from '../../data/sample-products';
 import { ProductCatalogService } from '../../data/product-catalog.service';
 
@@ -10,7 +11,7 @@ type ProductSortOrder = 'featured' | 'price-asc' | 'price-desc';
 
 @Component({
   selector: 'app-home-page',
-  imports: [RouterLink],
+  imports: [RouterLink, LucideStar, LucideTrash, LucideMinus, LucidePlus],
   templateUrl: './home-page.html',
   styleUrl: './home-page.css',
 })

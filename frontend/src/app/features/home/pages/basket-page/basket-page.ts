@@ -4,6 +4,15 @@ import { RouterLink } from '@angular/router';
 import { CartService } from '@core/cart/cart.service';
 import { ProductCatalogService } from '../../data/product-catalog.service';
 
+import {
+  LucideCheck,
+  LucideMinus,
+  LucidePlus,
+  LucideShoppingCart,
+  LucideTrash,
+  LucideTruck,
+} from '@lucide/angular';
+
 const fallbackProducts: Record<string, { name: string; price: number; image?: string }> = {
   'linen-throw': { name: 'Textured cotton throw blanket', price: 34.95 },
   'table-lamp': { name: 'Minimal ceramic bedside lamp', price: 48 },
@@ -17,7 +26,16 @@ const fallbackProducts: Record<string, { name: string; price: number; image?: st
 
 @Component({
   selector: 'app-basket-page',
-  imports: [CurrencyPipe, RouterLink],
+  imports: [
+    CurrencyPipe,
+    RouterLink,
+    LucideCheck,
+    LucideMinus,
+    LucidePlus,
+    LucideShoppingCart,
+    LucideTrash,
+    LucideTruck,
+  ],
   templateUrl: './basket-page.html',
   styleUrl: './basket-page.css',
 })

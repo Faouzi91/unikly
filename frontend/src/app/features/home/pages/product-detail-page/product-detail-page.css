@@ -96,7 +96,8 @@ h1 { margin: 0; color: #202522; font-size: clamp(28px, 4vw, 38px); font-weight: 
   gap: 2px;
 }
 
-.star-svg {
+.star-svg,
+.star-svg path {
   width: 18px;
   height: 18px;
   fill: #e2e8f0;
@@ -104,7 +105,8 @@ h1 { margin: 0; color: #202522; font-size: clamp(28px, 4vw, 38px); font-weight: 
   stroke-width: 1;
 }
 
-.star-svg.filled {
+.star-svg.filled,
+.star-svg.filled path {
   fill: #f59e0b;
   stroke: #d97706;
 }

@@ -218,14 +218,16 @@
   align-items: center;
   gap: 1px;
 }
-.card-star-svg {
+.card-star-svg,
+.card-star-svg path {
   width: 14px;
   height: 14px;
   fill: #e2e8f0;
   stroke: #cbd5e1;
   stroke-width: 1;
 }
-.card-star-svg.filled {
+.card-star-svg.filled,
+.card-star-svg.filled path {
   fill: #f59e0b;
   stroke: #d97706;
 }

@@ -105,9 +105,11 @@ unikly/
 5. **Defensive Templates & Accessibility**:
    - Always attach `(error)="$any($event.target).src = '/product-placeholder.svg'"` and `loading="lazy"` to external images.
    - Maintain WCAG 2.1 AA compliance: semantic elements, accessible labels (`[attr.aria-label]`), and `role="status"` for dynamic updates.
-6. **Strictly Vector Icons (No Emojis)**:
-   - Always use crisp, accessible inline SVG vector icons instead of unicode emojis (e.g. never use 🗑, 🚚, 🛒, ✓).
-   - Ensure SVGs specify accessible attributes (`aria-hidden="true"` or explicit `[attr.aria-label]`), standard sizing (`width`, `height`), and inherit theme colors (`stroke="currentColor"` or `fill="currentColor"`).
+6. **Strictly Vector Icons with Lucide Angular (No Emojis)**:
+   - Always use the `@lucide/angular` standalone component icon library (`LucideStar`, `LucideShoppingCart`, `LucideTrash`, `LucideCheck`, etc.) rather than unicode emojis or verbose raw SVGs.
+   - Import required icons individually into the component's `imports` array to ensure strict tree-shaking.
+   - Use the icon's SVG attribute selector (e.g. `<svg lucideShoppingCart [size]="20" aria-hidden="true"></svg>`).
+   - Ensure icons specify accessible attributes (`aria-hidden="true"` or explicit `[attr.aria-label]`), standard sizing (`[size]="..."`), and inherit theme colors (`stroke="currentColor"` or `color="currentColor"`).
 
 ---
 
