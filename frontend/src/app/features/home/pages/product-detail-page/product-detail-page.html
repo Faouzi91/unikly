@@ -35,7 +35,11 @@
                 class="detail-stepper-btn"
                 (click)="decrement()"
                 [attr.aria-label]="quantityInBasket() === 1 ? 'Remove from basket' : 'Decrease quantity'">
-                {{ quantityInBasket() === 1 ? '🗑' : '−' }}
+                @if (quantityInBasket() === 1) {
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+                } @else {
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+                }
               </button>
               <span class="detail-stepper-text">
                 <strong>{{ quantityInBasket() }}</strong> in your basket
@@ -46,7 +50,7 @@
                 [disabled]="isAtStockLimit(item)"
                 (click)="increment()"
                 aria-label="Increase quantity">
-                +
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
               </button>
             </div>
             <a class="view-basket-link" routerLink="/basket">View basket →</a>

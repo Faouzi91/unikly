@@ -105,6 +105,9 @@ unikly/
 5. **Defensive Templates & Accessibility**:
    - Always attach `(error)="$any($event.target).src = '/product-placeholder.svg'"` and `loading="lazy"` to external images.
    - Maintain WCAG 2.1 AA compliance: semantic elements, accessible labels (`[attr.aria-label]`), and `role="status"` for dynamic updates.
+6. **Strictly Vector Icons (No Emojis)**:
+   - Always use crisp, accessible inline SVG vector icons instead of unicode emojis (e.g. never use 🗑, 🚚, 🛒, ✓).
+   - Ensure SVGs specify accessible attributes (`aria-hidden="true"` or explicit `[attr.aria-label]`), standard sizing (`width`, `height`), and inherit theme colors (`stroke="currentColor"` or `fill="currentColor"`).
 
 ---
 
