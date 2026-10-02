@@ -218,18 +218,27 @@
   align-items: center;
   gap: 1px;
 }
-.card-star-svg,
-.card-star-svg path {
+:host ::ng-deep .card-star-svg,
+.card-star-svg {
   width: 14px;
   height: 14px;
-  fill: #e2e8f0;
-  stroke: #cbd5e1;
-  stroke-width: 1;
+  fill: #e2e8f0 !important;
+  stroke: #cbd5e1 !important;
+  color: #cbd5e1 !important;
 }
-.card-star-svg.filled,
-.card-star-svg.filled path {
-  fill: #f59e0b;
-  stroke: #d97706;
+:host ::ng-deep .card-star-svg path {
+  fill: #e2e8f0 !important;
+  stroke: #cbd5e1 !important;
+}
+:host ::ng-deep .card-star-svg.filled,
+.card-star-svg.filled {
+  fill: #f59e0b !important;
+  stroke: #d97706 !important;
+  color: #f59e0b !important;
+}
+:host ::ng-deep .card-star-svg.filled path {
+  fill: #f59e0b !important;
+  stroke: #d97706 !important;
 }
 .rating small {
   color: #67706b;

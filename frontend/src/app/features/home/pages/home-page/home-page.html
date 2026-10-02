@@ -59,7 +59,7 @@
                     <p class="rating" [attr.aria-label]="product.rating + ' out of 5 stars'">
                         <span class="card-stars" aria-hidden="true">
                             @for (star of [1, 2, 3, 4, 5]; track star) {
-                                <svg lucideStar [size]="14" class="card-star-svg" [class.filled]="product.rating >= star" aria-hidden="true"></svg>
+                                <svg lucideStar [size]="14" [class]="product.rating >= star ? 'card-star-svg filled' : 'card-star-svg'" aria-hidden="true"></svg>
                             }
                         </span>
                         <small>({{ product.reviews }})</small>

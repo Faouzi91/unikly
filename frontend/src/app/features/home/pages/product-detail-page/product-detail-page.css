@@ -96,29 +96,47 @@ h1 { margin: 0; color: #202522; font-size: clamp(28px, 4vw, 38px); font-weight: 
   gap: 2px;
 }
 
-.star-svg,
-.star-svg path {
+:host ::ng-deep .star-svg,
+.star-svg {
   width: 18px;
   height: 18px;
-  fill: #e2e8f0;
-  stroke: #cbd5e1;
-  stroke-width: 1;
+  fill: #e2e8f0 !important;
+  stroke: #cbd5e1 !important;
+  color: #cbd5e1 !important;
 }
 
-.star-svg.filled,
-.star-svg.filled path {
-  fill: #f59e0b;
-  stroke: #d97706;
+:host ::ng-deep .star-svg path {
+  fill: #e2e8f0 !important;
+  stroke: #cbd5e1 !important;
 }
 
+:host ::ng-deep .star-svg.filled,
+.star-svg.filled {
+  fill: #f59e0b !important;
+  stroke: #d97706 !important;
+  color: #f59e0b !important;
+}
+
+:host ::ng-deep .star-svg.filled path {
+  fill: #f59e0b !important;
+  stroke: #d97706 !important;
+}
+
+:host ::ng-deep .star-rating-display.large .star-svg,
 .star-rating-display.large .star-svg {
   width: 22px;
   height: 22px;
 }
 
+:host ::ng-deep .star-rating-display.small .star-svg,
 .star-rating-display.small .star-svg {
   width: 15px;
   height: 15px;
+}
+
+:host ::ng-deep .star-svg.interactive:hover path {
+  fill: #fbbf24 !important;
+  stroke: #d97706 !important;
 }
 
 .price { margin: 0 0 16px; color: #17211b; font-size: 26px; font-weight: 700; }
@@ -387,6 +405,32 @@ h1 { margin: 0; color: #202522; font-size: clamp(28px, 4vw, 38px); font-weight: 
 .cta-login-note a {
   color: #1c483a;
   font-weight: 600;
+}
+
+.cta-not-purchased-box {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.not-purchased-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.not-purchased-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.45;
 }
 
 .my-review-status-box {

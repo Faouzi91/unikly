@@ -28,6 +28,11 @@ This file contains foundational project rules and architectural constraints for 
    - Never conclude that a task is finished based purely on unit tests or compilation.
    - Run end-to-end smoke tests against the active Docker Compose stack (`http://localhost:8080` API, `http://localhost:4200` Web, PostgreSQL) to verify full request lifecycles.
 
+4. **Git Branching & Commit Discipline**:
+   - Never commit new features, bug fixes, or non-trivial increments directly to `master`.
+   - Always create a dedicated topic branch (`feat/<name>`, `fix/<name>`, `refactor/<name>`) following [`.agents/skills/git-workflow/SKILL.md`](.agents/skills/git-workflow/SKILL.md).
+   - Verify all tests in Docker before merging to `master`.
+
 ---
 
 ## 2. Project Structure & Code Placement Guide

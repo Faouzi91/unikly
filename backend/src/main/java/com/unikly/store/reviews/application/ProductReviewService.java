@@ -74,8 +74,9 @@ public class ProductReviewService {
             Optional<StoreUser> userOpt = userRepository.findByEmail(currentUserEmail);
             if (userOpt.isPresent()) {
                 StoreUser user = userOpt.get();
-                canReview = user.getRole() == StoreRole.BUYER || user.getRole() == StoreRole.ADMIN;
                 verifiedBuyer = orderRepository.hasPurchasedProduct(user.getId(), productId);
+                canReview = (user.getRole() == StoreRole.ADMIN) ||
+                        (user.getRole() == StoreRole.BUYER && verifiedBuyer);
 
                 currentUserReview = reviewViews.stream()
                         .filter(r -> r.buyerId().equals(user.getId()))
@@ -109,6 +110,11 @@ public class ProductReviewService {
         }
 
         boolean isVerified = orderRepository.hasPurchasedProduct(user.getId(), productId);
+        if (!isVerified && user.getRole() != StoreRole.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Only verified purchasers who have ordered this product can write a review.");
+        }
+
         String authorName = (user.getDisplayName() != null && !user.getDisplayName().isBlank())
                 ? user.getDisplayName().trim()
                 : "Customer";

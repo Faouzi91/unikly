@@ -17,7 +17,7 @@
           <a class="rating-summary-link" href="#customer-reviews" (click)="scrollToReviews($event)" [attr.aria-label]="averageRating().toFixed(1) + ' out of 5 stars, ' + totalReviews() + ' reviews'">
             <div class="star-rating-display" aria-hidden="true">
               @for (star of [1, 2, 3, 4, 5]; track star) {
-                <svg lucideStar [size]="18" class="star-svg" [class.filled]="averageRating() >= star" aria-hidden="true"></svg>
+                <svg lucideStar [size]="18" [class]="averageRating() >= star ? 'star-svg filled' : 'star-svg'" aria-hidden="true"></svg>
               }
             </div>
             <span class="rating-text">
@@ -102,7 +102,7 @@
             <div class="breakdown-score-meta">
               <div class="star-rating-display large" aria-hidden="true">
                 @for (star of [1, 2, 3, 4, 5]; track star) {
-                  <svg lucideStar [size]="22" class="star-svg" [class.filled]="averageRating() >= star" aria-hidden="true"></svg>
+                  <svg lucideStar [size]="22" [class]="averageRating() >= star ? 'star-svg filled' : 'star-svg'" aria-hidden="true"></svg>
                 }
               </div>
               <span class="breakdown-total">{{ totalReviews() }} {{ totalReviews() === 1 ? 'global rating' : 'global ratings' }}</span>
@@ -149,13 +149,24 @@
             <div class="cta-actions">
               <button type="button" class="btn-review-primary" (click)="openReviewForm()">
                 <svg lucideSquarePen [size]="16" [strokeWidth]="2" aria-hidden="true"></svg>
-                Write a customer review
+                Write a verified review
               </button>
-              @if (isVerifiedBuyer()) {
-                <div class="verified-buyer-hint">
-                  <svg lucideShieldCheck [size]="16" [strokeWidth]="2" aria-hidden="true"></svg>
-                  <span>You purchased this item! Your review will receive a Verified Purchase badge.</span>
-                </div>
+              <div class="verified-buyer-hint">
+                <svg lucideShieldCheck [size]="16" [strokeWidth]="2" aria-hidden="true"></svg>
+                <span>Verified Purchase: You ordered this item and qualify to write a review.</span>
+              </div>
+            </div>
+          } @else if (auth.isAuthenticated()) {
+            <div class="cta-not-purchased-box">
+              <div class="not-purchased-badge">
+                <svg lucideShieldCheck [size]="16" [strokeWidth]="2" aria-hidden="true"></svg>
+                <span>Verified Purchase Required</span>
+              </div>
+              <p class="not-purchased-desc">Only customers who have ordered this item can leave a review. Order this handcrafted item to share your feedback!</p>
+              @if (quantityInBasket() > 0) {
+                <a class="btn-review-outline" routerLink="/basket">Proceed to checkout in basket →</a>
+              } @else {
+                <button type="button" class="btn-review-outline" (click)="addToBasket()">Add to basket to purchase</button>
               }
             </div>
           } @else {
@@ -163,7 +174,7 @@
               <a class="btn-review-primary" routerLink="/login" [queryParams]="{ returnUrl: '/products/' + item.id }">
                 Sign in to write a review
               </a>
-              <span class="cta-login-note">Don't have an account? <a routerLink="/register">Register</a> as a buyer.</span>
+              <span class="cta-login-note">Only verified purchasers who have ordered this item can leave a review. Don't have an account? <a routerLink="/register">Register</a> as a buyer.</span>
             </div>
           }
         </div>
@@ -199,7 +210,7 @@
                     [class.active]="formRating() >= star"
                     [attr.aria-label]="star + ' stars'"
                     [attr.aria-checked]="formRating() === star">
-                    <svg lucideStar [size]="24" class="star-svg interactive" [class.filled]="formRating() >= star" aria-hidden="true"></svg>
+                    <svg lucideStar [size]="24" [class]="formRating() >= star ? 'star-svg interactive filled' : 'star-svg interactive'" aria-hidden="true"></svg>
                   </button>
                 }
                 <span class="star-picker-text">{{ formRating() }} out of 5 stars</span>
@@ -284,7 +295,7 @@
                 <div class="review-card-rating-row">
                   <div class="star-rating-display small" aria-hidden="true">
                     @for (star of [1, 2, 3, 4, 5]; track star) {
-                      <svg lucideStar [size]="15" class="star-svg" [class.filled]="review.rating >= star" aria-hidden="true"></svg>
+                      <svg lucideStar [size]="15" [class]="review.rating >= star ? 'star-svg filled' : 'star-svg'" aria-hidden="true"></svg>
                     }
                   </div>
                   @if (review.isVerifiedPurchase) {

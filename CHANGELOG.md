@@ -2,7 +2,28 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
-## 2026-10-02 — Standardized frontend on @lucide/angular icon library
+## 2026-10-02 — Git workflow skill, star rating color fix, and verified purchase review gate
+
+### Developer Tooling & Git Workflow
+- Created AI Agent & Developer Skill [`.agents/skills/git-workflow/SKILL.md`](.agents/skills/git-workflow/SKILL.md):
+  - Codified branch prefix conventions (`feat/`, `fix/`, `refactor/`, `perf/`, `docs/`, `chore/`).
+  - Standardized branch lifecycle, conventional commits, toolchain-isolated verification, and clean merge procedures.
+  - Added Rule 4 to [`AGENTS.md`](AGENTS.md) requiring topic branching for all future increments and fixes.
+
+### Frontend Star Rating Display Fix
+- Resolved an issue where Lucide star icons appeared grey even on reviewed products:
+  - Switched from `[class.filled]="..."` to dynamic `[class]="... ? '... filled' : '...'"` bindings across [`HomePage`](frontend/src/app/features/home/pages/home-page/home-page.html) and [`ProductDetailPage`](frontend/src/app/features/home/pages/product-detail-page/product-detail-page.html) to prevent Lucide's `[attr.class]` binding from wiping out the active class.
+  - Added `:host ::ng-deep` encapsulated CSS selectors in [`home-page.css`](frontend/src/app/features/home/pages/home-page/home-page.css) and [`product-detail-page.css`](frontend/src/app/features/home/pages/product-detail-page/product-detail-page.css) targeting `<svg:path>` elements directly to guarantee vibrant golden fill (`#f59e0b`) and amber outline (`#d97706`).
+
+### Authenticity & Verified Purchase Review Gate
+- Strengthened review integrity in [`ProductReviewService`](backend/src/main/java/com/unikly/store/reviews/application/ProductReviewService.java):
+  - Enforced that only buyers who have placed and confirmed an order for a product can submit a review (`HTTP 403 Forbidden` if unpurchased).
+  - Updated `canReview` calculation in review summary responses to require verified purchase status.
+- Enhanced UX on [`ProductDetailPage`](frontend/src/app/features/home/pages/product-detail-page/product-detail-page.html):
+  - Verified buyers see "Write a verified review" with a confirmed purchase status hint.
+  - Authenticated buyers without a purchase see a clear "Verified Purchase Required" notice explaining the policy, with a one-click CTA to add the product to their basket or view cart.
+- Added comprehensive integration tests in [`ProductReviewTests`](backend/src/test/java/com/unikly/store/reviews/ProductReviewTests.java); verified purchase gating with 25 passing backend tests.
+- Updated smoke test suite verifying that unpurchased review attempts are blocked with 403 Forbidden while verified reviews publish successfully.
 
 ### Frontend Architecture & Icon Standard
 - Standardized the entire Angular web client on [`@lucide/angular`](https://lucide.dev) standalone components, eliminating unicode emojis and verbose raw SVG boilerplate.

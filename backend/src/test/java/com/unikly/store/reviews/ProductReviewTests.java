@@ -116,10 +116,47 @@ class ProductReviewTests {
     }
 
     @Test
-    void buyerCanSubmitReviewAndGetVerifiedBadgeAfterPurchase() throws Exception {
+    void buyerWithoutPurchaseCannotSubmitReview() throws Exception {
         MockHttpSession buyerSession = login(buyer.getEmail());
 
-        // 1. Submit review before purchase (unverified)
+        // Buyer without purchase cannot review -> Forbidden (403)
+        mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
+                        .session(buyerSession)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "rating": 5,
+                                    "title": "Stunning quality!",
+                                    "comment": "Exceeded all my expectations."
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+
+        // Summary reflects buyer cannot review without purchase
+        mockMvc.perform(get("/api/products/" + product.getId() + "/reviews").session(buyerSession))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentUserCanReview", is(false)))
+                .andExpect(jsonPath("$.currentUserVerifiedBuyer", is(false)));
+    }
+
+    @Test
+    void buyerWithPurchaseCanSubmitAndEditVerifiedReview() throws Exception {
+        MockHttpSession buyerSession = login(buyer.getEmail());
+
+        // 1. Buyer places an order for the product
+        orderService.create(buyer.getEmail(), new OrderRequests.Create(
+                "Jane Buyer", "jane@example.com", "555-1234",
+                "123 Artisans Way", "", "Portland", "OR", "97201", "US",
+                "STANDARD", List.of(new OrderRequests.Item(product.getId(), 1))));
+
+        // 2. Verified buyer checks summary: can review
+        mockMvc.perform(get("/api/products/" + product.getId() + "/reviews").session(buyerSession))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentUserCanReview", is(true)))
+                .andExpect(jsonPath("$.currentUserVerifiedBuyer", is(true)));
+
+        // 3. Submit verified review
         mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
                         .session(buyerSession)
                         .with(csrf())
@@ -134,23 +171,9 @@ class ProductReviewTests {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.rating", is(5)))
                 .andExpect(jsonPath("$.title", is("Stunning quality!")))
-                .andExpect(jsonPath("$.isVerifiedPurchase", is(false)));
+                .andExpect(jsonPath("$.isVerifiedPurchase", is(true)));
 
-        // 2. Fetch summary as buyer - should show currentUserReview
-        mockMvc.perform(get("/api/products/" + product.getId() + "/reviews").session(buyerSession))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalReviews", is(1)))
-                .andExpect(jsonPath("$.averageRating", is(5.0)))
-                .andExpect(jsonPath("$.currentUserCanReview", is(true)))
-                .andExpect(jsonPath("$.currentUserReview.title", is("Stunning quality!")));
-
-        // 3. Buyer places an order for the product
-        orderService.create(buyer.getEmail(), new OrderRequests.Create(
-                "Jane Buyer", "jane@example.com", "555-1234",
-                "123 Artisans Way", "", "Portland", "OR", "97201", "US",
-                "STANDARD", List.of(new OrderRequests.Item(product.getId(), 1))));
-
-        // 4. Update the review - should now be marked as verified purchase
+        // 4. Update the review
         mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
                         .session(buyerSession)
                         .with(csrf())
@@ -166,7 +189,7 @@ class ProductReviewTests {
                 .andExpect(jsonPath("$.rating", is(4)))
                 .andExpect(jsonPath("$.isVerifiedPurchase", is(true)));
 
-        // 5. Verify summary reflects updated rating (still 1 review total, rating 4.0)
+        // 5. Verify summary reflects updated rating (1 review total, rating 4.0)
         ProductReviewSummaryView summary = reviewService.getProductReviewSummary(product.getId(), buyer.getEmail());
         assertEquals(1, summary.totalReviews());
         assertEquals(4.0, summary.averageRating());
@@ -196,6 +219,12 @@ class ProductReviewTests {
     @Test
     void reviewValidationRejectsInvalidRatings() throws Exception {
         MockHttpSession buyerSession = login(buyer.getEmail());
+
+        // Buyer orders first to satisfy purchase gate
+        orderService.create(buyer.getEmail(), new OrderRequests.Create(
+                "Jane Buyer", "jane@example.com", "555-1234",
+                "123 Artisans Way", "", "Portland", "OR", "97201", "US",
+                "STANDARD", List.of(new OrderRequests.Item(product.getId(), 1))));
 
         // Rating 0 is invalid
         mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
@@ -230,6 +259,12 @@ class ProductReviewTests {
     void buyerCanDeleteOwnReviewAndAdminCanModerate() throws Exception {
         MockHttpSession buyerSession = login(buyer.getEmail());
         MockHttpSession adminSession = login(admin.getEmail());
+
+        // Buyer orders first
+        orderService.create(buyer.getEmail(), new OrderRequests.Create(
+                "Jane Buyer", "jane@example.com", "555-1234",
+                "123 Artisans Way", "", "Portland", "OR", "97201", "US",
+                "STANDARD", List.of(new OrderRequests.Item(product.getId(), 1))));
 
         // Submit review
         MvcResult created = mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
