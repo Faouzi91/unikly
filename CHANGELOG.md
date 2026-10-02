@@ -2,7 +2,17 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
-## 2026-10-02 — Architecture and best practice audit refinements
+## 2026-10-02 — Server-side cart persistence and guest-to-buyer sync
+
+- Implemented database-backed shopping cart domain (`customer_carts`, `customer_cart_items`) with Flyway migration [`V15__create_customer_carts.sql`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/resources/db/migration/V15__create_customer_carts.sql).
+- Added domain entities [`CustomerCart`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/java/com/unikly/store/cart/domain/CustomerCart.java) and [`CustomerCartItem`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/java/com/unikly/store/cart/domain/CustomerCartItem.java) with quantity constraints and unique product index.
+- Created [`CustomerCartRepository`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/java/com/unikly/store/cart/persistence/CustomerCartRepository.java) using `@EntityGraph` eager loading to avoid N+1 query overhead.
+- Implemented [`CustomerCartService`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/java/com/unikly/store/cart/application/CustomerCartService.java) with real-time stock validation, batch product mapping, line item subtotal calculations, and graceful guest-to-buyer merge.
+- Added REST endpoints in [`CustomerCartController`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/java/com/unikly/store/cart/api/CustomerCartController.java) (`GET`, `POST`, `PUT`, `DELETE` on `/api/cart/**`), protected by `StorePermission.CART_MANAGE_SELF` in [`AuthSecurityConfiguration`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/java/com/unikly/store/platform/security/AuthSecurityConfiguration.java).
+- Integrated automatic cart clearing into [`CustomerOrderService.create`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/main/java/com/unikly/store/orders/application/CustomerOrderService.java) upon successful order creation.
+- Enhanced Angular [`CartService`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/frontend/src/app/core/cart/cart.service.ts) to synchronize with `/api/cart` for authenticated buyers and merge guest items from `localStorage` upon login.
+- Added unit and integration tests in [`CustomerCartTests`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/backend/src/test/java/com/unikly/store/cart/CustomerCartTests.java) and updated [`cart.service.spec.ts`](file:///home/aboubakar-garba/Documents/Projects/BrandNew/unikly/frontend/src/app/core/cart/cart.service.spec.ts).
+- Validated full request lifecycle with 12 passing end-to-end smoke tests against live Docker Compose services.
 
 - Completed end-to-end architecture and implementation review against `AGENTS.md` and industry best practice skills.
 - Optimized backend seller order queries with `@Transactional(readOnly = true)` on `CustomerOrderService.listForSeller`.

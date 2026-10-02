@@ -81,6 +81,7 @@ public class AuthSecurityConfiguration {
                     .requestMatchers("/api/auth/me").hasAuthority(StorePermission.ACCOUNT_READ_SELF.authority())
                     .requestMatchers(HttpMethod.POST, "/api/auth/password").hasAuthority(StorePermission.ACCOUNT_UPDATE_SELF.authority())
                     .requestMatchers(HttpMethod.GET, "/api/profile/me").hasAuthority(StorePermission.ACCOUNT_READ_SELF.authority())
+                    .requestMatchers("/api/cart", "/api/cart/**").hasAuthority(StorePermission.CART_MANAGE_SELF.authority())
                     .requestMatchers(HttpMethod.POST, "/api/orders").hasAuthority(StorePermission.ORDER_CREATE_SELF.authority())
                     .requestMatchers(HttpMethod.GET, "/api/orders/mine").hasAuthority(StorePermission.ORDER_READ_SELF.authority())
                     .requestMatchers(HttpMethod.PUT, "/api/orders/mine/*/confirm-delivery").hasAuthority(StorePermission.ORDER_READ_SELF.authority())

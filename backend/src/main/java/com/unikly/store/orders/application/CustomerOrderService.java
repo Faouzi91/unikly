@@ -1,5 +1,6 @@
 package com.unikly.store.orders.application;
 
+import com.unikly.store.cart.application.CustomerCartService;
 import com.unikly.store.catalog.domain.CatalogProduct;
 import com.unikly.store.catalog.persistence.CatalogProductRepository;
 import com.unikly.store.identity.domain.StoreRole;
@@ -28,11 +29,17 @@ public class CustomerOrderService {
     private final CustomerOrderRepository orders;
     private final CatalogProductRepository products;
     private final StoreUserRepository users;
+    private final CustomerCartService carts;
 
-    public CustomerOrderService(CustomerOrderRepository orders, CatalogProductRepository products, StoreUserRepository users) {
+    public CustomerOrderService(
+            CustomerOrderRepository orders,
+            CatalogProductRepository products,
+            StoreUserRepository users,
+            CustomerCartService carts) {
         this.orders = orders;
         this.products = products;
         this.users = users;
+        this.carts = carts;
     }
 
     public OrderView create(String email, OrderRequests.Create request) {
@@ -74,7 +81,9 @@ public class CustomerOrderService {
             order.addItem(new CustomerOrderItem(product.getId(), product.getName(), product.getSellerId(),
                     quantity, product.getPrice()));
         }
-        return view(orders.save(order));
+        CustomerOrder saved = orders.save(order);
+        carts.clearCartByBuyerId(buyer.getId());
+        return view(saved);
     }
 
     @Transactional(readOnly = true)

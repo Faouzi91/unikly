@@ -1,4 +1,8 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { AuthService } from '@core/identity/auth.service';
 import { CartService } from './cart.service';
 
 describe('CartService', () => {
@@ -6,7 +10,19 @@ describe('CartService', () => {
 
   beforeEach(() => {
     localStorage.removeItem(storageKey);
-    TestBed.configureTestingModule({ providers: [CartService] });
+    TestBed.configureTestingModule({
+      providers: [
+        CartService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: AuthService,
+          useValue: {
+            user: signal(null),
+          },
+        },
+      ],
+    });
   });
 
   afterEach(() => localStorage.removeItem(storageKey));
