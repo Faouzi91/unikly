@@ -2,6 +2,21 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
+## 2026-10-02 — Interactive cart controls and ecommerce value-add features
+
+### Frontend UX & Reactive State Management
+- Enhanced [`CartService`](frontend/src/app/core/cart/cart.service.ts) with `updateQuantity(productId, quantity, availableQuantity)` and real-time synchronization with `PUT /api/cart/items/{productId}`.
+- Re-architected [`BasketPage`](frontend/src/app/features/home/pages/basket-page):
+  - Added accessible `[-] [quantity] [+]` stepper controls with instant stock ceiling enforcement and single-item removal.
+  - Added product thumbnail previews with lazy loading and fallback placeholder handling.
+  - Added unit price breakdown, dynamic line totals, and stock status badges (`In stock`, `Only X left in stock`, `Max in basket`).
+  - Added dynamic Free Delivery progress bar (`Add $X.XX more for FREE Standard Delivery` vs. `You've unlocked FREE Standard Delivery!`).
+  - Redesigned order summary card with item count, delivery estimates, trust guarantees, and sticky desktop positioning.
+- Enhanced Catalog & Product Detail UX:
+  - Added inline in-basket steppers directly to product grid cards on [`HomePage`](frontend/src/app/features/home/pages/home-page) allowing buyers to increment or decrement quantities without leaving the catalog.
+  - Added in-basket stepper and direct "View basket" link to [`ProductDetailPage`](frontend/src/app/features/home/pages/product-detail-page).
+  - Added low-stock alert badges (`Only X left!`) across catalog listings and detail views.
+
 ## 2026-10-02 — Server-side cart persistence and guest-to-buyer sync (`CART_MANAGE_SELF`)
 
 ### Database Schema & Migrations

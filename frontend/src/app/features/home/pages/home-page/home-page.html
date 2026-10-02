@@ -62,11 +62,35 @@
                     </p>
                     <p class="price">${{ product.price.toFixed(2) }}</p>
                     <p class="stock-status" [class.out-of-stock]="product.stockQuantity === 0">
-                        {{ product.stockQuantity === 0 ? 'Out of stock' : product.stockQuantity + ' in stock' }}
+                        @if (product.stockQuantity === 0) {
+                            Out of stock
+                        } @else if (product.stockQuantity <= 3) {
+                            <span class="low-stock-alert">Only {{ product.stockQuantity }} left!</span>
+                        } @else {
+                            {{ product.stockQuantity }} in stock
+                        }
                     </p>
-                    <button type="button" class="add-button" [disabled]="!canAdd(product)" (click)="addToCart(product)">
-                        {{ product.stockQuantity === 0 ? 'Out of stock' : canAdd(product) ? 'Add to basket' : 'Maximum in basket' }}
-                    </button>
+                    @if (getQuantityInCart(product.id) > 0) {
+                        <div class="card-stepper-wrap">
+                            <div class="card-stepper">
+                                <button type="button" class="card-stepper-btn" (click)="decrementInCart(product)"
+                                    [attr.aria-label]="getQuantityInCart(product.id) === 1 ? 'Remove ' + product.name + ' from basket' : 'Decrease ' + product.name">
+                                    {{ getQuantityInCart(product.id) === 1 ? '🗑' : '−' }}
+                                </button>
+                                <span class="card-stepper-text">
+                                    <strong>{{ getQuantityInCart(product.id) }}</strong> in basket
+                                </span>
+                                <button type="button" class="card-stepper-btn" [disabled]="!canAdd(product)" (click)="incrementInCart(product)"
+                                    [attr.aria-label]="'Increase ' + product.name">
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                    } @else {
+                        <button type="button" class="add-button" [disabled]="!canAdd(product)" (click)="addToCart(product)">
+                            {{ product.stockQuantity === 0 ? 'Out of stock' : 'Add to basket' }}
+                        </button>
+                    }
                 </div>
             </article>
             } @empty {

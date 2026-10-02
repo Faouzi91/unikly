@@ -48,4 +48,21 @@ describe('CartService', () => {
     expect(cart.lines()).toEqual([{ productId: 'coffee-set', quantity: 1 }]);
     expect(cart.itemCount()).toBe(1);
   });
+
+  it('updates quantity directly and caps at available stock', () => {
+    const cart = TestBed.inject(CartService);
+    cart.add('table-lamp');
+
+    cart.updateQuantity('table-lamp', 4, 10);
+    expect(cart.lines()).toEqual([{ productId: 'table-lamp', quantity: 4 }]);
+    expect(cart.itemCount()).toBe(4);
+
+    // Caps at available quantity
+    cart.updateQuantity('table-lamp', 15, 5);
+    expect(cart.lines()).toEqual([{ productId: 'table-lamp', quantity: 5 }]);
+
+    // Removes if quantity < 1
+    cart.updateQuantity('table-lamp', 0);
+    expect(cart.lines()).toEqual([]);
+  });
 });

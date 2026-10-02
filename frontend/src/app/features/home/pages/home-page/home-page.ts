@@ -51,8 +51,12 @@ export class HomePage {
       .subscribe((params) => this.query.set(params.get('q') ?? ''));
   }
 
+  getQuantityInCart(productId: string): number {
+    return this.cart.lines().find((line) => line.productId === productId)?.quantity ?? 0;
+  }
+
   canAdd(product: StoreProduct): boolean {
-    const quantityInCart = this.cart.lines().find((line) => line.productId === product.id)?.quantity ?? 0;
+    const quantityInCart = this.getQuantityInCart(product.id);
     return product.stockQuantity > quantityInCart;
   }
 
@@ -63,6 +67,27 @@ export class HomePage {
       this.notice.set(product.stockQuantity === 0
         ? `${product.name} is out of stock.`
         : `You already have all ${product.stockQuantity} available in your basket.`);
+    }
+  }
+
+  incrementInCart(product: StoreProduct): void {
+    const current = this.getQuantityInCart(product.id);
+    if (current < product.stockQuantity) {
+      this.cart.updateQuantity(product.id, current + 1, product.stockQuantity);
+      this.notice.set(`${product.name} quantity increased to ${current + 1}.`);
+    } else {
+      this.notice.set(`All ${product.stockQuantity} available units are in your basket.`);
+    }
+  }
+
+  decrementInCart(product: StoreProduct): void {
+    const current = this.getQuantityInCart(product.id);
+    if (current > 1) {
+      this.cart.updateQuantity(product.id, current - 1, product.stockQuantity);
+      this.notice.set(`${product.name} quantity updated to ${current - 1}.`);
+    } else if (current === 1) {
+      this.cart.remove(product.id);
+      this.notice.set(`${product.name} removed from your basket.`);
     }
   }
 

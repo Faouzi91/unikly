@@ -71,6 +71,25 @@ export class CartService {
     return true;
   }
 
+  updateQuantity(productId: string, quantity: number, availableQuantity = Number.POSITIVE_INFINITY): boolean {
+    if (quantity < 1) {
+      this.remove(productId);
+      return true;
+    }
+    const targetQuantity = Math.min(quantity, availableQuantity);
+    const lines = this.linesState().map((line) =>
+      line.productId === productId ? { ...line, quantity: targetQuantity } : line,
+    );
+    this.linesState.set(lines);
+
+    if (this.auth.user()?.role === 'BUYER') {
+      void this.updateItemOnServer(productId, targetQuantity);
+    } else {
+      this.writeLocal(lines);
+    }
+    return true;
+  }
+
   remove(productId: string): void {
     const updated = this.linesState().filter((line) => line.productId !== productId);
     this.linesState.set(updated);
@@ -115,6 +134,17 @@ export class CartService {
     try {
       const view = await firstValueFrom(
         this.http.post<ServerCartView>('/api/cart/items', { productId, quantity }),
+      );
+      this.setLinesFromView(view);
+    } catch {
+      void this.fetchServerCart();
+    }
+  }
+
+  private async updateItemOnServer(productId: string, quantity: number): Promise<void> {
+    try {
+      const view = await firstValueFrom(
+        this.http.put<ServerCartView>(`/api/cart/items/${encodeURIComponent(productId)}`, { quantity }),
       );
       this.setLinesFromView(view);
     } catch {

@@ -1,42 +1,136 @@
 <main class="basket-page">
   <div class="basket-heading">
     <div>
-      <p class="eyebrow">Your picks</p>
-      <h1>Your basket</h1>
+      <p class="eyebrow">Shopping bag</p>
+      <h1>Your basket @if (items().length) { <span class="item-count-badge">({{ cart.itemCount() }} {{ cart.itemCount() === 1 ? 'item' : 'items' }})</span> }</h1>
     </div>
     @if (items().length) {
       <div class="basket-heading-actions">
-        <a class="checkout-header-link" routerLink="/checkout">Continue to checkout</a>
+        <a class="checkout-header-link" routerLink="/checkout">Continue to checkout →</a>
         <button class="clear-button" type="button" (click)="clear()">Remove all</button>
       </div>
     }
   </div>
 
   @if (items().length) {
+    <!-- Free Delivery Incentive Bar -->
+    <section class="delivery-threshold-banner" aria-label="Free delivery progress">
+      <div class="delivery-threshold-header">
+        @if (freeDeliveryQualified()) {
+          <span class="delivery-unlocked-icon" aria-hidden="true">✓</span>
+          <span class="delivery-unlocked-text"><strong>You've unlocked FREE Standard Delivery!</strong></span>
+        } @else {
+          <span class="delivery-threshold-icon" aria-hidden="true">🚚</span>
+          <span>Add <strong>{{ amountNeededForFreeDelivery() | currency }}</strong> more to qualify for <strong>FREE Standard Delivery</strong></span>
+        }
+      </div>
+      <div class="delivery-progress-track" role="progressbar" [attr.aria-valuenow]="deliveryProgressPercent()" aria-valuemin="0" aria-valuemax="100">
+        <div class="delivery-progress-fill" [style.width.%]="deliveryProgressPercent()" [class.complete]="freeDeliveryQualified()"></div>
+      </div>
+    </section>
+
     <section class="basket-content" aria-label="Basket items">
       <div class="basket-items">
         @for (item of items(); track item.productId) {
           <article class="basket-item">
-            <div>
-              <h2>{{ item.name }}</h2>
-              <p>Quantity: {{ item.quantity }}</p>
+            <a class="item-thumbnail-link" [routerLink]="['/products', item.productId]" [attr.aria-label]="'View ' + item.name">
+              <img class="item-thumbnail" [src]="item.image" [alt]="item.name" loading="lazy" (error)="$any($event.target).src = '/product-placeholder.svg'">
+            </a>
+
+            <div class="item-details">
+              <span class="item-category">{{ item.category }}</span>
+              <h2><a class="item-title-link" [routerLink]="['/products', item.productId]">{{ item.name }}</a></h2>
+              <p class="item-unit-price">{{ item.price | currency }} each</p>
+
+              <div class="stock-indicator">
+                @if (item.isAtLimit) {
+                  <span class="badge-limit" role="status">All {{ item.stockQuantity }} available in basket</span>
+                } @else if (item.isLowStock) {
+                  <span class="badge-low" role="status">Only {{ item.stockQuantity }} left in stock</span>
+                } @else {
+                  <span class="badge-instock">In stock</span>
+                }
+              </div>
             </div>
-            <strong>{{ item.price ? ('$' + (item.price * item.quantity).toFixed(2)) : '' }}</strong>
-            <button type="button" class="remove-button" (click)="remove(item.productId)"
-              [attr.aria-label]="'Remove ' + item.name + ' from basket'">Remove</button>
+
+            <!-- Stepper Controls -->
+            <div class="item-stepper" aria-label="Adjust quantity">
+              <button
+                type="button"
+                class="stepper-btn"
+                (click)="decrement(item)"
+                [attr.aria-label]="item.quantity === 1 ? 'Remove ' + item.name + ' from basket' : 'Decrease quantity of ' + item.name">
+                {{ item.quantity === 1 ? '🗑' : '−' }}
+              </button>
+              <span class="stepper-qty" [attr.aria-label]="'Current quantity: ' + item.quantity">{{ item.quantity }}</span>
+              <button
+                type="button"
+                class="stepper-btn"
+                [disabled]="item.isAtLimit"
+                (click)="increment(item)"
+                [attr.aria-label]="'Increase quantity of ' + item.name">
+                +
+              </button>
+            </div>
+
+            <div class="item-total-col">
+              <strong class="item-line-total">{{ item.lineTotal | currency }}</strong>
+              <button
+                type="button"
+                class="remove-button"
+                (click)="remove(item.productId)"
+                [attr.aria-label]="'Remove ' + item.name + ' from basket'">
+                Remove
+              </button>
+            </div>
           </article>
         }
       </div>
+
       <aside class="basket-summary">
-        <p><span>Subtotal</span><strong>{{ '$' + subtotal().toFixed(2) }}</strong></p>
-        <small>Demo checkout is available. Payment and delivery processing are not connected.</small>
-        <a routerLink="/" fragment="shop">Continue shopping</a>
+        <h2 class="summary-title">Order summary</h2>
+        <div class="summary-row">
+          <span>Items ({{ cart.itemCount() }})</span>
+          <span>{{ subtotal() | currency }}</span>
+        </div>
+        <div class="summary-row">
+          <span>Standard Delivery</span>
+          <span [class.free-tag]="freeDeliveryQualified()">{{ freeDeliveryQualified() ? 'FREE' : (estimatedDeliveryFee() | currency) }}</span>
+        </div>
+        <hr class="summary-divider">
+        <div class="summary-row total-row">
+          <strong>Estimated Total</strong>
+          <strong>{{ estimatedTotal() | currency }}</strong>
+        </div>
+
+        <a class="checkout-main-button" routerLink="/checkout">
+          Proceed to checkout →
+        </a>
+
+        <div class="trust-guarantees">
+          <div class="trust-item">
+            <span aria-hidden="true">✓</span>
+            <span>Free standard delivery on orders over $50</span>
+          </div>
+          <div class="trust-item">
+            <span aria-hidden="true">✓</span>
+            <span>30-day hassle-free return guarantee</span>
+          </div>
+          <div class="trust-item">
+            <span aria-hidden="true">✓</span>
+            <span>Authoritative server-side stock & price protection</span>
+          </div>
+        </div>
+
+        <a class="continue-shopping-link" routerLink="/" fragment="shop">← Continue shopping</a>
       </aside>
     </section>
   } @else {
     <section class="empty-basket">
-      <p>Your basket is empty.</p>
-      <a routerLink="/" fragment="shop">Explore the shop</a>
+      <div class="empty-basket-icon" aria-hidden="true">🛒</div>
+      <h2>Your basket is empty</h2>
+      <p>Discover our curated collection of thoughtfully designed everyday items.</p>
+      <a class="explore-shop-button" routerLink="/" fragment="shop">Explore the shop →</a>
     </section>
   }
 </main>

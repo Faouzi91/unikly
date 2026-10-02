@@ -83,4 +83,68 @@ h1 { margin: 0; color: #202522; font-size: clamp(28px, 4vw, 38px); font-weight: 
 
 .stock-status { margin: -12px 0 14px; color: #39704d; font-size: 13px; font-weight: 600; }
 .stock-status.out-of-stock { color: #8b302b; }
+.low-stock-alert { color: #a45814; font-weight: 700; }
 .add-button:disabled { cursor: not-allowed; opacity: .55; }
+
+.detail-in-basket-panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  width: min(100%, 360px);
+}
+
+.detail-stepper {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border: 1px solid #1c483a;
+  border-radius: 6px;
+  background: #f4f8f5;
+  overflow: hidden;
+}
+
+.detail-stepper-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: #1c483a;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease-in-out;
+}
+
+.detail-stepper-btn:hover:not(:disabled) {
+  background: #ddeadf;
+}
+
+.detail-stepper-btn:disabled {
+  color: #a8b3ac;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.detail-stepper-text {
+  padding: 0 12px;
+  font-size: 14px;
+  color: #1c483a;
+  white-space: nowrap;
+}
+
+.view-basket-link {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1c483a;
+  text-decoration: none;
+}
+
+.view-basket-link:hover {
+  text-decoration: underline;
+}

@@ -18,16 +18,49 @@
         <p class="price">${{ item.price.toFixed(2) }}</p>
         <p class="description">{{ item.description }}</p>
         <p class="stock-status" [class.out-of-stock]="item.stockQuantity === 0">
-          {{ item.stockQuantity === 0 ? 'Out of stock' : item.stockQuantity + ' in stock' }}
+          @if (item.stockQuantity === 0) {
+            Out of stock
+          } @else if (item.stockQuantity <= 3) {
+            <span class="low-stock-alert">Only {{ item.stockQuantity }} left in stock — order soon</span>
+          } @else {
+            {{ item.stockQuantity }} in stock
+          }
         </p>
-        <button class="add-button" type="button" [disabled]="isAtStockLimit(item)" (click)="addToBasket()">
-          {{ item.stockQuantity === 0 ? 'Out of stock' : isAtStockLimit(item) ? 'Maximum in basket' : 'Add to basket' }}
-        </button>
-        @if (addedToBasket()) {
-          <p class="basket-confirmation" role="status">Added to your basket.</p>
-        } @if (isAtStockLimit(item) && item.stockQuantity > 0) {
-          <p class="stock-status out-of-stock" role="status">All available stock is already in your basket.</p>
+
+        @if (quantityInBasket() > 0) {
+          <div class="detail-in-basket-panel">
+            <div class="detail-stepper">
+              <button
+                type="button"
+                class="detail-stepper-btn"
+                (click)="decrement()"
+                [attr.aria-label]="quantityInBasket() === 1 ? 'Remove from basket' : 'Decrease quantity'">
+                {{ quantityInBasket() === 1 ? '🗑' : '−' }}
+              </button>
+              <span class="detail-stepper-text">
+                <strong>{{ quantityInBasket() }}</strong> in your basket
+              </span>
+              <button
+                type="button"
+                class="detail-stepper-btn"
+                [disabled]="isAtStockLimit(item)"
+                (click)="increment()"
+                aria-label="Increase quantity">
+                +
+              </button>
+            </div>
+            <a class="view-basket-link" routerLink="/basket">View basket →</a>
+          </div>
+        } @else {
+          <button class="add-button" type="button" [disabled]="item.stockQuantity === 0" (click)="addToBasket()">
+            {{ item.stockQuantity === 0 ? 'Out of stock' : 'Add to basket' }}
+          </button>
         }
+
+        @if (isAtStockLimit(item) && item.stockQuantity > 0) {
+          <p class="stock-status out-of-stock" role="status">All {{ item.stockQuantity }} available in stock are in your basket.</p>
+        }
+
         <p class="demo-note">Product information shown here is part of the Unikly demo catalog.</p>
       </section>
     </article>
