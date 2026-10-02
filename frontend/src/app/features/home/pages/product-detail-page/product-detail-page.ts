@@ -1,5 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { map } from 'rxjs';
 import { CartService } from '@core/cart/cart.service';
 import { StoreProduct } from '../../data/sample-products';
 import { ProductCatalogService } from '../../data/product-catalog.service';
@@ -13,16 +15,13 @@ import { ProductCatalogService } from '../../data/product-catalog.service';
 export class ProductDetailPage {
   readonly cart = inject(CartService);
   private readonly catalog = inject(ProductCatalogService);
-  private readonly productId = signal<string | null>(null);
-  readonly product = computed(() => this.catalog.products().find((item) => item.id === this.productId()));
+  private readonly route = inject(ActivatedRoute);
+  private readonly paramId = toSignal(
+    this.route.paramMap.pipe(map((params) => params.get('id'))),
+    { initialValue: null },
+  );
+  readonly product = computed(() => this.catalog.products().find((item) => item.id === this.paramId()));
   readonly addedToBasket = signal(false);
-
-  constructor(route: ActivatedRoute) {
-    route.paramMap.subscribe((params) => {
-      this.productId.set(params.get('id'));
-      this.addedToBasket.set(false);
-    });
-  }
 
   isAtStockLimit(product: StoreProduct): boolean {
     return (this.cart.lines().find((line) => line.productId === product.id)?.quantity ?? 0) >= product.stockQuantity;

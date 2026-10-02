@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CartService } from '@core/cart/cart.service';
 import { StoreProduct } from '../../data/sample-products';
@@ -45,7 +46,9 @@ export class HomePage {
   });
 
   constructor() {
-    this.route.queryParamMap.subscribe((params) => this.query.set(params.get('q') ?? ''));
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed())
+      .subscribe((params) => this.query.set(params.get('q') ?? ''));
   }
 
   canAdd(product: StoreProduct): boolean {

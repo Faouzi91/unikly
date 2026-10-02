@@ -122,6 +122,7 @@ public class CustomerOrderService {
         return view(orders.save(order));
     }
 
+    @Transactional(readOnly = true)
     public List<SellerOrderView> listForSeller(String email) {
         StoreUser seller = seller(email);
         return orders.findAllForSeller(seller.getId()).stream()

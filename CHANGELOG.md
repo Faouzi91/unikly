@@ -2,6 +2,14 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
+## 2026-10-02 — Architecture and best practice audit refinements
+
+- Completed end-to-end architecture and implementation review against `AGENTS.md` and industry best practice skills.
+- Optimized backend seller order queries with `@Transactional(readOnly = true)` on `CustomerOrderService.listForSeller`.
+- Added database index `ix_customer_order_items_seller_id` via migration `V14` to accelerate seller order item joins.
+- Modernized Angular `ProductDetailPage` to 100% constructor-less `inject()` and reactive `toSignal()` route parameter resolution.
+- Added `takeUntilDestroyed()` cleanup to `HomePage` search query parameter subscription.
+
 ## 2026-10-01 — Delivery options and profile address auto-fill
 
 - Auto-fill buyer delivery contact and address details from saved customer profile upon entering checkout.
