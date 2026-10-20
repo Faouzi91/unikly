@@ -2,6 +2,19 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
+## 2026-10-20 — Sprint 1 scope: first impression and account access
+
+### Product plan
+
+- Recorded the agreed first-sprint screens: shared header/footer, landing page, registration, login, and account recovery.
+- Linked the sprint to M1, M2, M4, M14, and the storefront theme audit. Added acceptance for truthful positioning, demo listing provenance, accessible responsive states, and secure non-enumerating recovery.
+- Kept competitor differentiation dependent on a selected customer/category and evidence. Production email delivery remains an explicit M14 gate until a sender and operational owner are selected.
+
+### Verification
+
+- Documentation links, roadmap cross-references, and final diff reviewed; `git diff --check` passed.
+- This is a planning increment only. No application code was changed, and no build, automated test, or live browser flow was run. Sprint implementation remains planned.
+
 ## 2026-10-20 — Current marketplace SRS, phased roadmap, and storefront style audit
 
 ### Product scope and progress

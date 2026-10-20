@@ -14,7 +14,7 @@ Unikly has a working early marketplace foundation: account sessions and permissi
 
 | Decision | Owner | State | Needed before |
 | --- | --- | --- | --- |
-| First buyer segment and seller wedge/category | Product owner | Open | Public positioning and catalog acceptance |
+| First buyer segment, seller wedge/category, and evidence-backed reason to choose Unikly | Product owner | Open | Public positioning and catalog acceptance |
 | Initial country/region and supported currency | Product/operations owner | Open | Currency, payment, tax, privacy, and payout design |
 | Buyer-facing delivery and return promise | Operations owner | Open | Publishing delivery/return trust claims |
 | Minimum seller review/approval before public offers | Product/operations owner | Open | Public seller onboarding |
@@ -32,7 +32,7 @@ Statuses: **Done** requires acceptance and required verification evidence in the
 | ID | Increment | Status | SRS | Exit evidence |
 | --- | --- | --- | --- | --- |
 | M0 | Reconcile product truth, create a shared SRS/roadmap, and synchronize agent instructions | Done | All | Documentation references agree; requirement status separates code presence from release proof; diff/link review recorded in this changelog and pushed on the topic branch. |
-| M1 | Record first customer/seller wedge, launch market, and delivery promise | Blocked on product decisions | §1, §4, FR-DEL-01 | Signed decision record identifies segment, region, category, currency candidate, and policy owner. |
+| M1 | Record first customer/seller wedge, launch market, and delivery promise | Blocked on product decisions | §1, §4, FR-DEL-01 | Signed decision record identifies segment, region, category, currency candidate, policy owner, and an evidence-backed reason for buyers and sellers to choose Unikly over the relevant alternatives. |
 | M2 | Remove or rewrite unsupported storefront delivery, returns, and payment claims | Ready | FR-DEL-01, FR-PAY-01 | Each displayed promise is backed by an implemented flow and published policy; demo checkout clearly explains whether it collects payment. |
 | M3 | Restrict reviews to the agreed completed-purchase state | Ready | FR-REV-01 | Placed/processing/canceled orders cannot qualify; the agreed completed state can; the verified marker matches the rule. |
 | M4 | Identify seeded/demo listings and seller provenance | Ready | FR-CAT-01, FR-CAT-02 | Every fixture shown in a public environment is visibly demo content or attributed to a real seller; no offer implies false verification. |
@@ -61,6 +61,31 @@ Statuses: **Done** requires acceptance and required verification evidence in the
 | M27 | Add carrier/fulfillment integration only when the pilot proves it is needed | Deferred; depends on M1 and M26 | FR-DEL-02 | Named provider/contract, volume or service evidence, operational owner, failure handling, and measurable benefit justify integration. |
 | M28 | Pass first-market production-readiness and go-live gates | Blocked on M1, M2–M18, M20–M26 | NFR-SEC-01..02, NFR-REL-02, NFR-OPS-01, NFR-PERF-01, NFR-UX-01, NFR-A11Y-01, NFR-PRIV-01..02, FR-RISK-01 | End-to-end verify browse-to-order, seller fulfillment limited to own order lines, buyer status tracking, and cross-account/cross-seller denials (SRS flows 1–4); eligible completed-purchase and ineligible review attempts with a matching verified marker (M3); verified registration/recovery (M14); seller approval (M15); operator provisioning/suspension/reactivation (M16); support (M17); and notifications (M18). Verify responsive buyer and seller flows at narrow and desktop widths. Verify payment/retry/reconciliation (M20–M22), refund/fees/settlement (M23–M25), and delivery/return/support (M17, M26). Before live payments, approve provider risk-signal, fraud escalation, chargeback, and dispute ownership/process (M1, FR-RISK-01). Complete restore rehearsal, TLS/secrets, alerts/runbooks, privacy/security review, WCAG 2.2 AA review, and measured performance. Operational preparation may proceed while these flows are built. M27 is optional if the manual pilot meets the promise; M19 seller reports may follow the first pilot. |
 | M29 | Expand capabilities from usage evidence | Deferred | FR-CAT-07, FR-SEARCH-02..03, FR-DEL-02, FR-RISK-02, NFR-MAINT-01 | An issue states user evidence, operating owner, success measure, and why the current system is insufficient before adding canonical product/offer identity, category-specific variants, automated fraud/abuse controls, richer search, bulk feeds, promotions, complex logistics, mobile, or service decomposition. Before automated decisions are enabled, provide a documented review and appeal process. |
+
+## Sprint 1 — First impression and account access
+
+**Status:** Planned; scope agreed, implementation not started.
+**Scope:** Shared header and footer, landing page, registration, login, and password recovery.
+**Roadmap links:** M1 (positioning and market decisions), M2 (truthful storefront promises), M4 (demo listing provenance), M14 (email verification and account recovery), and theme audit T1–T4.
+
+The goal is to make the first visit clear, credible, and easy to act on for the chosen first-market customer. Amazon and Walmart are capability benchmarks, not the initial product scope or a reason to imitate their breadth. A competitive claim needs a selected customer/category, relevant alternatives, and evidence. Until M1 is recorded, keep copy specific to implemented behavior and do not invent a delivery, return, payment, seller-verification, or security promise.
+
+| Slice | User outcome | Acceptance |
+| --- | --- | --- |
+| Shared header and footer | Visitors can find browse/search, account, and basket actions and move around the real site on phone and desktop. | Logged-out and signed-in states are clear; navigation works with keyboard and touch; focus is visible; footer links lead to implemented destinations; layout has no clipped or unreachable controls at narrow, tablet, and desktop widths. |
+| Landing page | A first-time visitor understands what Unikly offers and what to do next. | Final headline and primary action reflect the M1 customer/wedge decision; browse/search is easy to start; featured listings are real or clearly marked as demo per M4; delivery, return, payment, and security claims meet M2 and are backed by current policy and behavior. |
+| Registration and login | A visitor can create an account or return to an existing account with clear feedback. | Forms explain required fields and validation; loading, success, and failure states are accessible; links between login, registration, and recovery work; server-side role and session rules remain authoritative; the UI does not imply that registration email is verified before proof succeeds (M14). |
+| Password recovery and email verification | A user can request account recovery, set a new password, and understand the verification state without exposing account existence. | Recovery responses are non-enumerating; tokens are time-limited and single-use; requests are rate-limited; successful reset invalidates or revokes existing sessions; verification is only shown as complete after proof (M14). Use a provider-neutral mail boundary and a non-production development sink until the production sender is selected and configured outside source control. |
+| Experience review | The agreed screens feel coherent and remain usable across common devices and input methods. | Use shared semantic design tokens for brand, surfaces, typography, controls, and focus across these screens. Review real browser rendering at 320/375px, tablet, and desktop; complete the key flows by keyboard; check accessible names, status/error announcements, visible focus, contrast, and reduced motion against the WCAG 2.2 AA launch target. Record screenshots and usability findings against the chosen M1 audience. |
+
+### Sprint sequence and dependencies
+
+1. Resolve the M1 first customer, seller/category wedge, market, and evidence-backed reason to choose Unikly. Compare relevant alternatives for that wedge and record the user problem and differentiator; do not use generic “better than Amazon/Walmart” claims.
+2. Deliver the shared shell and landing page with current, supportable content. M1 positioning can remain neutral while the decision is open; unsupported trust claims remain out under M2.
+3. Improve registration and login, then implement the recovery and verification vertical slice against M14. Use the development mail sink for local verification; keep production email delivery unclaimed until its sender/configuration and operational ownership are set.
+4. Review the complete flows in a real browser at the stated viewports, capture the evidence, and update M1/M2/M14 and the theme audit only when their acceptance evidence exists.
+
+Do not mark this sprint complete from screenshots or compilation alone. The account flows need end-to-end verification, and any public-launch claim about email delivery remains blocked until the production sender is configured and verified. Payment gateways, live carriers, broad catalog expansion, and scale infrastructure stay outside this sprint.
 
 ## Theme and storefront workstream
 
