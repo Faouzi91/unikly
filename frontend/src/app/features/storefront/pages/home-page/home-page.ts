@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Title } from '@angular/platform-browser';
 import { CartService } from '@core/cart/cart.service';
 import { LucideMinus, LucidePlus, LucideStar, LucideTrash } from '@lucide/angular';
 import { StoreProduct } from '@core/catalog/sample-products';
@@ -20,11 +21,13 @@ export class HomePage {
   private readonly catalog = inject(ProductCatalogService);
   readonly products = this.catalog.products;
   private readonly route = inject(ActivatedRoute);
+  private readonly title = inject(Title);
   readonly query = signal('');
   readonly activeCategory = signal('All');
   readonly sortOrder = signal<ProductSortOrder>('featured');
   readonly notice = signal('');
   readonly categories = ['All', 'Home', 'Electronics', 'Kitchen', 'Outdoor'];
+  readonly resultCount = computed(() => this.filteredProducts().length);
   readonly filteredProducts = computed(() => {
     const search = this.query().trim().toLocaleLowerCase();
     return this.products().filter(
@@ -47,9 +50,16 @@ export class HomePage {
   });
 
   constructor() {
+    this.title.setTitle('Unikly | Browse products');
     this.route.queryParamMap
       .pipe(takeUntilDestroyed())
       .subscribe((params) => this.query.set(params.get('q') ?? ''));
+  }
+
+  categoryCount(category: string): number {
+    return category === 'All'
+      ? this.products().length
+      : this.products().filter((product) => product.category === category).length;
   }
 
   getQuantityInCart(productId: string): number {

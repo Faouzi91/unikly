@@ -1,0 +1,21 @@
+<main class="identity-flow-main">
+  <section class="identity-flow-card" aria-labelledby="verification-title">
+    <p class="flow-kicker">Account verification</p>
+    @switch (state()) {
+      @case ('working') {
+        <h1 id="verification-title">Verifying your email…</h1>
+        <p role="status" aria-live="polite">Please wait while we confirm the link.</p>
+      }
+      @case ('success') {
+        <h1 id="verification-title">Your email is verified.</h1>
+        <p role="status">You can now sign in to your Unikly account.</p>
+        <a class="primary-button" routerLink="/login">Continue to sign in</a>
+      }
+      @case ('invalid') {
+        <h1 id="verification-title">This link can’t be used.</h1>
+        <p>The link may have expired or already been used. Request a fresh link to continue.</p>
+        <a class="primary-button" routerLink="/resend-verification">Request another link</a>
+      }
+    }
+  </section>
+</main>

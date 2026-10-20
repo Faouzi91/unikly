@@ -120,7 +120,7 @@ public class CatalogProductService {
     private ProductView view(CatalogProduct product) {
         return new ProductView(product.getId(), product.getName(), product.getDescription(),
                 product.getCategory(), product.getPrice(), product.getImage(),
-                product.getSellerId(), product.getStockQuantity());
+                product.getSellerId(), product.getStockQuantity(), product.isDemo());
     }
 
     private ProductSnapshot snapshot(CatalogProduct product) {
@@ -145,7 +145,8 @@ public class CatalogProductService {
     }
 
     public record ProductView(String id, String name, String description, String category,
-                              java.math.BigDecimal price, String image, Long sellerId, int stockQuantity) {}
+                              java.math.BigDecimal price, String image, Long sellerId, int stockQuantity,
+                              boolean isDemo) {}
 
     public record ProductSnapshot(String id, String name, String category, java.math.BigDecimal price, String image,
                                   Long sellerId, int stockQuantity) {}

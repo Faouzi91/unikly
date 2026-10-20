@@ -123,7 +123,7 @@ class DevelopmentUserSeeder {
             String image,
             int stockQuantity) {
         if (products.findById(id).isEmpty()) {
-            products.save(new CatalogProduct(id, sellerId, name, description, category, price, image, stockQuantity));
+            products.save(new CatalogProduct(id, sellerId, name, description, category, price, image, stockQuantity, true));
         }
     }
 
@@ -146,6 +146,7 @@ class DevelopmentUserSeeder {
         user.updatePasswordHash(passwords.encode(password));
         user.updateDisplayName(displayName);
         user.updateRole(role);
+        user.verifyEmail();
         return users.save(user);
     }
 }

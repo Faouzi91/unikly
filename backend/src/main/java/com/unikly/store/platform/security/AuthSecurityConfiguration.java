@@ -71,13 +71,19 @@ public class AuthSecurityConfiguration {
                         .requireExplicitSave(true))
                 .sessionManagement(session -> session
                         .sessionFixation(fixation -> fixation.changeSessionId())
-                    .maximumSessions(5)
-                    .sessionRegistry(sessionRegistry))
+                        .maximumSessions(5)
+                        .sessionRegistry(sessionRegistry)
+                        .expiredSessionStrategy(event -> event.getResponse().setStatus(HttpStatus.UNAUTHORIZED.value())))
                 .csrf(csrf -> csrf
                     .csrfTokenRepository(csrfTokenRepository())
                         .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/csrf", "/api/auth/register", "/api/auth/login", "/actuator/health").permitAll()
+                    .requestMatchers(HttpMethod.POST,
+                            "/api/auth/verification/request",
+                            "/api/auth/verification/confirm",
+                            "/api/auth/password-recovery/request",
+                            "/api/auth/password-recovery/confirm").permitAll()
                     .requestMatchers("/api/auth/me").hasAuthority(StorePermission.ACCOUNT_READ_SELF.authority())
                     .requestMatchers(HttpMethod.POST, "/api/auth/password").hasAuthority(StorePermission.ACCOUNT_UPDATE_SELF.authority())
                     .requestMatchers(HttpMethod.GET, "/api/profile/me").hasAuthority(StorePermission.ACCOUNT_READ_SELF.authority())

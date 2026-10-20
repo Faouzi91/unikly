@@ -22,7 +22,9 @@ Public catalog and review reads do not require a role. Role names are not a repl
 
 | Route or operation | Current rule |
 | --- | --- |
-| GET /api/auth/csrf, POST /api/auth/register, POST /api/auth/login, GET /actuator/health | Public |
+| GET /api/auth/csrf, POST /api/auth/register, GET /actuator/health | Public |
+| POST /api/auth/login | Public, CSRF required; login attempts are rate-limited |
+| POST /api/auth/verification/request, /api/auth/verification/confirm, /api/auth/password-recovery/request, /api/auth/password-recovery/confirm | Public, CSRF required; requests are rate-limited (429 Too Many Requests when exceeded) and responses do not reveal whether an email is registered |
 | POST /api/auth/logout | Session logout; state-changing requests require CSRF |
 | GET /api/auth/me, GET /api/profile/me | ACCOUNT_READ_SELF |
 | PUT /api/profile/me, POST /api/auth/password | ACCOUNT_UPDATE_SELF |

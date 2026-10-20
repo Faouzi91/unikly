@@ -42,7 +42,9 @@
             </a>
 
             <div class="item-details">
-              <span class="item-category">{{ item.category }}</span>
+              <span class="item-category">
+                {{ item.category }} · {{ item.isDemo ? 'Demo listing' : (item.sellerId ? 'Seller account #' + item.sellerId : 'Seller offer') }}
+              </span>
               <h2><a class="item-title-link" [routerLink]="['/products', item.productId]">{{ item.name }}</a></h2>
               <p class="item-unit-price">{{ item.price | currency }} each</p>
 
@@ -120,19 +122,19 @@
             <span class="trust-check-icon" aria-hidden="true">
               <svg lucideCheck [size]="14" [strokeWidth]="2.5"></svg>
             </span>
-            <span>Free standard delivery on orders over $50</span>
+            <span>Standard delivery fee waived on demo orders over $50</span>
           </div>
           <div class="trust-item">
             <span class="trust-check-icon" aria-hidden="true">
               <svg lucideCheck [size]="14" [strokeWidth]="2.5"></svg>
             </span>
-            <span>30-day hassle-free return guarantee</span>
+            <span>Demo checkout records an unpaid order; payment is not collected</span>
           </div>
           <div class="trust-item">
             <span class="trust-check-icon" aria-hidden="true">
               <svg lucideCheck [size]="14" [strokeWidth]="2.5"></svg>
             </span>
-            <span>Authoritative server-side stock & price protection</span>
+            <span>Server-calculated totals and stock reservation at checkout</span>
           </div>
         </div>
 

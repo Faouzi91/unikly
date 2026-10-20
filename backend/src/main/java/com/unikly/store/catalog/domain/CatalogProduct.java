@@ -27,6 +27,8 @@ public class CatalogProduct {
     private String image;
     @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity;
+    @Column(name = "is_demo", nullable = false)
+    private boolean demo;
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
@@ -36,6 +38,11 @@ public class CatalogProduct {
 
     public CatalogProduct(String id, Long sellerId, String name, String description, String category,
                           BigDecimal price, String image, int stockQuantity) {
+        this(id, sellerId, name, description, category, price, image, stockQuantity, false);
+    }
+
+    public CatalogProduct(String id, Long sellerId, String name, String description, String category,
+                          BigDecimal price, String image, int stockQuantity, boolean demo) {
         this.id = id;
         this.sellerId = sellerId;
         this.name = name;
@@ -44,6 +51,7 @@ public class CatalogProduct {
         this.price = price;
         this.image = image;
         this.stockQuantity = stockQuantity;
+        this.demo = demo;
         this.createdAt = Instant.now();
         this.updatedAt = this.createdAt;
     }
@@ -71,6 +79,7 @@ public class CatalogProduct {
     public BigDecimal getPrice() { return price; }
     public String getImage() { return image; }
     public int getStockQuantity() { return stockQuantity; }
+    public boolean isDemo() { return demo; }
     public void decreaseStock(int quantity) {
         if (quantity < 1 || quantity > stockQuantity) throw new IllegalArgumentException("Insufficient stock");
         stockQuantity -= quantity;

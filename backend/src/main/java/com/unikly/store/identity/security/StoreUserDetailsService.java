@@ -34,7 +34,8 @@ public class StoreUserDetailsService implements UserDetailsService {
             .forEach(authorities::add);
         return User.withUsername(user.getEmail())
                 .password(user.getPasswordHash())
-            .authorities(authorities)
+                .authorities(authorities)
+                .disabled(!user.isEmailVerified())
                 .build();
     }
 }

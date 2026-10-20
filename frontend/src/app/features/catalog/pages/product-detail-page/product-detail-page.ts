@@ -3,10 +3,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DatePipe, DecimalPipe } from '@angular/common';
+import { Title } from '@angular/platform-browser';
 import { map, firstValueFrom } from 'rxjs';
 import { CartService } from '@core/cart/cart.service';
 import { AuthService } from '@core/identity/auth.service';
-import { ReviewsService, ProductReviewSummary, ReviewItem } from '@core/reviews/reviews.service';
+import { ReviewsService, ProductReviewSummary } from '@core/reviews/reviews.service';
 import {
   LucideCheck,
   LucideCircleAlert,
@@ -57,6 +58,7 @@ export class ProductDetailPage {
   private readonly catalog = inject(ProductCatalogService);
   private readonly reviewsService = inject(ReviewsService);
   private readonly route = inject(ActivatedRoute);
+  private readonly title = inject(Title);
 
   private readonly paramId = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('id'))),
@@ -84,12 +86,14 @@ export class ProductDetailPage {
   });
 
   readonly totalReviews = computed(() => {
+    if (this.product()?.isDemo) return 0;
     const summary = this.reviewSummary();
     if (summary) return summary.totalReviews;
     return this.product()?.reviews ?? 0;
   });
 
   readonly averageRating = computed(() => {
+    if (this.product()?.isDemo) return 0;
     const summary = this.reviewSummary();
     if (summary && summary.totalReviews > 0) return summary.averageRating;
     return this.product()?.rating ?? 0.0;
@@ -98,9 +102,8 @@ export class ProductDetailPage {
   readonly userReview = computed(() => this.reviewSummary()?.currentUserReview ?? null);
 
   readonly canReview = computed(() => {
-    const user = this.auth.user();
-    if (!user) return false;
-    return user.role === 'BUYER' || user.role === 'ADMIN';
+    if (this.product()?.isDemo) return false;
+    return this.reviewSummary()?.currentUserCanReview ?? false;
   });
 
   readonly isVerifiedBuyer = computed(() => this.reviewSummary()?.currentUserVerifiedBuyer ?? false);
@@ -121,8 +124,12 @@ export class ProductDetailPage {
   constructor() {
     effect(() => {
       const id = this.paramId();
+      const currentProduct = this.product();
+      this.title.setTitle(currentProduct ? `${currentProduct.name} | Unikly` : 'Product not found | Unikly');
       this.auth.user(); // reload when user logs in/out
-      if (id) {
+      if (currentProduct?.isDemo) {
+        this.reviewSummary.set(null);
+      } else if (id) {
         void this.loadReviews(id);
       }
     });
@@ -201,6 +208,26 @@ export class ProductDetailPage {
 
   setRating(stars: number): void {
     this.formRating.set(stars);
+  }
+
+  onRatingKeydown(event: KeyboardEvent, currentStar: number): void {
+    let nextStar: number | null = null;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+      nextStar = currentStar < 5 ? currentStar + 1 : 1;
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+      nextStar = currentStar > 1 ? currentStar - 1 : 5;
+    } else if (event.key === 'Home') {
+      nextStar = 1;
+    } else if (event.key === 'End') {
+      nextStar = 5;
+    }
+    if (nextStar !== null) {
+      event.preventDefault();
+      this.formRating.set(nextStar);
+      const container = (event.currentTarget as HTMLElement | null)?.parentElement;
+      const targetButton = container?.querySelector<HTMLButtonElement>(`button[data-star="${nextStar}"]`);
+      targetButton?.focus();
+    }
   }
 
   async submitReview(): Promise<void> {

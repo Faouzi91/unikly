@@ -1,9 +1,12 @@
 package com.unikly.store.identity.application;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface IdentityAccountService {
     AccountIdentity requireByEmail(String email);
+
+    AuthenticatedUserView requireAuthenticatedUser(String email);
 
     Optional<AccountIdentity> findByEmail(String email);
 
@@ -18,4 +21,12 @@ public interface IdentityAccountService {
     }
 
     record AccountIdentity(Long id, String email, String displayName, AccountRole role) {}
+
+    record AuthenticatedUserView(
+            Long id,
+            String email,
+            String displayName,
+            String role,
+            boolean emailVerified,
+            List<String> permissions) {}
 }

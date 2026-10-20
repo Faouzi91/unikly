@@ -30,6 +30,22 @@ public class IdentityAccountServiceImpl implements IdentityAccountService {
 
     @Override
     @Transactional(readOnly = true)
+    public AuthenticatedUserView requireAuthenticatedUser(String email) {
+        StoreUser user = requireUserByEmail(email);
+        return new AuthenticatedUserView(
+                user.getId(),
+                user.getEmail(),
+                user.getDisplayName(),
+                user.getRole().name(),
+                user.isEmailVerified(),
+                user.getRole().permissions().stream()
+                        .map(Enum::name)
+                        .sorted()
+                        .toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<AccountIdentity> findByEmail(String email) {
         return users.findByEmail(email.toLowerCase(Locale.ROOT))
                 .map(user -> new AccountIdentity(user.getId(), user.getEmail(), user.getDisplayName(),

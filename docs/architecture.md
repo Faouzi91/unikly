@@ -18,11 +18,11 @@ The backend is one Spring Boot application. Business capabilities are modules un
 - reviews: product reviews, verified-purchase checks, and moderation endpoints.
 - platform: cross-cutting HTTP and security configuration.
 
-Modules use the API, application, domain, and persistence layers where needed. identity also contains its Spring Security user-details adapter. Keep infrastructure configuration in platform, not in business domains.
+Modules use the API, application, domain, and persistence layers where needed. identity also contains its Spring Security user-details adapter and outbound email delivery adapter (`infrastructure`). Keep infrastructure configuration in platform, not in business domains.
 
 A module owns its entities, repositories, and use cases. Cross-module operations use the owning module's public application service and exchange immutable application records; business modules must not couple through another module's repositories or internal entities. `platform` is the technical composition module: `platform.security` may reference identity security primitives, while `platform.bootstrap` may access module persistence only for dev-profile fixture seeding. Neither exception may implement customer business flows. Add only packages that have working code. Do not create future modules in advance.
 
-`ModuleBoundariesTests` verifies that business modules do not import another module's `api/`, `domain/`, `persistence/`, or `security/` packages and that application modules remain acyclic.
+`ModuleBoundariesTests` verifies that business modules do not import another module's `api/`, `domain/`, `persistence/`, `security/`, or `infrastructure/` packages and that application modules remain acyclic.
 
 Flyway migrations are in backend/src/main/resources/db/migration/. Backend tests mirror the business modules under backend/src/test/java/com/unikly/store/.
 

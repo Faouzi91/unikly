@@ -5,7 +5,7 @@
     <article class="product-detail">
       <div class="detail-image-wrap">
         <img class="detail-image" [src]="item.image" [alt]="item.name" (error)="$any($event.target).src = '/product-placeholder.svg'">
-        @if (item.badge) { <span class="detail-badge">{{ item.badge }}</span> }
+        @if (item.isDemo) { <span class="detail-badge">Demo listing</span> }
       </div>
 
       <section class="detail-copy" aria-labelledby="product-title">
@@ -13,6 +13,7 @@
         <h1 id="product-title">{{ item.name }}</h1>
 
         <!-- Authoritative Star Rating Header Row -->
+        @if (!item.isDemo && totalReviews() > 0) {
         <div class="rating-header-row">
           <a class="rating-summary-link" href="#customer-reviews" (click)="scrollToReviews($event)" [attr.aria-label]="averageRating().toFixed(1) + ' out of 5 stars, ' + totalReviews() + ' reviews'">
             <div class="star-rating-display" aria-hidden="true">
@@ -25,9 +26,15 @@
             </span>
           </a>
         </div>
+        }
 
         <p class="price">${{ item.price.toFixed(2) }}</p>
         <p class="description">{{ item.description }}</p>
+        @if (item.isDemo) {
+          <p class="demo-note">This is sample product, price, and stock data, not a real seller offer. Demo checkout does not collect payment.</p>
+        } @else if (item.sellerId) {
+          <p class="seller-note">Listed by seller account #{{ item.sellerId }}</p>
+        }
         <p class="stock-status" [class.out-of-stock]="item.stockQuantity === 0">
           @if (item.stockQuantity === 0) {
             Out of stock
@@ -76,12 +83,11 @@
           <p class="stock-status out-of-stock" role="status">All {{ item.stockQuantity }} available in stock are in your basket.</p>
         }
 
-        <p class="demo-note">Authentic customer ratings & reviews are verified from store orders.</p>
       </section>
     </article>
 
     <!-- Comprehensive Customer Reviews Section -->
-    <section id="customer-reviews" class="customer-reviews-section" aria-labelledby="reviews-heading">
+    <section id="customer-reviews" class="customer-reviews-section" [hidden]="item.isDemo" aria-labelledby="reviews-heading">
       <div class="reviews-section-header">
         <h2 id="reviews-heading" class="reviews-main-title">Customer Reviews & Ratings</h2>
         <p class="reviews-main-subtitle">Real experiences and feedback from verified purchasers</p>
@@ -156,19 +162,21 @@
                 <span>Verified Purchase: You ordered this item and qualify to write a review.</span>
               </div>
             </div>
-          } @else if (auth.isAuthenticated()) {
+          } @else if (auth.user()?.role === 'BUYER') {
             <div class="cta-not-purchased-box">
               <div class="not-purchased-badge">
                 <svg lucideShieldCheck [size]="16" [strokeWidth]="2" aria-hidden="true"></svg>
                 <span>Verified Purchase Required</span>
               </div>
-              <p class="not-purchased-desc">Only customers who have ordered this item can leave a review. Order this handcrafted item to share your feedback!</p>
+              <p class="not-purchased-desc">A qualifying purchase is required to write a review. Order this item to share your feedback.</p>
               @if (quantityInBasket() > 0) {
                 <a class="btn-review-outline" routerLink="/basket">Proceed to checkout in basket →</a>
               } @else {
                 <button type="button" class="btn-review-outline" (click)="addToBasket()">Add to basket to purchase</button>
               }
             </div>
+          } @else if (auth.isAuthenticated()) {
+            <p class="cta-login-note">Product reviews are available to buyers with an eligible order.</p>
           } @else {
             <div class="cta-login-box">
               <a class="btn-review-primary" routerLink="/login" [queryParams]="{ returnUrl: '/products/' + item.id }">
@@ -200,15 +208,19 @@
           <form (ngSubmit)="submitReview()" class="review-inner-form">
             <!-- Star Rating Picker -->
             <div class="form-group">
-              <label class="form-label">Overall rating</label>
-              <div class="star-picker" role="radiogroup" aria-label="Choose rating">
+              <label id="rating-picker-label" class="form-label">Overall rating</label>
+              <div class="star-picker" role="radiogroup" aria-labelledby="rating-picker-label">
                 @for (star of [1, 2, 3, 4, 5]; track star) {
                   <button
                     type="button"
+                    role="radio"
                     class="star-picker-btn"
+                    [attr.data-star]="star"
+                    [tabIndex]="formRating() === star ? 0 : -1"
                     (click)="setRating(star)"
+                    (keydown)="onRatingKeydown($event, star)"
                     [class.active]="formRating() >= star"
-                    [attr.aria-label]="star + ' stars'"
+                    [attr.aria-label]="star + (star === 1 ? ' star' : ' stars')"
                     [attr.aria-checked]="formRating() === star">
                     <svg lucideStar [size]="24" [class]="formRating() >= star ? 'star-svg interactive filled' : 'star-svg interactive'" aria-hidden="true"></svg>
                   </button>

@@ -2,6 +2,59 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
+## 2026-10-20 — Sprint 1 audit fixes: identity hardening, Flyway migration safety, catalog/basket provenance, and accessibility
+
+### Database and configuration
+
+- Backfilled existing accounts as verified (`UPDATE store_users SET email_verified = TRUE`) in `V17__mark_demo_catalog_and_add_identity_email_tokens.sql` before applying the `FALSE` default for new rows so upgrading non-empty databases does not lock out existing users.
+- Aligned `docker-compose.yml` and `DevelopmentUserSeederTests` development seed email addresses (`customer@unikly.com`, `admin@unikly.com`, `seller@unikly.com`, `no-reply@unikly.com`) with `application-dev.yml` and `.env.example`.
+- Added `.vscode/` to `.gitignore`.
+
+### Backend and security
+
+- Hardened `IdentityEmailFlowService.register` against timing side-channels and unverified-account lockouts/pre-registration hijacking: always hashes the candidate password with Argon2 before checking email existence, and allows re-registration of unverified accounts to update `passwordHash`, `displayName`, and `role` while re-issuing verification.
+- Updated `IdentityEmailFlowService` to return `429 Too Many Requests` when registration, verification, or password-recovery rate limits are exceeded instead of silently dropping email dispatch while returning `202 Accepted`.
+- Added rate-limiting (`IdentityRequestRateLimiter`) to `POST /api/auth/login` and configured `expiredSessionStrategy` on `maximumSessions(5)` in `AuthSecurityConfiguration` so sessions revoked by password recovery return `401 Unauthorized`.
+- Moved `AuthController` authenticated-principal lookups (`requireAuthenticatedUser`) behind `IdentityAccountService` so the API layer no longer injects `StoreUserRepository` directly.
+- Added `infrastructure` to `ModuleBoundariesTests.INTERNAL_PACKAGES` and documented `identity`'s internal `infrastructure.email` package in `docs/architecture.md` and `docs/authorization-matrix.md`.
+
+### Frontend and accessibility
+
+- Aligned `CustomerProfile` in `auth.service.ts` with the backend `CustomerProfileService.ProfileView` contract (`id`, `email`, `displayName`, phone, and delivery address fields).
+- Made non-empty `/api/products` responses authoritative in `ProductCatalogService` without re-merging deleted `SAMPLE_PRODUCTS`, while retaining sample fallback only when the API fails or returns an empty catalog.
+- Added `Demo listing` vs `Seller account #` provenance badges per basket line item on `basket-page` and replaced the unbacked `"30-day hassle-free return guarantee"` with truthful demo checkout guidance.
+- Completed the product review rating radio group (`role="radio"`, roving `tabIndex`, and Arrow/Home/End keyboard selection) and dynamic page title updates in `product-detail-page`.
+- Fixed `#confirm-password` `aria-invalid`, `aria-describedby`, and inline mismatch feedback on `reset-password`.
+- Added route-aware `title` metadata across storefront, catalog, cart, checkout, account, and seller routes, and updated `docs/theme-style-audit.md`.
+
+### Verification
+
+- `docker run --rm -v "${PWD}/frontend:/workspace" -w /workspace node:24.21.0-alpine npm run check:architecture` passed (`Angular feature boundaries are valid.`).
+- `docker build -t unikly-web-test ./frontend` passed.
+- `docker compose build api` passed.
+- Full Java 25 Maven test suite in `maven:3.9.16-eclipse-temurin-25` passed (`Tests run: 29, Failures: 0, Errors: 0, Skipped: 0`).
+
+## 2026-10-20 — Fix storefront production build typing
+
+### Frontend
+
+- Excluded server-owned `emailVerified` from profile update input and used an empty fragment when removing email action tokens from the URL.
+
+### Verification
+
+- `docker build -t unikly-web-test ./frontend` passed.
+
+## 2026-10-20 — Fix API image test compilation
+
+### Build
+
+- Removed the identity authorization test's direct Jackson `ObjectMapper` use; the test compares the full password-recovery response while its existing JSON-path checks verify the message.
+
+### Verification
+
+- `docker compose build api` passed, including test-source compilation.
+- The focused identity authorization test was attempted in the Java 25 Maven container, but Maven Central terminated several artifact downloads early.
+
 ## 2026-10-20 — Sprint 1 scope: first impression and account access
 
 ### Product plan

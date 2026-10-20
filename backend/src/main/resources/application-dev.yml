@@ -2,11 +2,11 @@ unikly:
   dev-users:
     enabled: ${UNIKLY_SEED_DEV_USERS:false}
     customer:
-      email: ${DEV_CUSTOMER_EMAIL:customer@unikly.local}
+      email: ${DEV_CUSTOMER_EMAIL:customer@unikly.com}
       password: ${DEV_CUSTOMER_PASSWORD:}
     admin:
-      email: ${DEV_ADMIN_EMAIL:admin@unikly.local}
+      email: ${DEV_ADMIN_EMAIL:admin@unikly.com}
       password: ${DEV_ADMIN_PASSWORD:}
     seller:
-      email: ${DEV_SELLER_EMAIL:seller@unikly.local}
+      email: ${DEV_SELLER_EMAIL:seller@unikly.com}
       password: ${DEV_SELLER_PASSWORD:}

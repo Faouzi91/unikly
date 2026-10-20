@@ -81,7 +81,7 @@ Status legend: **Implemented** = current source has the capability; **Partial** 
 
 - **FR-ID-01 — Partial:** A person can register and authenticate as a buyer or seller; public requests cannot grant administrator rights.
 - **FR-ID-02 — Partial:** Users can end their session and manage their own account/profile data; sensitive actions require server-side authentication and permission checks.
-- **FR-ID-03 — Open:** Registration email verification and account recovery must use verified, rate-limited, non-enumerating flows before a public launch. Recovery must safely invalidate or revoke existing sessions.
+- **FR-ID-03 — Partial:** Registration now requires email verification before login; verification and recovery tokens are hashed at rest, single-use, time-limited, and delivered through a local SMTP sink. Recovery requests are non-enumerating and rate-limited, and a successful reset revokes sessions on the current application instance. A production sender, shared rate limiting, and operational delivery/configuration evidence remain launch gates.
 - **FR-ID-04 — Open:** Before a seller publishes public offers, onboarding records an approval state and permissioned review. This minimum approval is required for public seller onboarding; deeper verification and payout evidence are defined by the launch market, and payout data is collected only for an approved payout flow.
 - **FR-ID-05 — Partial:** Role-to-operation behavior must remain documented and tested against the authorization matrix; account suspension and operator provisioning need a controlled workflow. Operators cannot grant themselves privileges, and suspension must block access immediately and revoke or invalidate existing sessions.
 

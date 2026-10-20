@@ -27,15 +27,15 @@ These decisions do not block reversible improvements such as search correctness,
 
 ## Delivery sequence
 
-Statuses: **Done** requires acceptance and required verification evidence in the issue/PR, a changelog entry, and a pushed topic-branch commit. **Accepted (commit/push pending)** means acceptance and checks are complete but the requested Git handoff is unfinished. **Ready** means scoped and can be started; **Blocked** means a named decision/dependency is missing; **Planned** means sequenced but not yet fully refined. Do not infer completion from source presence alone.
+Statuses: **Done** requires acceptance and required verification evidence in the issue/PR, a changelog entry, and a pushed topic-branch commit. **Accepted (commit/push pending)** means acceptance and checks are complete but the requested Git handoff is unfinished. **In progress** means implementation is underway and acceptance evidence is incomplete. **Ready** means scoped and can be started; **Blocked** means a named decision/dependency is missing; **Planned** means sequenced but not yet fully refined. Do not infer completion from source presence alone.
 
 | ID | Increment | Status | SRS | Exit evidence |
 | --- | --- | --- | --- | --- |
 | M0 | Reconcile product truth, create a shared SRS/roadmap, and synchronize agent instructions | Done | All | Documentation references agree; requirement status separates code presence from release proof; diff/link review recorded in this changelog and pushed on the topic branch. |
 | M1 | Record first customer/seller wedge, launch market, and delivery promise | Blocked on product decisions | §1, §4, FR-DEL-01 | Signed decision record identifies segment, region, category, currency candidate, policy owner, and an evidence-backed reason for buyers and sellers to choose Unikly over the relevant alternatives. |
-| M2 | Remove or rewrite unsupported storefront delivery, returns, and payment claims | Ready | FR-DEL-01, FR-PAY-01 | Each displayed promise is backed by an implemented flow and published policy; demo checkout clearly explains whether it collects payment. |
+| M2 | Remove or rewrite unsupported storefront delivery, returns, and payment claims | In progress | FR-DEL-01, FR-PAY-01 | Each displayed promise is backed by an implemented flow and published policy; demo checkout clearly explains whether it collects payment. |
 | M3 | Restrict reviews to the agreed completed-purchase state | Ready | FR-REV-01 | Placed/processing/canceled orders cannot qualify; the agreed completed state can; the verified marker matches the rule. |
-| M4 | Identify seeded/demo listings and seller provenance | Ready | FR-CAT-01, FR-CAT-02 | Every fixture shown in a public environment is visibly demo content or attributed to a real seller; no offer implies false verification. |
+| M4 | Identify seeded/demo listings and seller provenance | In progress | FR-CAT-01, FR-CAT-02 | Every fixture shown in a public environment is visibly demo content or attributed to a real seller; no offer implies false verification. |
 | M5 | Minimize buyer contact data visible in seller order views | Ready | NFR-PRIV-02 | Seller sees recipient name/address for own lines, no buyer email by default, and phone only if the approved delivery method needs it. Case-scoped support access is delivered and audited in M17. |
 | M6 | Add seller store profiles and buyer-visible seller identity | Planned | FR-CAT-05 | Seller can update own public profile; buyer can view it; private seller data remains protected. |
 | M7 | Add listing draft/publish/archive lifecycle | Planned | FR-CAT-02 | Sellers can transition their own offers; public browse shows only published listings; order history remains readable after archive. |
@@ -45,7 +45,7 @@ Statuses: **Done** requires acceptance and required verification evidence in the
 | M11 | Validate product media and provide reliable image behavior | Planned | FR-CAT-04 | Invalid/unavailable media fails safely; upload/source rules, file constraints, fallback, and authorization are verified. |
 | M12 | Make order creation retry-safe | Planned | FR-ORDER-02, NFR-REL-01 | Replaying one request returns the original order and one stock decrement; a distinct request can place a separate order. |
 | M13 | Decide and store one launch currency consistently | Blocked on M1 | FR-ORDER-04 | Approved ISO currency is carried through product/order/delivery amounts and formatting; incompatible amounts cannot be combined. |
-| M14 | Add verified registration email and account recovery | Planned | FR-ID-03 | Registration requires email proof before the account is treated as verified. Recovery is rate-limited, non-enumerating, and safely invalidates/revokes sessions. |
+| M14 | Add verified registration email and account recovery | In progress | FR-ID-03 | Registration requires email proof before the account is treated as verified. Recovery is rate-limited, non-enumerating, and safely invalidates/revokes sessions. |
 | M15 | Add seller verification and controlled onboarding state | Planned | FR-ID-04 | Seller status is visible to the seller and authorized operators; verification/payout evidence is private and access-audited. Seller publication is denied until the required approval state is reached. |
 | M16 | Add permissioned operator account lifecycle controls | Planned | FR-ID-05, FR-ADMIN-01 | Only authorized operators can provision, suspend, and reactivate accounts under policy; operators cannot grant themselves privileges. Actor, target, reason, and time are audited; suspension immediately blocks access and revokes or invalidates existing sessions. |
 | M17 | Add permissioned support cases for order/listing problems | Planned | FR-ORDER-05, FR-SUP-01, FR-ADMIN-01, NFR-PRIV-02 | Customer can report an issue and see status; support resolves it under least privilege. Additional buyer contact data is available only within an authorized case and every access/action is audited. This slice does not execute a monetary refund. |
@@ -64,7 +64,7 @@ Statuses: **Done** requires acceptance and required verification evidence in the
 
 ## Sprint 1 — First impression and account access
 
-**Status:** Planned; scope agreed, implementation not started.
+**Status:** In progress; implementation is underway on a feature branch.
 **Scope:** Shared header and footer, landing page, registration, login, and password recovery.
 **Roadmap links:** M1 (positioning and market decisions), M2 (truthful storefront promises), M4 (demo listing provenance), M14 (email verification and account recovery), and theme audit T1–T4.
 

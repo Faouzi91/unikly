@@ -8,6 +8,7 @@ export interface StoreProduct {
   reviews: number;
   image: string;
   stockQuantity: number;
+  isDemo: boolean;
   badge?: string;
   sellerId?: number;
 }
@@ -20,10 +21,10 @@ export const SAMPLE_PRODUCTS: StoreProduct[] = [
     category: 'Home',
     price: 34.95,
     stockQuantity: 18,
-    rating: 4.7,
-    reviews: 284,
+    rating: 0,
+    reviews: 0,
+    isDemo: true,
     image: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=720&q=85',
-    badge: 'Bestseller',
   },
   {
     id: 'table-lamp',
@@ -32,8 +33,9 @@ export const SAMPLE_PRODUCTS: StoreProduct[] = [
     category: 'Home',
     price: 48,
     stockQuantity: 12,
-    rating: 4.6,
-    reviews: 163,
+    rating: 0,
+    reviews: 0,
+    isDemo: true,
     image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=720&q=85',
   },
   {
@@ -43,10 +45,10 @@ export const SAMPLE_PRODUCTS: StoreProduct[] = [
     category: 'Electronics',
     price: 89.99,
     stockQuantity: 7,
-    rating: 4.5,
-    reviews: 512,
+    rating: 0,
+    reviews: 0,
+    isDemo: true,
     image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=720&q=85',
-    badge: 'Popular',
   },
   {
     id: 'coffee-set',
@@ -55,8 +57,9 @@ export const SAMPLE_PRODUCTS: StoreProduct[] = [
     category: 'Kitchen',
     price: 26.5,
     stockQuantity: 24,
-    rating: 4.8,
-    reviews: 97,
+    rating: 0,
+    reviews: 0,
+    isDemo: true,
     image: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?auto=format&fit=crop&w=720&q=85',
   },
   {
@@ -66,8 +69,9 @@ export const SAMPLE_PRODUCTS: StoreProduct[] = [
     category: 'Outdoor',
     price: 42,
     stockQuantity: 0,
-    rating: 4.4,
-    reviews: 221,
+    rating: 0,
+    reviews: 0,
+    isDemo: true,
     image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=720&q=85',
   },
   {
@@ -77,8 +81,9 @@ export const SAMPLE_PRODUCTS: StoreProduct[] = [
     category: 'Kitchen',
     price: 31.75,
     stockQuantity: 9,
-    rating: 4.7,
-    reviews: 138,
+    rating: 0,
+    reviews: 0,
+    isDemo: true,
     image: 'https://images.unsplash.com/photo-1603199506016-b9a594b593c0?auto=format&fit=crop&w=720&q=85',
   },
   {
@@ -88,8 +93,9 @@ export const SAMPLE_PRODUCTS: StoreProduct[] = [
     category: 'Home',
     price: 22.99,
     stockQuantity: 4,
-    rating: 4.3,
-    reviews: 84,
+    rating: 0,
+    reviews: 0,
+    isDemo: true,
     image: 'https://images.unsplash.com/photo-1494438639946-1ebd1d20bf85?auto=format&fit=crop&w=720&q=85',
   },
   {
@@ -99,8 +105,9 @@ export const SAMPLE_PRODUCTS: StoreProduct[] = [
     category: 'Outdoor',
     price: 19.95,
     stockQuantity: 15,
-    rating: 4.6,
-    reviews: 349,
+    rating: 0,
+    reviews: 0,
+    isDemo: true,
     image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=720&q=85',
   },
 ];

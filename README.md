@@ -5,6 +5,8 @@ Unikly is an e-commerce marketplace foundation with buyer and seller accounts, p
 ## Current authentication slice
 
 - Email and password registration, login, logout, and password change.
+- Registration accounts remain disabled until the user confirms the time-limited verification link. Password recovery uses a single-use link and ends active sessions after a successful reset.
+- The local Compose stack captures verification and recovery email in Mailpit at <http://localhost:8025>; this sink is for development only. Production email delivery and shared rate limiting still require deployment configuration and operational review.
 - Public registration lets people choose Buyer or Seller accounts; the API accepts only those two choices and never allows a public request to assign Admin.
 - Argon2 password hashes; the application never stores plaintext passwords.
 - Server-side sessions in HttpOnly, SameSite=Strict cookies; no bearer tokens in browser storage.
@@ -29,7 +31,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Open <http://localhost:4200>. Browse/search products, add items to the basket, create a buyer or seller account, place an order, and manage profile/security settings. PostgreSQL is exposed only on localhost at port 5432 by default. If that port is already in use, set `DATABASE_HOST_PORT` (for example, to `5433`) in `.env`. The API is exposed on port 8080 by default; set `API_HOST_PORT` to another free port if needed. `.env` is ignored by Git; never commit it or use its local values in a public deployment.
+Open <http://localhost:4200>. Browse/search products, add items to the basket, create a buyer or seller account, and confirm the message captured in Mailpit at <http://localhost:8025> before signing in. Recovery messages are captured there too. The demo checkout does not collect payment. PostgreSQL is exposed only on localhost at port 5432 by default. If that port is already in use, set `DATABASE_HOST_PORT` (for example, to `5433`) in `.env`. The API is exposed on port 8080 by default; set `API_HOST_PORT` to another free port if needed. `.env` is ignored by Git; never commit it or use its local values in a public deployment.
 
 The development account seeder is disabled by default. To enable it, set `UNIKLY_SEED_DEV_USERS=true` and provide non-empty, local-only values for `DEV_CUSTOMER_PASSWORD`, `DEV_ADMIN_PASSWORD`, and `DEV_SELLER_PASSWORD` in `.env`. The account emails can also be changed there. Configured accounts are reset to their configured roles and passwords each time the development API starts. Do not publish `.env` or enable development seeding on a public deployment.
 
@@ -66,6 +68,8 @@ Project reviewers are defined in .gemini/agents/ and limited to read-only file/s
 
 - `GET /api/auth/csrf`: initialize/read the CSRF token before a state-changing request.
 - `POST /api/auth/register`: `{ "email", "password", "displayName", "accountType": "BUYER" | "SELLER" }`; Admin is never assignable through public registration.
+- `POST /api/auth/verification/request` and `/api/auth/verification/confirm`: request a verification message or confirm its single-use token.
+- `POST /api/auth/password-recovery/request` and `/api/auth/password-recovery/confirm`: request a reset message or set a new password with its single-use token.
 - `POST /api/auth/login`: `{ "email", "password" }`.
 - `POST /api/auth/logout`: invalidates the current session. Include the `X-XSRF-TOKEN` header.
 - `GET /api/auth/me`: current authenticated account.
@@ -77,4 +81,4 @@ Project reviewers are defined in .gemini/agents/ and limited to read-only file/s
 - `GET /api/admin/access-check`: example admin-only route.
 - `GET /actuator/health`: health probe.
 
-For production deployment, terminate TLS, set `SESSION_COOKIE_SECURE=true`, replace local database credentials with managed secrets, configure rate limiting and email-based verification/password recovery, and review security settings before opening registration to the public.
+For production deployment, terminate TLS, set `SESSION_COOKIE_SECURE=true`, replace local database credentials with managed secrets, use a production email sender and shared rate limiter, and review security settings before opening registration to the public. The current in-memory request limiter and Mailpit sink are single-instance development implementations.

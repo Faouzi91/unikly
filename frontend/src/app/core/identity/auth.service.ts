@@ -7,10 +7,14 @@ export interface AuthUser {
   email: string;
   displayName: string;
   role: 'BUYER' | 'SELLER' | 'ADMIN';
+  emailVerified: boolean;
   permissions: string[];
 }
 
-export interface CustomerProfile extends AuthUser {
+export interface CustomerProfile {
+  id: number;
+  email: string;
+  displayName: string;
   phoneNumber: string | null;
   addressLine1: string | null;
   addressLine2: string | null;
@@ -39,7 +43,27 @@ export class AuthService {
     accountType: 'BUYER' | 'SELLER';
   }): Promise<void> {
     await this.prepareCsrf();
-    await firstValueFrom(this.http.post<AuthUser>('/api/auth/register', details));
+    await firstValueFrom(this.http.post<void>('/api/auth/register', details));
+  }
+
+  async requestEmailVerification(email: string): Promise<void> {
+    await this.prepareCsrf();
+    await firstValueFrom(this.http.post('/api/auth/verification/request', { email }));
+  }
+
+  async confirmEmailVerification(token: string): Promise<void> {
+    await this.prepareCsrf();
+    await firstValueFrom(this.http.post('/api/auth/verification/confirm', { token }));
+  }
+
+  async requestPasswordReset(email: string): Promise<void> {
+    await this.prepareCsrf();
+    await firstValueFrom(this.http.post('/api/auth/password-recovery/request', { email }));
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    await this.prepareCsrf();
+    await firstValueFrom(this.http.post('/api/auth/password-recovery/confirm', { token, newPassword }));
   }
 
   async login(credentials: { email: string; password: string }): Promise<void> {
@@ -68,7 +92,7 @@ export class AuthService {
   }
 
   async updateProfile(
-    profile: Omit<CustomerProfile, 'id' | 'email' | 'role' | 'permissions'>,
+    profile: Omit<CustomerProfile, 'id' | 'email' | 'emailVerified' | 'role' | 'permissions'>,
   ): Promise<CustomerProfile> {
     const result = await firstValueFrom(this.http.put<CustomerProfile>('/api/profile/me', profile));
     const current = this.user();

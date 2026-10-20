@@ -50,14 +50,7 @@ export class ProductCatalogService {
         rating: ratingsById.get(product.id)?.rating ?? 0,
         reviews: ratingsById.get(product.id)?.reviews ?? 0,
       }));
-      const remoteById = new Map(ratedProducts.map((product) => [product.id, product]));
-      const mergedSamples = SAMPLE_PRODUCTS.map((sample) => {
-        const persisted = remoteById.get(sample.id);
-        if (!persisted) return sample;
-        remoteById.delete(sample.id);
-        return { ...sample, ...persisted, badge: sample.badge };
-      });
-      this.productsState.set([...mergedSamples, ...remoteById.values()]);
+      this.productsState.set(ratedProducts.length > 0 ? ratedProducts : [...SAMPLE_PRODUCTS]);
       await this.migrateCurrentSellersLocalProducts();
     } catch {
       // Keep sample products available when the API is offline.

@@ -1,46 +1,73 @@
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
 <header class="site-header">
-  <a class="brand" routerLink="/" aria-label="Unikly home"><img src="/unikly_logo_no_bg.svg" alt="" width="29" height="36"></a>
+  <a class="brand" routerLink="/" aria-label="Unikly home">
+    <img src="/unikly_logo_no_bg.svg" alt="" width="29" height="36">
+    <span>Unikly</span>
+  </a>
+
   <form class="header-search" role="search" (ngSubmit)="search()">
-    <label class="visually-hidden" for="site-search">Search Unikly</label>
-    <input id="site-search" name="search" type="search" placeholder="Search Unikly" [(ngModel)]="searchTerm">
-    <button type="submit" aria-label="Search products"><svg lucideSearch [size]="21" [strokeWidth]="2" aria-hidden="true"></svg></button>
+    <label class="visually-hidden" for="site-search">Search products</label>
+    <input id="site-search" name="search" type="search" placeholder="Search products" [(ngModel)]="searchTerm">
+    <button type="submit" aria-label="Search products">
+      <svg lucideSearch [size]="20" [strokeWidth]="2" aria-hidden="true"></svg>
+    </button>
   </form>
-  <nav class="header-actions" aria-label="Account navigation">
+
+  <nav class="header-actions" aria-label="Account and basket">
     @if (auth.isAuthenticated()) {
       <a class="account-action" routerLink="/account">
-        <svg lucideUser [size]="25" [strokeWidth]="1.7" aria-hidden="true"></svg>
+        <svg lucideUser [size]="22" [strokeWidth]="1.8" aria-hidden="true"></svg>
         <span class="action-copy"><small>Hello, {{ auth.user()?.displayName }}</small><strong>Account</strong></span>
       </a>
       <button class="sign-out-action" type="button" (click)="signOut()">Sign out</button>
     } @else {
       <a class="account-action" routerLink="/login">
-        <svg lucideUser [size]="25" [strokeWidth]="1.7" aria-hidden="true"></svg>
-        <span class="action-copy"><small>Sign in</small><strong>Account</strong></span>
+        <svg lucideUser [size]="22" [strokeWidth]="1.8" aria-hidden="true"></svg>
+        <span class="action-copy"><small>Welcome</small><strong>Sign in</strong></span>
       </a>
     }
-    <a class="basket-link" routerLink="/basket" [attr.aria-label]="'Basket (' + cart.itemCount() + ')'">
-      <svg lucideShoppingCart [size]="23" [strokeWidth]="1.7" aria-hidden="true"></svg>
-      <span>{{ cart.itemCount() }}</span>
+    <a class="basket-link" routerLink="/basket" [attr.aria-label]="'Basket, ' + cart.itemCount() + ' items'">
+      <svg lucideShoppingCart [size]="22" [strokeWidth]="1.8" aria-hidden="true"></svg>
+      <span class="basket-count" aria-hidden="true">{{ cart.itemCount() }}</span>
     </a>
   </nav>
 </header>
+
 <nav class="secondary-nav" aria-label="Shop navigation">
   <div class="secondary-nav-inner">
     <a routerLink="/" fragment="shop">Shop</a>
     <a routerLink="/basket">Basket</a>
     @if (auth.user()?.role === 'BUYER') { <a routerLink="/orders">Your orders</a> }
-    @if (auth.user()?.role === 'SELLER') { <a routerLink="/seller/orders">Seller orders</a><a routerLink="/seller/products">My products</a><a routerLink="/seller/products/new">Sell a product</a> }
-    @if (auth.isAuthenticated()) { <a routerLink="/account">Your account</a> } @else { <a routerLink="/login">Sign in</a> }
+    @if (auth.user()?.role === 'SELLER') {
+      <a routerLink="/seller/orders">Seller orders</a>
+      <a routerLink="/seller/products">My products</a>
+      <a routerLink="/seller/products/new">Sell a product</a>
+    }
+    @if (auth.isAuthenticated()) { <a routerLink="/account">Your account</a> }
+    @else { <a routerLink="/register">Create account</a> }
   </div>
 </nav>
-<router-outlet />
+
+<div id="main-content" class="route-content" tabindex="-1">
+  <router-outlet />
+</div>
+
 <footer class="site-footer">
   <div class="footer-inner">
-    <div><a class="footer-brand" routerLink="/">Unikly</a><p>Thoughtful finds for everyday living.</p></div>
+    <div class="footer-intro">
+      <a class="footer-brand" routerLink="/">Unikly</a>
+      <p>Browse useful things and see the details before you order.</p>
+    </div>
     <nav aria-label="Footer navigation">
-      <a routerLink="/" fragment="shop">Shop</a><a routerLink="/basket">Basket</a>
-      @if (auth.isAuthenticated()) { <a routerLink="/account">Your account</a> } @else { <a routerLink="/login">Sign in</a> }
+      <a routerLink="/" fragment="shop">Shop products</a>
+      <a routerLink="/basket">Your basket</a>
+      @if (auth.isAuthenticated()) { <a routerLink="/account">Your account</a> }
+      @else {
+        <a routerLink="/login">Sign in</a>
+        <a routerLink="/register">Create account</a>
+      }
     </nav>
-    <small>Secure account access - {{ currentYear }} Unikly</small>
+    <small>© {{ currentYear }} Unikly · Demo marketplace · Orders do not collect payment.</small>
   </div>
 </footer>

@@ -26,4 +26,15 @@ describe('HomePage product search', () => {
 
     expect(page.filteredProducts().map((product) => product.id)).toEqual(['coffee-set']);
   });
+
+  it('reports the visible product count for each category', () => {
+    const fixture = TestBed.createComponent(HomePage);
+    const page = fixture.componentInstance;
+
+    expect(page.categoryCount('All')).toBe(8);
+    expect(page.categoryCount('Home')).toBe(3);
+
+    page.activeCategory.set('Home');
+    expect(page.resultCount()).toBe(3);
+  });
 });

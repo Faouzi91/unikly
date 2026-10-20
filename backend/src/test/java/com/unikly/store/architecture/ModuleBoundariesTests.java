@@ -13,7 +13,8 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 class ModuleBoundariesTests {
     private static final List<String> BUSINESS_MODULES = List.of(
             "identity", "catalog", "cart", "orders", "profile", "reviews");
-    private static final List<String> INTERNAL_PACKAGES = List.of("api", "domain", "persistence", "security");
+    private static final List<String> INTERNAL_PACKAGES =
+            List.of("api", "domain", "persistence", "security", "infrastructure");
 
     @Test
     void businessModulesUseOtherModulesThroughApplicationContracts() {

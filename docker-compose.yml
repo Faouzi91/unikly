@@ -15,6 +15,12 @@ services:
       timeout: 3s
       retries: 20
 
+  mailpit:
+    image: axllent/mailpit:v1.31.5
+    ports:
+      - "127.0.0.1:${MAILPIT_UI_HOST_PORT:-8025}:8025"
+      - "127.0.0.1:${MAILPIT_SMTP_HOST_PORT:-1025}:1025"
+
   api:
     build:
       context: ./backend
@@ -22,21 +28,31 @@ services:
       SERVER_ADDRESS: 0.0.0.0
       SPRING_PROFILES_ACTIVE: dev
       UNIKLY_SEED_DEV_USERS: ${UNIKLY_SEED_DEV_USERS:-false}
-      DEV_CUSTOMER_EMAIL: ${DEV_CUSTOMER_EMAIL:-customer@unikly.local}
+      DEV_CUSTOMER_EMAIL: ${DEV_CUSTOMER_EMAIL:-customer@unikly.com}
       DEV_CUSTOMER_PASSWORD: ${DEV_CUSTOMER_PASSWORD:-}
-      DEV_ADMIN_EMAIL: ${DEV_ADMIN_EMAIL:-admin@unikly.local}
+      DEV_ADMIN_EMAIL: ${DEV_ADMIN_EMAIL:-admin@unikly.com}
       DEV_ADMIN_PASSWORD: ${DEV_ADMIN_PASSWORD:-}
-      DEV_SELLER_EMAIL: ${DEV_SELLER_EMAIL:-seller@unikly.local}
+      DEV_SELLER_EMAIL: ${DEV_SELLER_EMAIL:-seller@unikly.com}
       DEV_SELLER_PASSWORD: ${DEV_SELLER_PASSWORD:-}
       DATABASE_URL: jdbc:postgresql://database:5432/unikly
       DATABASE_USERNAME: ${DATABASE_USERNAME:-unikly_dev}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD in your ignored .env file}
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-false}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@unikly.com}
+      UNIKLY_PUBLIC_BASE_URL: ${UNIKLY_PUBLIC_BASE_URL:-http://localhost:4200}
       SESSION_COOKIE_SECURE: "false"
     ports:
       - "127.0.0.1:${API_HOST_PORT:-8080}:8080"
     depends_on:
       database:
         condition: service_healthy
+      mailpit:
+        condition: service_started
 
   web:
     build:

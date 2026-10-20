@@ -55,22 +55,22 @@ class DevelopmentUserSeederTests {
 
     @Test
     void seedsDevelopmentAccountsWithEncodedPasswordsAndAllowsLogin() throws Exception {
-        assertSeededLogin("customer@unikly.local", CUSTOMER_PASSWORD, StoreRole.BUYER);
-        assertSeededLogin("admin@unikly.local", ADMIN_PASSWORD, StoreRole.ADMIN);
-        assertSeededLogin("seller@unikly.local", SELLER_PASSWORD, StoreRole.SELLER);
+        assertSeededLogin("customer@unikly.com", CUSTOMER_PASSWORD, StoreRole.BUYER);
+        assertSeededLogin("admin@unikly.com", ADMIN_PASSWORD, StoreRole.ADMIN);
+        assertSeededLogin("seller@unikly.com", SELLER_PASSWORD, StoreRole.SELLER);
     }
 
 
     @Test
     void repairsAnExistingDevelopmentAccountToConfiguredRoleAndPassword() throws Exception {
-        var seller = users.findByEmail("seller@unikly.local").orElseThrow();
+        var seller = users.findByEmail("seller@unikly.com").orElseThrow();
         seller.updatePasswordHash(passwords.encode("IncorrectOldPassword123!"));
         seller.updateRole(StoreRole.BUYER);
         users.save(seller);
 
         developmentSeeder.run(new DefaultApplicationArguments(new String[0]));
 
-        assertSeededLogin("seller@unikly.local", SELLER_PASSWORD, StoreRole.SELLER);
+        assertSeededLogin("seller@unikly.com", SELLER_PASSWORD, StoreRole.SELLER);
     }
 
     private static String testPassword() {

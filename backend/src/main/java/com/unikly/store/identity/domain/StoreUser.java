@@ -31,6 +31,9 @@ public class StoreUser {
     @Column(nullable = false, length = 20)
     private StoreRole role;
 
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -38,11 +41,20 @@ public class StoreUser {
     }
 
     public StoreUser(String email, String passwordHash, String displayName, StoreRole role) {
+        this(email, passwordHash, displayName, role, true);
+    }
+
+    public StoreUser(String email, String passwordHash, String displayName, StoreRole role, boolean emailVerified) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.displayName = displayName;
         this.role = role;
+        this.emailVerified = emailVerified;
         this.createdAt = Instant.now();
+    }
+
+    public static StoreUser unverified(String email, String passwordHash, String displayName, StoreRole role) {
+        return new StoreUser(email, passwordHash, displayName, role, false);
     }
 
     public Long getId() {
@@ -65,6 +77,10 @@ public class StoreUser {
         return role;
     }
 
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -79,5 +95,9 @@ public class StoreUser {
 
     public void updateRole(StoreRole role) {
         this.role = role;
+    }
+
+    public void verifyEmail() {
+        this.emailVerified = true;
     }
 }
