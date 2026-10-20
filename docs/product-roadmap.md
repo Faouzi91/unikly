@@ -31,7 +31,7 @@ Statuses: **Done** requires acceptance and required verification evidence in the
 
 | ID | Increment | Status | SRS | Exit evidence |
 | --- | --- | --- | --- | --- |
-| M0 | Reconcile product truth, create a shared SRS/roadmap, and synchronize agent instructions | Accepted (commit/push pending) | All | Documentation references agree; requirement status separates code presence from release proof; diff/link review recorded in this changelog. |
+| M0 | Reconcile product truth, create a shared SRS/roadmap, and synchronize agent instructions | Done | All | Documentation references agree; requirement status separates code presence from release proof; diff/link review recorded in this changelog and pushed on the topic branch. |
 | M1 | Record first customer/seller wedge, launch market, and delivery promise | Blocked on product decisions | §1, §4, FR-DEL-01 | Signed decision record identifies segment, region, category, currency candidate, and policy owner. |
 | M2 | Remove or rewrite unsupported storefront delivery, returns, and payment claims | Ready | FR-DEL-01, FR-PAY-01 | Each displayed promise is backed by an implemented flow and published policy; demo checkout clearly explains whether it collects payment. |
 | M3 | Restrict reviews to the agreed completed-purchase state | Ready | FR-REV-01 | Placed/processing/canceled orders cannot qualify; the agreed completed state can; the verified marker matches the rule. |

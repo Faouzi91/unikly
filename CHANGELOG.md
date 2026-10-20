@@ -19,6 +19,7 @@ Progress notes for the Unikly project. Payment collection and carrier integratio
 ### Verification
 
 - Documentation link targets, requirement/milestone cross-references, status consistency, and final diff were reviewed; no application build or live-stack run was needed for this documentation-only increment.
+- M0 was pushed as `b1e001e` on `docs/gemini-ecc-workflow`; the separate production and Compose smoke gates remain open in `docs/release-readiness.md`.
 
 ## 2026-10-20 — Enforced module boundaries and delivery tracking
 
