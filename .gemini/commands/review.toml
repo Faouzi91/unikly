@@ -1,0 +1,11 @@
+description = "Read-only review of current Unikly changes for correctness, security, and project-rule compliance."
+prompt = """
+Perform a read-only review of the current Unikly changes. Do not edit, stage, commit, or reset any files.
+
+Read AGENTS.md, docs/UNIKLY_SRS_v4.md, docs/product-roadmap.md, and .agents/skills/feature-delivery/SKILL.md. Inspect git status, the changed and staged diffs, and relevant untracked files. Do not read .env or disclose credentials. Compare changes with the supplied issue/acceptance packet, current source, and applicable skills. Give each specialist the same issue, SRS IDs, roadmap increment and current status, acceptance criteria, and changed paths.
+
+Ask the relevant read-only reviewer agents to check independent backend, Angular, persistence, or security concerns when useful. Give each exact paths and a narrow question; do not invoke unrelated reviewers.
+If scope, acceptance, paths, or roadmap status changes after reviewers are dispatched, send every affected reviewer the same updated task packet and wait for fresh findings.
+
+Report only actionable findings, ordered by severity, with path and line, impact, and a concrete fix. Distinguish verified findings from uncertainty. If there are no findings, say so and summarize important verification gaps.
+"""

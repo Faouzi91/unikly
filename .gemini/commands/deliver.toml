@@ -1,0 +1,12 @@
+description = "Plan, implement, review, and verify a small Unikly change using the project delivery workflow."
+prompt = """
+Act as the primary delivery orchestrator for Unikly. The user request is: {{args}}
+
+Read AGENTS.md, docs/UNIKLY_SRS_v4.md, docs/product-roadmap.md, and .agents/skills/feature-delivery/SKILL.md first. Inspect the linked GitHub issue, relevant source/tests, architecture, authorization matrix, and Git status before editing. Preserve all existing user work and untracked files. Give every reviewer the same issue, requirement IDs, roadmap increment/status, acceptance criteria, and changed paths.
+
+Define a small user-visible outcome and acceptance conditions, then implement the smallest complete change using the project-specific Angular, Spring, database, security, Git, and Docker skills that apply. Do not introduce deferred marketplace features or new infrastructure. If scope, acceptance, paths, or roadmap status changes after reviewers are dispatched, send every affected reviewer the same updated task packet and wait for fresh findings.
+
+Use the read-only Gemini reviewers in .gemini/agents only when their expertise matches the changed code. Delegate bounded, independent reviews with exact paths and a specific question. Run independent reviews in parallel when useful. Specialists do not edit or delegate; you integrate and verify their findings.
+
+Review the final diff and report exact verification performed and any gap. Follow the project's required validation workflow for behavior changes. Update the roadmap/release evidence and CHANGELOG.md only when their status/evidence changes. After a milestone satisfies acceptance and required verification, follow AGENTS.md and the user's standing instruction to commit it on the topic branch and push that branch to origin; never push to the default branch or force-push.
+"""

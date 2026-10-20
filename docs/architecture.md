@@ -1,59 +1,51 @@
-# Application Architecture
+# Application architecture
+
+## Product boundary
+
+Unikly is an e-commerce storefront. The current application supports public catalog browsing, buyer and seller accounts, a cart, checkout and orders, profile management, seller fulfillment, and product reviews. Payment collection and carrier integrations are outside the current implementation.
+
+The current product requirements and capability status are in [UNIKLY_SRS_v4.md](UNIKLY_SRS_v4.md), sequenced in the [implementation roadmap](product-roadmap.md). The v3/v2 SRS files and onboarding guide are historical snapshots, including the superseded freelance-services marketplace direction.
 
 ## Backend: modular monolith
 
-The API remains one Spring Boot deployable. Code is organized by business capability, with infrastructure concerns kept separate:
+The backend is one Spring Boot application. Business capabilities are modules under backend/src/main/java/com/unikly/store/:
 
-```text
-backend/src/main/java/com/unikly/store/
-  UniklyApplication.java
-  identity/
-    api/                    # Auth endpoints, request/response types, module error mapping
-    domain/                 # StoreUser, StoreRole, StorePermission
-    persistence/            # Identity repositories and persistence adapters
-    security/               # UserDetails adapter for Spring Security
-  platform/security/        # Cross-cutting HTTP security configuration
-```
+- identity: registration, session authentication, account permissions, and security integration.
+- catalog: product listing, seller-owned inventory, and catalog API.
+- cart: persistent customer cart and cart API.
+- orders: order creation, buyer order history, cancellation, delivery confirmation, and seller fulfillment.
+- profile: the authenticated customer's contact and delivery profile.
+- reviews: product reviews, verified-purchase checks, and moderation endpoints.
+- platform: cross-cutting HTTP and security configuration.
 
-Only implemented modules should have source packages. Do not create empty placeholder packages. A module owns its domain model, application/use-case services, persistence adapters and API endpoints. Cross-module work goes through a public application service or explicit event, not another module's repositories or internal entities. Keep Spring configuration out of domain packages. `UniklyApplication` stays above the modules so component scanning covers the modular monolith.
+Modules use the API, application, domain, and persistence layers where needed. identity also contains its Spring Security user-details adapter. Keep infrastructure configuration in platform, not in business domains.
 
-When product features are implemented, add `catalog`, `cart`, `ordering`, and `reviews` modules using the same API/application/domain/persistence layering where each layer is needed; do not create empty placeholder packages in advance.
+A module owns its entities, repositories, and use cases. Cross-module operations use the owning module's public application service and exchange immutable application records; business modules must not couple through another module's repositories or internal entities. `platform` is the technical composition module: `platform.security` may reference identity security primitives, while `platform.bootstrap` may access module persistence only for dev-profile fixture seeding. Neither exception may implement customer business flows. Add only packages that have working code. Do not create future modules in advance.
 
-The test tree mirrors production modules under `backend/src/test/java/com/unikly/store/identity`. Database migrations are versioned under `backend/src/main/resources/db/migration`.
+`ModuleBoundariesTests` verifies that business modules do not import another module's `api/`, `domain/`, `persistence/`, or `security/` packages and that application modules remain acyclic.
 
-## Frontend: feature areas
+Flyway migrations are in backend/src/main/resources/db/migration/. Backend tests mirror the business modules under backend/src/test/java/com/unikly/store/.
 
-```text
-frontend/src/
-  main.ts
-  styles.css
-  app/
-    app.ts                 # Composition shell only
-    app.routes.ts          # Lazy feature route entry points
-    app.config.ts          # Global providers/initializers
-    core/                  # Cross-feature singleton infrastructure
-      identity/            # Session state and route guards
-    features/
-      identity/            # Sign-in and registration workflows
-        pages/auth-page/    # Colocated template and styles
-        identity.routes.ts  # Feature-owned route definitions
-        public-api.ts       # Only route surface consumed by app router
-      account/             # Current user's account view
-        pages/account-page/ # Colocated page, template, and styles
-        account.routes.ts
-        public-api.ts
-      home/                # Public storefront landing and sample product browsing
-    core/cart/             # Browser-local demo basket; replace with cart API in commerce phase
-  public/
-```
+## Frontend: standalone Angular features
 
-Feature routes and pages are lazy loaded. A feature owns its routes, pages, UI and feature-specific services; reusable global infrastructure belongs in `core`. Do not put business screens in the root app shell. Use `@core/*` and `@features/*` aliases for stable imports. Import across feature boundaries only through a feature's documented public entry point; never reach into another feature's page/component internals. If a feature grows, split it into `data-access`, `ui`, and `pages` within that feature rather than creating a global grab-bag folder.
+The Angular app is composed from a small application shell and lazy feature routes.
 
-## Dependency direction
+- frontend/src/app/core/ contains shared services for catalog, cart, identity, orders, and reviews.
+- frontend/src/app/features/identity/ owns registration, sign-in, and password recovery screens.
+- frontend/src/app/features/account/ owns account settings and buyer order history.
+- frontend/src/app/features/storefront/ owns the storefront landing page.
+- frontend/src/app/features/catalog/ owns product detail and catalog presentation.
+- frontend/src/app/features/cart/ owns the basket and checkout pages.
+- frontend/src/app/features/seller/ owns seller product and fulfillment workflows.
+- frontend/src/app/app.routes.ts composes feature route entry points. It imports only route arrays exported from each feature's `public-api.ts`; feature internals stay behind those entry points.
+- Shared catalog API/state lives in `frontend/src/app/core/catalog/` so catalog, seller, cart, and checkout screens use one server-backed product model.
 
-- `app` composes `core` and lazy `features`.
-- Features may use public APIs from `core`.
-- Features do not import each other's internals.
-- Backend modules depend inward on their own domain and outward only on other modules' public application APIs.
-- Security is enforced by the backend. Frontend guards and hidden navigation are usability controls only.
-- New API routes are deny-by-default and require an explicit permission plus ownership checks for customer-owned resources.
+`npm run check:architecture` verifies that the application shell and other features do not import feature internals directly. CI runs this check before the Angular production build.
+
+Keep page components and feature-only services inside their feature. Put cross-feature API clients and state in core. Do not import another feature's internal pages or components.
+
+## Security boundary
+
+The backend is authoritative for authentication, permissions, resource ownership, stock and order calculations. Product review summaries are served by the reviews module so the catalog module does not query the reviews repository. Frontend guards and hidden controls improve navigation but do not grant access. New API routes must be explicitly authorized; unmatched /api/** routes are denied.
+
+See [docs/authorization-matrix.md](authorization-matrix.md) for the current route and permission mapping.

@@ -1,68 +1,60 @@
-# Authorization Model
+# Authorization model
 
-Authorization is enforced by Spring Security on the server. Angular route guards and displayed permissions are for navigation and clarity only; they are never the security boundary.
+The backend is the security boundary. Frontend route guards and displayed permissions are for usability only.
 
-## Role matrix
+## Current role behavior
 
 | Capability | Buyer | Seller | Administrator |
 | --- | --- | --- | --- |
-| Read and update own account | Yes | Yes | Yes |
-| Browse catalog | Yes | Yes | No by default |
-| Manage own cart | Yes | No by default | No by default |
-| Create, read, and cancel own orders | Yes | No by default | No by default |
-| Read and fulfill orders containing own products | No | Yes | No by default |
-| Read any account | No | No | Yes |
-| Suspend accounts | No | No | Yes |
-| Manage catalog | No | No | Yes |
-| Manage orders | No | No | Yes |
-| Issue refunds | No | No | Yes |
-| Moderate reviews | No | No | Yes |
-| Assign roles | No | No | Yes |
-| Read platform reports | No | No | Yes |
+| Read and update own account/profile | Yes | Yes | Yes |
+| Browse products and public reviews | Yes | Yes | Yes |
+| Manage own cart and place orders | Yes | No | No |
+| Read, cancel, and confirm own orders | Yes | No | No |
+| Read and fulfill orders containing own products | No | Yes | No |
+| Manage own catalog products | No | Yes, with ownership checks | No current route |
+| Create a public review | Yes, after an eligible verified purchase | No | No |
+| Moderate any product review | No | No | Yes |
+| Use platform administration APIs | No | No | Permission-gated; only the access-check route is currently implemented |
 
-“Own” resources must be scoped to the authenticated principal in the service/repository query; possession of an object ID is not authorization. Admin actions should be separately permission-checked and audited. A broad admin role is not a substitute for checking the permission needed by a specific operation.
+Public catalog and review reads do not require a role. Role names are not a replacement for checking ownership of a specific resource.
 
-## Permission identifiers
+## Current permission and route mapping
 
-| Permission | Intended use |
+| Route or operation | Current rule |
 | --- | --- |
-| `ACCOUNT_READ_SELF` | Read the authenticated customer's own account |
-| `ACCOUNT_UPDATE_SELF` | Change allowed fields on own account |
-| `CATALOG_READ` | Browse published products |
-| `CART_MANAGE_SELF` | Add/remove/change own cart items |
-| `ORDER_CREATE_SELF` | Submit own checkout/order |
-| `ORDER_READ_SELF` | Read own order history and status |
-| `ORDER_CANCEL_SELF` | Cancel own eligible order |
-| `ORDER_FULFILL_OWN` | Read orders containing the seller's products and advance their fulfillment status one step at a time |
-| `PLATFORM_ADMIN` | Platform administration capability; not a default substitute for narrower checks |
-| `ACCOUNT_READ_ANY` | Read any customer account in admin workflows |
-| `ACCOUNT_SUSPEND` | Suspend or restore accounts |
-| `CATALOG_MANAGE` | Create/update/archive products and categories |
-| `ORDER_MANAGE` | Manage order fulfillment and status |
-| `ORDER_REFUND` | Issue or approve refunds |
-| `REVIEW_MODERATE` | Moderate user reviews |
-| `ROLE_ASSIGN` | Assign roles through a trusted administrative workflow |
-| `PLATFORM_REPORT_READ` | Read platform-wide reports; currently gates the sample admin access-check route |
+| GET /api/auth/csrf, POST /api/auth/register, POST /api/auth/login, GET /actuator/health | Public |
+| POST /api/auth/logout | Session logout; state-changing requests require CSRF |
+| GET /api/auth/me, GET /api/profile/me | ACCOUNT_READ_SELF |
+| PUT /api/profile/me, POST /api/auth/password | ACCOUNT_UPDATE_SELF |
+| /api/cart/** | CART_MANAGE_SELF; the service uses the authenticated customer |
+| POST /api/orders | ORDER_CREATE_SELF; prices and totals are computed server-side |
+| GET /api/orders/mine and buyer delivery confirmation | ORDER_READ_SELF; the service scopes the order to its buyer |
+| Buyer order cancellation | ORDER_CANCEL_SELF; only eligible orders owned by the buyer may be canceled |
+| Seller order list and status updates | ORDER_FULFILL_OWN; each affected order item must belong to the seller |
+| GET /api/products/mine | Seller role |
+| POST, PUT, and DELETE /api/products/** | Seller role; seller ownership is checked for product mutations |
+| GET /api/products and public product/review reads | Public |
+| GET /api/reviews/summary | Public aggregate rating summaries for catalog cards |
+| POST /api/products/{productId}/reviews, DELETE .../reviews/mine | REVIEW_CREATE_SELF; creation also requires an eligible verified purchase |
+| DELETE /api/reviews/{id} | REVIEW_MODERATE |
+| GET /api/admin/access-check | PLATFORM_REPORT_READ |
+| Other /api/admin/** routes | PLATFORM_ADMIN |
+| Any unmatched /api/** route | Denied |
 
-## Current API policy
+The route rules above reflect AuthSecurityConfiguration. Admins moderate customer reviews through REVIEW_MODERATE; they cannot create or delete a customer review through the buyer endpoints. When changing a route or permission, inspect that configuration, the controller, and the application service, then update this document and add access-control tests.
 
-- Public: `GET /api/auth/csrf`, `POST /api/auth/register`, `POST /api/auth/login`, `GET /actuator/health`.
-- Authenticated with `ACCOUNT_READ_SELF`: `GET /api/auth/me`.
-- Authenticated with `ACCOUNT_READ_SELF`: `GET /api/profile/me`.
-- Authenticated with `ACCOUNT_UPDATE_SELF`: `PUT /api/profile/me` and `POST /api/auth/password`.
-- Authenticated with `ORDER_FULFILL_OWN`: `GET /api/orders/seller` and `PUT /api/orders/seller/{reference}/status`; the service scopes every order to the authenticated seller's order items.
-- Authenticated with `ORDER_CANCEL_SELF`: `PUT /api/orders/mine/{reference}/cancel`; the service scopes the order to its buyer and permits cancellation only before any item begins processing.
-- Authenticated with `PLATFORM_REPORT_READ`: `GET /api/admin/access-check`.
-- Every other `/api/**` endpoint is denied until it is explicitly assigned a permission.
-- Registration accepts only `BUYER` or `SELLER` as `accountType`; arbitrary roles, including `ADMIN`, cannot be assigned through public registration. No public role-change endpoint exists.
-- Role assignment and initial administrator provisioning are trusted operator tasks. Never seed a known admin password into a migration or image.
+## Permission inventory
 
-## Rules for adding endpoints
+The permission names are defined in StorePermission. The current routes use ACCOUNT_READ_SELF, ACCOUNT_UPDATE_SELF, CART_MANAGE_SELF, ORDER_CREATE_SELF, ORDER_READ_SELF, ORDER_CANCEL_SELF, ORDER_FULFILL_OWN, REVIEW_CREATE_SELF (Buyer only), REVIEW_MODERATE (Administrator only), PLATFORM_REPORT_READ, and PLATFORM_ADMIN.
 
-1. Add a narrowly named permission to `StorePermission` only when a real operation needs it.
-2. Grant it to the minimum role(s) in `StoreRole`.
-3. Require that permission in the HTTP matcher or a method-level authorization annotation.
-4. For customer-owned data, verify ownership in the application/service query as well as the endpoint permission.
-5. Add tests for allowed roles, denied roles, anonymous requests, and cross-account resource access.
-6. Do not use role/permission information from request bodies, query parameters, or browser state as authority.
-7. Keep UI guards in sync for usability, but test server enforcement independently.
+Other enum values are reserved until an endpoint uses them. Do not describe an enum permission as an implemented capability without confirming the route mapping and service behavior.
+
+## Rules for new endpoints
+
+1. Add the narrowest permission needed for a real operation and grant it only to the required role.
+2. Add an explicit HTTP matcher or method-level authorization. Preserve the deny-by-default rule.
+3. Scope customer-owned reads and mutations to the authenticated principal in the application service or repository query.
+4. For seller-owned products and order items, verify the seller owns each affected resource.
+5. Test anonymous, allowed-role, denied-role, and cross-account access when the change affects authorization.
+6. Never trust role, permission, customer ID, seller ID, price, or total values supplied by the browser.
+7. Keep Angular guards aligned for usability, but verify access control on the server.

@@ -1,77 +1,42 @@
 ---
 name: docker-toolchain-isolated
 description: >-
-  Workflows and best practices for running Java 25 and Node 24 toolchains in isolated Docker containers.
-  Use when compiling, testing, packaging, or deploying Unikly services without relying on host toolchains.
+  Build and test Unikly with the project-pinned Java 25 and Node 24 toolchains in Docker. Use when compiling, testing, or running the local stack.
 ---
 
-# Docker Toolchain Isolation Skill
+# Isolated Unikly toolchains
 
-This skill documents how to build, test, and run Unikly in an isolated containerized environment, avoiding host toolchain version conflicts.
+The pinned versions are .java-version (Java 25.0.4), .nvmrc (Node 24.21.0), Maven configuration, lockfiles, and Dockerfiles. Use Docker so commands do not silently run under a different host toolchain.
 
-## Host vs. Target Toolchain Discrepancy
+## Backend tests
 
-| Component | Host System | Required by Unikly | Isolation Strategy |
-| :--- | :--- | :--- | :--- |
-| **Java JDK** | OpenJDK 17 | **Eclipse Temurin 25** | Containerized Maven execution with host `~/.m2` cache mount |
-| **Node.js** | Node v22 | **Node v24.21.0 Alpine** | Containerized Angular build via Docker multi-stage image |
-| **Database** | None (PostgreSQL 18) | **PostgreSQL 18.6 Alpine** | Docker Compose managed container on port `55432` |
+Run Maven tests from the backend directory mounted into the pinned Maven/Temurin image:
 
-> [!CAUTION]
-> **NEVER run `./mvnw test` or `npm run build` directly on the host machine.**
-> Doing so will result in bytecode mismatch errors (class file version 69.0 vs 61.0) or Node dependency incompatibilities.
+    docker run --rm -v "$PWD/backend:/workspace" -w /workspace maven:3.9.16-eclipse-temurin-25 mvn -B -ntp test
 
----
+This uses the project pom.xml and the image's Maven distribution. It does not require the local unikly-api-test image.
 
-## Standard Runbooks
+## Frontend production build
 
-### 1. Running Backend Unit & Integration Tests
+Build the frontend Dockerfile, which pins Node 24.21.0 and runs the Angular production build:
 
-Execute backend Maven tests using the isolated test container while mounting the host `~/.m2` cache to avoid re-downloading dependencies:
+    docker build -t unikly-web-test ./frontend
 
-```bash
-docker run --rm \
-  -v "${HOME}/.m2:/root/.m2" \
-  -v "$(pwd)/backend:/workspace" \
-  -w /workspace \
-  unikly-api-test \
-  mvn test
-```
+The Angular Karma tests need a browser. Run them only in a container configured with the pinned Node version and Chromium; do not assume the production image build ran unit tests.
 
-### 2. Testing the Angular Production Build
+## Local Compose stack
 
-Validate that the Angular client compiles without TypeScript or template binding errors:
+Start or rebuild only the affected service when possible:
 
-```bash
-docker build -t unikly-web-test ./frontend
-```
+    docker compose up --build -d api
+    docker compose up --build -d web
+    docker compose up --build -d
 
-### 3. Rebuilding & Restarting Running Compose Services
+Check the actual service names and health before smoke testing:
 
-When backend code, database migrations, or frontend code changes, rebuild only the affected service:
+    docker compose ps
+    docker compose logs --tail 80 api
+    docker compose logs --tail 80 web
+    docker compose logs --tail 80 database
 
-```bash
-# Rebuild and restart backend API
-docker compose up --build -d api
-
-# Rebuild and restart frontend web container
-docker compose up --build -d web
-
-# Rebuild all services cleanly
-docker compose up --build -d
-```
-
-### 4. Inspecting Container Logs & Health
-
-Check real-time startup logs to confirm Spring Boot and Flyway initialization:
-
-```bash
-# View backend Spring Boot startup & migration logs
-docker logs --tail 30 unikly-api-1
-
-# View database logs
-docker logs --tail 30 unikly-database-1
-
-# View web nginx logs
-docker logs --tail 30 unikly-web-1
-```
+Compose uses .env for local-only database and optional development-seed configuration. Never expose those values in logs or reports. Do not remove the persistent database volume as cleanup.

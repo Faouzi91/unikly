@@ -113,6 +113,7 @@ class IdentityAuthorizationTests {
                                 """.formatted(email)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.permissions", hasItem("PLATFORM_REPORT_READ")))
+                .andExpect(jsonPath("$.permissions", not(hasItem("REVIEW_CREATE_SELF"))))
                 .andReturn();
 
         MockHttpSession session = (MockHttpSession) login.getRequest().getSession(false);

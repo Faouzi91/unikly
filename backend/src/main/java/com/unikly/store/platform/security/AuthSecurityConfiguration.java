@@ -93,6 +93,7 @@ public class AuthSecurityConfiguration {
                     .requestMatchers(HttpMethod.POST, "/api/products/*/reviews").hasAuthority(StorePermission.REVIEW_CREATE_SELF.authority())
                     .requestMatchers(HttpMethod.DELETE, "/api/products/*/reviews/mine").hasAuthority(StorePermission.REVIEW_CREATE_SELF.authority())
                     .requestMatchers(HttpMethod.DELETE, "/api/reviews/*").hasAuthority(StorePermission.REVIEW_MODERATE.authority())
+                    .requestMatchers(HttpMethod.GET, "/api/reviews/summary").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/products").hasRole("SELLER")
                     .requestMatchers(HttpMethod.PUT, "/api/products/**").hasRole("SELLER")
                     .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("SELLER")

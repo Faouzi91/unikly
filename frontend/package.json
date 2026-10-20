@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.cjs",
     "build": "ng build",
+    "check:architecture": "node scripts/check-feature-boundaries.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

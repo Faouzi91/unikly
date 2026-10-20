@@ -1,11 +1,11 @@
 package com.unikly.store.orders.application;
 
 import com.unikly.store.cart.application.CustomerCartService;
-import com.unikly.store.catalog.domain.CatalogProduct;
-import com.unikly.store.catalog.persistence.CatalogProductRepository;
-import com.unikly.store.identity.domain.StoreRole;
-import com.unikly.store.identity.domain.StoreUser;
-import com.unikly.store.identity.persistence.StoreUserRepository;
+import com.unikly.store.catalog.application.CatalogProductService;
+import com.unikly.store.catalog.application.CatalogProductService.ProductSnapshot;
+import com.unikly.store.identity.application.IdentityAccountService;
+import com.unikly.store.identity.application.IdentityAccountService.AccountIdentity;
+import com.unikly.store.identity.application.IdentityAccountService.AccountRole;
 import com.unikly.store.orders.domain.CustomerOrder;
 import com.unikly.store.orders.domain.CustomerOrderItem;
 import com.unikly.store.orders.domain.DeliveryMethod;
@@ -13,7 +13,6 @@ import com.unikly.store.orders.domain.OrderFulfillmentStatus;
 import com.unikly.store.orders.persistence.CustomerOrderRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -27,23 +26,23 @@ import org.springframework.web.server.ResponseStatusException;
 @Transactional
 public class CustomerOrderService {
     private final CustomerOrderRepository orders;
-    private final CatalogProductRepository products;
-    private final StoreUserRepository users;
+    private final CatalogProductService products;
+    private final IdentityAccountService identity;
     private final CustomerCartService carts;
 
     public CustomerOrderService(
             CustomerOrderRepository orders,
-            CatalogProductRepository products,
-            StoreUserRepository users,
+            CatalogProductService products,
+            IdentityAccountService identity,
             CustomerCartService carts) {
         this.orders = orders;
         this.products = products;
-        this.users = users;
+        this.identity = identity;
         this.carts = carts;
     }
 
     public OrderView create(String email, OrderRequests.Create request) {
-        StoreUser buyer = buyer(email);
+        AccountIdentity buyer = buyer(email);
         Map<String, Integer> requested = new TreeMap<>();
         for (OrderRequests.Item item : request.items()) {
             if (requested.putIfAbsent(item.productId(), item.quantity()) != null) {
@@ -51,17 +50,12 @@ public class CustomerOrderService {
             }
         }
 
-        List<CatalogProduct> lockedProducts = new ArrayList<>();
+        List<ProductSnapshot> reservedProducts = new java.util.ArrayList<>();
         BigDecimal subtotal = BigDecimal.ZERO;
         for (Map.Entry<String, Integer> line : requested.entrySet()) {
-            CatalogProduct product = products.findByIdForUpdate(line.getKey())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "A product is no longer available"));
-            if (line.getValue() > product.getStockQuantity()) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        product.getName() + " has only " + product.getStockQuantity() + " left in stock");
-            }
-            subtotal = subtotal.add(product.getPrice().multiply(BigDecimal.valueOf(line.getValue())));
-            lockedProducts.add(product);
+            ProductSnapshot product = products.reserveStock(line.getKey(), line.getValue());
+            subtotal = subtotal.add(product.price().multiply(BigDecimal.valueOf(line.getValue())));
+            reservedProducts.add(product);
         }
 
         DeliveryMethod method = parseDeliveryMethod(request.deliveryMethod());
@@ -70,33 +64,31 @@ public class CustomerOrderService {
 
         String id = UUID.randomUUID().toString();
         String reference = "UK-" + id.substring(0, 8).replace("-", "").toUpperCase();
-        CustomerOrder order = new CustomerOrder(id, reference, buyer.getId(), clean(request.fullName()),
+        CustomerOrder order = new CustomerOrder(id, reference, buyer.id(), clean(request.fullName()),
                 clean(request.email()).toLowerCase(), clean(request.phone()), clean(request.addressLine1()),
                 optional(request.addressLine2()), clean(request.city()), clean(request.region()),
                 clean(request.postalCode()), clean(request.country()), method.name(), deliveryFee, total);
-        for (int index = 0; index < lockedProducts.size(); index++) {
-            CatalogProduct product = lockedProducts.get(index);
-            int quantity = requested.get(product.getId());
-            product.decreaseStock(quantity);
-            order.addItem(new CustomerOrderItem(product.getId(), product.getName(), product.getSellerId(),
-                    quantity, product.getPrice()));
+        for (ProductSnapshot product : reservedProducts) {
+            int quantity = requested.get(product.id());
+            order.addItem(new CustomerOrderItem(product.id(), product.name(), product.sellerId(),
+                    quantity, product.price()));
         }
         CustomerOrder saved = orders.save(order);
-        carts.clearCartByBuyerId(buyer.getId());
+        carts.clearCartByBuyerId(buyer.id());
         return view(saved);
     }
 
     @Transactional(readOnly = true)
     public List<OrderView> listMine(String email) {
-        StoreUser buyer = buyer(email);
-        return orders.findAllByBuyerIdOrderByCreatedAtDesc(buyer.getId()).stream().map(this::view).toList();
+        AccountIdentity buyer = buyer(email);
+        return orders.findAllByBuyerIdOrderByCreatedAtDesc(buyer.id()).stream().map(this::view).toList();
     }
 
     public OrderView confirmDelivery(String email, String reference) {
-        StoreUser buyer = buyer(email);
+        AccountIdentity buyer = buyer(email);
         CustomerOrder order = orders.findByReference(reference)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
-        if (!buyer.getId().equals(order.getBuyerId())) {
+        if (!buyer.id().equals(order.getBuyerId())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found");
         }
         if (order.getItems().isEmpty() || order.getItems().stream()
@@ -112,10 +104,10 @@ public class CustomerOrderService {
     }
 
     public OrderView cancel(String email, String reference) {
-        StoreUser buyer = buyer(email);
+        AccountIdentity buyer = buyer(email);
         CustomerOrder order = orders.findByReference(reference)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
-        if (!buyer.getId().equals(order.getBuyerId())) {
+        if (!buyer.id().equals(order.getBuyerId())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found");
         }
         if (order.getItems().isEmpty() || order.getItems().stream()
@@ -124,7 +116,7 @@ public class CustomerOrderService {
                     "Only orders that have not entered processing can be canceled");
         }
         for (CustomerOrderItem item : order.getItems()) {
-            products.findByIdForUpdate(item.getProductId()).ifPresent(product -> product.increaseStock(item.getQuantity()));
+            products.restockIfPresent(item.getProductId(), item.getQuantity());
             item.cancel();
         }
         order.updateStatus(OrderFulfillmentStatus.CANCELED.name());
@@ -133,20 +125,20 @@ public class CustomerOrderService {
 
     @Transactional(readOnly = true)
     public List<SellerOrderView> listForSeller(String email) {
-        StoreUser seller = seller(email);
-        return orders.findAllForSeller(seller.getId()).stream()
-                .map(order -> sellerView(order, seller.getId()))
+        AccountIdentity seller = seller(email);
+        return orders.findAllForSeller(seller.id()).stream()
+                .map(order -> sellerView(order, seller.id()))
                 .toList();
     }
 
     public SellerOrderView updateSellerFulfillment(
             String email, String reference, OrderRequests.UpdateFulfillmentStatus request) {
         OrderFulfillmentStatus targetStatus = request.status();
-        StoreUser seller = seller(email);
+        AccountIdentity seller = seller(email);
         CustomerOrder order = orders.findByReference(reference)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
         List<CustomerOrderItem> sellerItems = order.getItems().stream()
-                .filter(item -> seller.getId().equals(item.getSellerId()))
+                .filter(item -> seller.id().equals(item.getSellerId()))
                 .toList();
         if (sellerItems.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found");
@@ -183,19 +175,24 @@ public class CustomerOrderService {
                 .orElse(OrderFulfillmentStatus.PLACED);
         order.updateStatus(overallStatus.name());
         orders.save(order);
-        return sellerView(order, seller.getId());
+        return sellerView(order, seller.id());
     }
 
-    private StoreUser seller(String email) {
-        StoreUser user = users.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
-        if (user.getRole() != StoreRole.SELLER) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+    private AccountIdentity seller(String email) {
+        AccountIdentity user = identity.requireByEmail(email);
+        if (user.role() != AccountRole.SELLER) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         return user;
     }
 
-    private StoreUser buyer(String email) {
-        StoreUser user = users.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
-        if (user.getRole() != StoreRole.BUYER) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+    private AccountIdentity buyer(String email) {
+        AccountIdentity user = identity.requireByEmail(email);
+        if (user.role() != AccountRole.BUYER) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         return user;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasPurchasedProduct(Long buyerId, String productId) {
+        return orders.hasPurchasedProduct(buyerId, productId);
     }
 
     private SellerOrderView sellerView(CustomerOrder order, Long sellerId) {

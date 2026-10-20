@@ -1,45 +1,36 @@
 ---
 name: postgres-flyway-architect
 description: >-
-  Database architecture, PostgreSQL 18 standards, and Flyway schema migration best practices.
-  Use when designing database schemas, writing Flyway migrations, defining foreign keys, or debugging SQL queries.
+  Design and review Unikly PostgreSQL 18 schemas, queries, JPA persistence, and immutable Flyway migrations. Use for database changes, constraints, indexes, or query behavior.
 ---
 
-# PostgreSQL & Flyway Architect Skill
+# PostgreSQL and Flyway architect
 
-This skill documents database standards, schema design principles, and Flyway migration practices for Unikly's PostgreSQL 18 database.
+Follow the schema and query conventions already present in Unikly. Review the application query and domain invariant along with every schema change.
 
-## Flyway Migration Standards
+## Safe Flyway changes
 
-1. **File Naming & Location**:
-   - Directory: `backend/src/main/resources/db/migration/`
-   - Pattern: `V<VERSION>__<description>.sql` (e.g., `V13__fix_aluminum_pencil_set_image.sql`).
-   - Use double underscores `__` between the version number and the description.
-   - Version numbers must be sequential positive integers.
+- Migrations live in backend/src/main/resources/db/migration/ and use V<N>__description.sql with the next available positive integer.
+- Treat every applied migration as immutable. Never edit, rename, or delete an existing migration; add a forward migration.
+- Check existing schema, seed data, entity mappings, and queries before designing a migration.
+- Name constraints and indexes clearly. Add foreign keys, NOT NULL, CHECK, and uniqueness constraints where they represent real domain invariants.
+- Choose ON DELETE behavior to match the owning domain lifecycle. Make sure required foreign keys are populated by migration and seed data.
+- For a populated table, plan safe backfill and constraint ordering. Do not silently drop or rewrite production data.
+- For large or continuously written tables, assess lock time and use a staged expand, backfill, and contract rollout when application compatibility requires it.
+- Do not use IF NOT EXISTS to hide schema drift or make an incorrect migration appear successful.
 
-2. **Migration Immutability**:
-   - **Never alter or delete an existing migration file that has already run in any environment.**
-   - Flyway calculates a SHA-256 checksum for each applied migration. Editing an existing migration causes `DbValidate` failure upon application restart.
-   - Always create a new forward migration (`V<N+1>__...sql`) to apply fixes or schema updates.
+## Types and query design
 
-3. **Data Type Conventions**:
-   - **Monetary amounts**: Always use `DECIMAL(10, 2)` or `NUMERIC(10, 2)` (never `FLOAT`, `REAL`, or `DOUBLE PRECISION`).
-   - **Timestamps**: Always use `TIMESTAMPTZ` or `TIMESTAMP WITH TIME ZONE` defaulting to `CURRENT_TIMESTAMP`.
-   - **Strings & IDs**: Use `VARCHAR` with explicit character bounds (e.g. `VARCHAR(255)`, `VARCHAR(64)`), or `TEXT` for free-form descriptions.
-   - **Foreign Keys**: Always define explicit `REFERENCES` and appropriate `ON DELETE` clauses. Ensure required relations have `NOT NULL` constraints (such as `seller_id` in `customer_order_items`).
+- Use NUMERIC/DECIMAL for money, never floating point. Match the precision and scale to current domain limits and Java mappings.
+- Use TIMESTAMPTZ for instants. Use bounded VARCHAR for values with a real domain limit and TEXT for free-form descriptions.
+- Match indexes to observed predicates, joins, sort order, and pagination. For composite B-tree indexes, put equality predicates before range or ordering columns when that fits the query.
+- Account for index storage and write cost; do not add speculative indexes. Index foreign keys when actual joins or deletes need them.
+- Avoid N+1 loading and unbounded result sets. Review JPA fetch strategy and the SQL generated for important read paths.
+- Keep SQL parameterized. Preserve database constraints as the final guard for concurrency-sensitive invariants such as uniqueness and stock changes.
 
----
+## Verification
 
-## Safe Database Access via Container
-
-To inspect or query the running PostgreSQL database without installing local client tools on the host:
-
-```bash
-docker exec -it unikly-database-1 psql -U unikly_dev -d unikly
-```
-
-Or execute inline queries:
-```bash
-docker exec unikly-database-1 psql -U unikly_dev -d unikly -c "SELECT version();"
-docker exec unikly-database-1 psql -U unikly_dev -d unikly -c "SELECT version, description, success FROM flyway_schema_history;"
-```
+- Unit tests that use H2 do not prove PostgreSQL-specific SQL or migration behavior.
+- For database behavior changes, use the project Java 25 Docker workflow, then exercise the affected path against the local PostgreSQL Compose stack when the project workflow requires it.
+- Use EXPLAIN (ANALYZE, BUFFERS) only against safe representative local data when evaluating a real query; never claim a performance improvement from an index definition alone.
+- Do not print .env values, credentials, user data, or production connection strings.

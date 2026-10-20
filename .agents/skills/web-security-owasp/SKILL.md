@@ -1,92 +1,48 @@
 ---
 name: web-security-owasp
 description: >-
-  Security hardening, vulnerability prevention, and OWASP Top 10 compliance for Unikly.
-  Use when designing authentication flows, implementing data mutations, reviewing endpoints for IDOR,
-  configuring CORS/CSRF, or performing security reviews before release.
+  Review and implement security controls in Unikly authentication, authorization, API mutations, ownership, CSRF, sensitive data, and configuration.
 ---
 
-# Web Security & OWASP Hardening Skill
+# Unikly web security
 
-This skill provides security review protocols, threat modeling directives, and hardening rules based on the OWASP Top 10 and enterprise Spring Boot/Angular security patterns.
+Use this skill for security-sensitive changes and release reviews. Treat [docs/authorization-matrix.md](../../../docs/authorization-matrix.md) and the running code as the authority for current permissions and routes; this checklist is not a substitute for checking the actual matcher and service.
 
----
+## Authentication and sessions
 
-## 1. Access Control & Authorization (OWASP A01: Broken Access Control)
+- Passwords are hashed with Argon2. Never store, log, or return plaintext passwords or password hashes.
+- Authentication is session-based. Keep session cookies HttpOnly and use the configured SameSite policy. Do not put bearer tokens or session IDs in browser storage.
+- State-changing requests require CSRF protection. Keep the CSRF cookie/header behavior aligned with AuthSecurityConfiguration; refresh the token after login rotates the session ID.
+- Keep account registration limited to supported public roles. Do not add a public admin role assignment or role-change route.
 
-1. **Object-Level Authorization (IDOR Prevention)**:
-   - Never rely solely on URL parameters (e.g. `/api/orders/{ref}`) without enforcing ownership in the service layer.
-   - **Buyer Boundaries**:
-     - When fetching or modifying an order (`/api/orders/mine/...`), verify `order.buyerId == currentUser.id`.
-     - When updating profile details (`/api/profile/me`), derive user identity strictly from `Authentication.getName()`.
-   - **Seller Boundaries**:
-     - When a seller updates or deletes a product (`PUT /api/products/{id}`), verify `product.sellerId == currentUser.id`.
-     - When fulfilling or updating order tracking (`PUT /api/orders/seller/...`), ensure the seller only updates line items where `item.sellerId == currentUser.id`.
+## Authorization and ownership
 
-2. **Role-Based Access Control (RBAC)**:
-   - Ensure every protected controller route enforces appropriate authorities:
-     - `BUYER`: Can place orders, view personal order history, cancel unfulfilled orders, update personal delivery profiles.
-     - `SELLER`: Can manage their own product inventory, view assigned orders, update shipment tracking.
-     - `ADMIN`: Platform moderation, account suspension, audit logs.
+- New /api/** routes must be explicitly authorized; unmatched API paths are denied by default.
+- Grant the narrowest permission needed and update the authorization matrix when route mappings change.
+- Derive the acting customer from the authenticated principal. Verify ownership of each order, cart, profile, review, product, or order item in the application service.
+- Seller role access to a route does not establish ownership of a product or order item.
+- Verify anonymous, allowed-role, denied-role, and cross-account access for authorization changes.
 
----
+## Input, output, and business rules
 
-## 2. Authentication & Session Hygiene (OWASP A07: Identification Failures)
+- Validate untrusted request data at the API boundary and enforce domain invariants in the application/domain layer.
+- Use parameterized database operations. Never build SQL/JPQL from untrusted string concatenation.
+- Do not render untrusted content as HTML or bypass Angular sanitization.
+- Compute prices, inventory-sensitive checkout, delivery fees, and order totals on the server. Use BigDecimal in Java.
+- Validate external URLs before server-side fetching; use allowlists where practical to prevent SSRF.
 
-1. **Password Storage**:
-   - Always hash passwords using `BCryptPasswordEncoder` with default strength (10+ rounds).
-   - Never store, log, or return plain text passwords or password hashes in API responses.
+## Secrets and error handling
 
-2. **CSRF Protection & Token Rotation**:
-   - Unikly enforces stateful CSRF protection via `CookieCsrfTokenRepository.withHttpOnlyFalse()`.
-   - Spring Security rotates the session ID upon login (`POST /api/auth/login`).
-   - Clients and test runners must fetch `GET /api/auth/csrf` to retrieve the active session's `XSRF-TOKEN` cookie and send it in the `X-XSRF-TOKEN` request header for all state-changing verbs (`POST`, `PUT`, `DELETE`).
+- Keep credentials and signing keys in ignored local configuration or a managed secret store. Keep .env.example safe to commit.
+- Avoid displaying local .env values in tool output, reports, or chat.
+- Return generic safe errors to clients. Keep SQL messages, traces, session values, and private user data out of responses and logs.
+- Keep exception mapping scoped to the module or controller.
 
----
+## Review checklist
 
-## 3. Data & Injection Defense (OWASP A03: Injection & XSS)
-
-1. **SQL & HQL Injection**:
-   - Always use Spring Data JPA derived query methods or parameterized HQL (`@Query("... WHERE p.sellerId = :sellerId")`).
-   - **Never concatenate raw strings into JPQL, HQL, or native SQL queries.**
-
-2. **Cross-Site Scripting (XSS)**:
-   - Angular automatically contextually encodes template bindings (e.g. `{{ product.name }}`).
-   - **Prohibited**: Never use `[innerHTML]` with unsanitized user content or call `DomSanitizer.bypassSecurityTrustHtml` on user-supplied text.
-   - Clean and trim text inputs upon receipt in the backend service layer before persistence.
-
----
-
-## 4. Authoritative Business Logic (OWASP A04: Insecure Design)
-
-1. **Financial Immutability**:
-   - Clients must **never** dictate product prices, delivery fees, or order totals.
-   - Calculate all totals authoritatively on the backend using `BigDecimal` with 2 decimal places and `RoundingMode.HALF_UP`.
-2. **State Machine Invariants**:
-   - Enforce valid state transitions at the service level:
-     - Orders can only be canceled by the buyer while in `PLACED` state before any item is fulfilled.
-     - Orders can only be marked `SHIPPED` by the assigned seller.
-
----
-
-## 5. Secret Hygiene & Configuration (OWASP A05: Security Misconfiguration)
-
-1. **Environment & Secrets**:
-   - Passwords, database URLs, and cryptographic secrets must live in `.env` (which is strictly gitignored).
-   - `.env.example` must contain only empty or safe development placeholders.
-2. **Scoped Exception Handling**:
-   - Restrict `@RestControllerAdvice` to targeted controllers.
-   - Never expose internal database stack traces, SQL errors, or sensitive environment details in HTTP 500 responses.
-3. **External Resource Validation**:
-   - When storing external URLs (e.g. image URLs, carrier tracking URLs), validate that schemes are strictly `http://` or `https://` with valid hosts to prevent SSRF and protocol manipulation.
-
----
-
-## Security Verification Checklist (Pre-Merge Audit)
-
-- [ ] Does every state-changing route require valid authentication and CSRF token?
-- [ ] Does the service explicitly verify that the caller owns the resource (IDOR check)?
-- [ ] Are all financial calculations performed authoritatively on the backend using `BigDecimal`?
-- [ ] Are all database queries parameterized without string concatenation?
-- [ ] Are external images and links validated for safe `http(s)` protocols?
-- [ ] Are secrets excluded from git commits and API response payloads?
+- Is every new API path covered by an explicit permission rule?
+- Does the service enforce ownership even when the caller has the endpoint permission?
+- Are login, logout, password changes, and other mutations protected by the correct CSRF/session behavior?
+- Can a request body or browser state influence the acting user, role, price, or total?
+- Are secrets, session values, personal data, and internal error details protected?
+- Are access-control and business-invariant tests updated for the change?

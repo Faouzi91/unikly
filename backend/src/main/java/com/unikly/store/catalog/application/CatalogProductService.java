@@ -2,15 +2,14 @@ package com.unikly.store.catalog.application;
 
 import com.unikly.store.catalog.domain.CatalogProduct;
 import com.unikly.store.catalog.persistence.CatalogProductRepository;
-import com.unikly.store.identity.domain.StoreRole;
-import com.unikly.store.identity.domain.StoreUser;
-import com.unikly.store.identity.persistence.StoreUserRepository;
-import com.unikly.store.reviews.persistence.ProductReviewRepository;
-import java.math.RoundingMode;
+import com.unikly.store.identity.application.IdentityAccountService;
+import com.unikly.store.identity.application.IdentityAccountService.AccountIdentity;
+import com.unikly.store.identity.application.IdentityAccountService.AccountRole;
 import java.net.URI;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,59 +21,94 @@ import org.springframework.web.server.ResponseStatusException;
 public class CatalogProductService {
     private static final String PLACEHOLDER = "/product-placeholder.svg";
     private final CatalogProductRepository products;
-    private final StoreUserRepository users;
-    private final ProductReviewRepository reviews;
+    private final IdentityAccountService identity;
 
     public CatalogProductService(
             CatalogProductRepository products,
-            StoreUserRepository users,
-            ProductReviewRepository reviews) {
+            IdentityAccountService identity) {
         this.products = products;
-        this.users = users;
-        this.reviews = reviews;
+        this.identity = identity;
     }
 
     @Transactional(readOnly = true)
     public List<ProductView> list() {
-        Map<String, ProductRatingAggregate> aggregates = loadAggregates();
         return products.findAllByOrderByCreatedAtDesc().stream()
-                .map(product -> view(product, aggregates))
+                .map(this::view)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<ProductView> listMine(String email) {
-        StoreUser seller = seller(email);
-        Map<String, ProductRatingAggregate> aggregates = loadAggregates();
-        return products.findAllBySellerIdOrderByCreatedAtDesc(seller.getId()).stream()
-                .map(product -> view(product, aggregates))
+        AccountIdentity seller = seller(email);
+        return products.findAllBySellerIdOrderByCreatedAtDesc(seller.id()).stream()
+                .map(this::view)
                 .toList();
     }
 
     public ProductView create(String email, ProductRequests.Upsert request) {
-        StoreUser seller = seller(email);
-        CatalogProduct product = new CatalogProduct(UUID.randomUUID().toString(), seller.getId(),
+        AccountIdentity seller = seller(email);
+        CatalogProduct product = new CatalogProduct(UUID.randomUUID().toString(), seller.id(),
                 clean(request.name()), clean(request.description()), clean(request.category()),
                 request.price(), image(request.image()), stock(request.stockQuantity()));
-        return view(products.save(product), loadAggregates());
+        return view(products.save(product));
     }
 
     public ProductView update(String email, String id, ProductRequests.Upsert request) {
-        StoreUser seller = seller(email);
-        CatalogProduct product = ownedProduct(id, seller.getId());
+        AccountIdentity seller = seller(email);
+        CatalogProduct product = ownedProduct(id, seller.id());
         product.update(clean(request.name()), clean(request.description()), clean(request.category()),
                 request.price(), image(request.image()), stock(request.stockQuantity()));
-        return view(product, loadAggregates());
+        return view(product);
     }
 
     public void delete(String email, String id) {
-        StoreUser seller = seller(email);
-        products.delete(ownedProduct(id, seller.getId()));
+        AccountIdentity seller = seller(email);
+        products.delete(ownedProduct(id, seller.id()));
     }
 
-    private StoreUser seller(String email) {
-        StoreUser user = users.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
-        if (user.getRole() != StoreRole.SELLER) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+    @Transactional(readOnly = true)
+    public Optional<ProductSnapshot> findProduct(String id) {
+        return products.findById(id).map(this::snapshot);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductSnapshot requireProduct(String id) {
+        return findProduct(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, ProductSnapshot> findProducts(Collection<String> ids) {
+        return products.findAllById(ids).stream()
+                .map(this::snapshot)
+                .collect(java.util.stream.Collectors.toUnmodifiableMap(ProductSnapshot::id, product -> product));
+    }
+
+    @Transactional(readOnly = true)
+    public boolean exists(String id) {
+        return products.existsById(id);
+    }
+
+    public ProductSnapshot reserveStock(String id, int quantity) {
+        if (quantity < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Reservation quantity must be positive");
+        }
+        CatalogProduct product = products.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "A product is no longer available"));
+        if (quantity > product.getStockQuantity()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    product.getName() + " has only " + product.getStockQuantity() + " left in stock");
+        }
+        product.decreaseStock(quantity);
+        return snapshot(product);
+    }
+
+    public void restockIfPresent(String id, int quantity) {
+        products.findByIdForUpdate(id).ifPresent(product -> product.increaseStock(quantity));
+    }
+
+    private AccountIdentity seller(String email) {
+        AccountIdentity user = identity.requireByEmail(email);
+        if (user.role() != AccountRole.SELLER) throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         return user;
     }
 
@@ -83,30 +117,16 @@ public class CatalogProductService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
-    private ProductView view(CatalogProduct product, Map<String, ProductRatingAggregate> aggregates) {
-        ProductRatingAggregate aggregate = aggregates.get(product.getId());
-        double rating = aggregate != null ? aggregate.rating() : 0.0;
-        int reviewCount = aggregate != null ? aggregate.reviews() : 0;
+    private ProductView view(CatalogProduct product) {
         return new ProductView(product.getId(), product.getName(), product.getDescription(),
-                product.getCategory(), product.getPrice(), product.getImage(), rating, reviewCount,
+                product.getCategory(), product.getPrice(), product.getImage(),
                 product.getSellerId(), product.getStockQuantity());
     }
 
-    private Map<String, ProductRatingAggregate> loadAggregates() {
-        Map<String, ProductRatingAggregate> map = new HashMap<>();
-        for (Object[] row : reviews.findAggregateRatings()) {
-            String productId = (String) row[0];
-            Double avg = (Double) row[1];
-            Long count = (Long) row[2];
-            double rounded = java.math.BigDecimal.valueOf(avg != null ? avg : 0.0)
-                    .setScale(1, RoundingMode.HALF_UP)
-                    .doubleValue();
-            map.put(productId, new ProductRatingAggregate(rounded, count != null ? count.intValue() : 0));
-        }
-        return map;
+    private ProductSnapshot snapshot(CatalogProduct product) {
+        return new ProductSnapshot(product.getId(), product.getName(), product.getCategory(), product.getPrice(),
+                product.getImage(), product.getSellerId(), product.getStockQuantity());
     }
-
-    private record ProductRatingAggregate(double rating, int reviews) {}
 
     private static String clean(String value) { return value.trim(); }
     private static int stock(Integer value) { return value == null ? 10 : value; }
@@ -125,6 +145,8 @@ public class CatalogProductService {
     }
 
     public record ProductView(String id, String name, String description, String category,
-                              java.math.BigDecimal price, String image, double rating, int reviews, Long sellerId,
-                              int stockQuantity) {}
+                              java.math.BigDecimal price, String image, Long sellerId, int stockQuantity) {}
+
+    public record ProductSnapshot(String id, String name, String category, java.math.BigDecimal price, String image,
+                                  Long sellerId, int stockQuantity) {}
 }

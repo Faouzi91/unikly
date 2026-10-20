@@ -30,4 +30,6 @@ public final class ReviewViews {
             boolean currentUserVerifiedBuyer,
             ReviewItemView currentUserReview
     ) {}
+
+    public record ProductRatingSummaryView(String productId, double averageRating, int totalReviews) {}
 }

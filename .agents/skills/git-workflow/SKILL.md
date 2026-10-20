@@ -1,84 +1,30 @@
 ---
 name: git-workflow
 description: >-
-  Git workflow, branching conventions, semantic commit standards, and merge procedures for Unikly.
-  Use when starting new features, bug fixes, refactoring, or preparing pull requests and commits.
+  Preserve Unikly user work and keep changes isolated with safe topic branches, deliberate staging, reviewable commits, and careful handoff. Use for Git operations or delivery preparation.
 ---
 
-# Git Workflow & Branching Guidelines
+# Git workflow
 
-This skill enforces structured git branch management, semantic commit standards, and safe integration procedures for the Unikly platform.
+Keep changes isolated and reviewable. Preserve all pre-existing tracked changes and untracked files.
 
----
+## Before editing
 
-## 1. Branching Strategy
+- Run git status --short --branch. Inspect the current branch and both tracked and untracked changes before editing.
+- Do not overwrite, stage, move, or remove user-owned work that is unrelated to the task.
+- Keep non-trivial work on a focused topic branch using feat/, fix/, refactor/, docs/, or chore/ prefixes. Do not switch branches if it would risk existing work.
+- Branch from the current local base unless the user asks to synchronize with a remote. Do not fetch or pull automatically.
 
-Never commit directly to `master` for non-trivial increments, bug fixes, or feature development. Always create focused, short-lived topic branches from the latest `master`.
+## While working
 
-### Branch Naming Conventions
+- Keep the change set scoped. Stage explicit paths only if a commit was requested; never stage everything blindly.
+- Do not commit unless asked. Do not amend, reset, clean, force-push, merge, or push unless the user requests that action.
+- Never use destructive Git operations to make a working tree look clean.
+- If asked to commit, use a concise Conventional Commit message and inspect the staged diff first.
+- Do not include secrets, local environment files, generated build output, or unrelated editor configuration in a commit.
 
-| Branch Prefix | Purpose | Example |
-| :--- | :--- | :--- |
-| `feat/` | New functionality, domain models, or user features | `feat/product-reviews`, `feat/cart-quantity-stepper` |
-| `fix/` | Bug fixes, regression remedies, or display corrections | `fix/star-rating-color`, `fix/csrf-session-expiry` |
-| `refactor/` | Code structure improvements with no behavior changes | `refactor/signals-cart-store`, `refactor/security-config` |
-| `perf/` | Performance optimizations, SQL index tuning | `perf/catalog-aggregate-query` |
-| `docs/` | Architectural documentation, roadmap, or rule updates | `docs/update-build-guide` |
-| `chore/` | Dependency upgrades, build configuration adjustments | `chore/upgrade-lucide-icons` |
+## Before handoff
 
----
-
-## 2. Standard Workflow Lifecycle
-
-### Step 1: Synchronize and Branch
-```bash
-git checkout master
-git pull --rebase origin master
-git checkout -b <branch-type>/<short-description>
-```
-
-### Step 2: Develop and Test in Isolation
-- Follow toolchain isolation constraints (never run `mvn` or `npm` directly on the host):
-  ```bash
-  # Backend verification in Docker
-  docker run --rm -v "${HOME}/.m2:/root/.m2" -v "$(pwd)/backend:/workspace" -w /workspace unikly-api-test mvn test
-
-  # Frontend verification in Docker
-  docker build -t unikly-web-test ./frontend
-  ```
-
-### Step 3: Semantic Commit Messages
-Commit atomically using the [Conventional Commits](https://www.conventionalcommits.org/) format:
-```bash
-<type>(<scope>): <concise present-tense description>
-```
-Common scopes: `catalog`, `identity`, `orders`, `reviews`, `cart`, `frontend`, `security`, `docs`.
-
-Example:
-```bash
-git add .
-git commit -m "fix(frontend): restore star icon fill colors via encapsulated deep styles"
-```
-
-### Step 4: Live Verification
-Run end-to-end smoke tests against the running Docker Compose stack:
-```bash
-python3 /home/aboubakar-garba/.gemini/antigravity-cli/brain/d0e22077-c86a-4e78-90ef-5f0df8179ce6/scratch/smoke_test.py
-```
-
-### Step 5: Merge and Rebase
-Once all verification steps pass:
-```bash
-git checkout master
-git merge --ff-only <branch-type>/<short-description>
-git push origin master
-git branch -d <branch-type>/<short-description>
-```
-
----
-
-## 3. Hygiene & Safety Rules
-
-1. **No Sensitive Data**: Never commit secrets, credentials, API keys, or machine-specific absolute file paths.
-2. **Clean Status**: Ensure `git status` shows zero untracked artifacts or unwanted temporary files before committing.
-3. **Commit Integrity**: Never amend or force-push commits already pushed to shared remotes unless explicitly approved.
+- Inspect git diff --check, git diff --stat, the tracked diff, and status for untracked files.
+- Confirm only intended files changed and that user work remains untouched.
+- Report the branch, whether changes were committed, checks actually performed, and any remaining verification gap.

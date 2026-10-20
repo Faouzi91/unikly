@@ -1,3 +1,5 @@
+> [!WARNING]
+> Historical document: this guide and SRS v2 describe the superseded freelance-services marketplace. Current requirements are in docs/UNIKLY_SRS_v4.md, sequencing/progress is in docs/product-roadmap.md, and local setup is in README.md. Keep this file for history; do not use it to scope current product work.
 # Unikly — Build & Onboarding Guide
 
 **Companion to:** Unikly Software Requirements Specification, v2.0

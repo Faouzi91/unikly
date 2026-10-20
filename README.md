@@ -1,6 +1,6 @@
 # Unikly
 
-Unikly is an e-commerce product store with buyer and seller accounts, profile management, a persistent product catalog, stock-aware checkout, buyer order history, and seller fulfillment updates for their own products. Payment collection and carrier tracking are not integrated. The active product-store requirements are in [UNIKLY_SRS_v3.docx](UNIKLY_SRS_v3.docx). The preserved [UNIKLY_SRS_v2.docx](UNIKLY_SRS_v2.docx) and onboarding guide document the superseded freelance services marketplace direction.
+Unikly is an e-commerce marketplace foundation with buyer and seller accounts, profile management, a persistent product catalog and cart, stock-aware order placement, buyer order history, seller fulfillment updates, and product reviews. Payment collection and carrier tracking are not integrated. Current requirements are in [docs/UNIKLY_SRS_v4.md](docs/UNIKLY_SRS_v4.md); the phased implementation sequence and shared progress are in [docs/product-roadmap.md](docs/product-roadmap.md). The v2/v3 SRS files and onboarding guide are historical snapshots, including the superseded freelance-services direction.
 
 ## Current authentication slice
 
@@ -38,24 +38,29 @@ Stop the services with `docker compose down`. The database volume is retained; `
 
 ## Development and tests
 
-Backend tests run with the Maven Wrapper and use isolated in-memory H2, so they do not connect to your local PostgreSQL service:
+Use the pinned toolchains through Docker. Backend tests use isolated in-memory H2 and do not connect to the local PostgreSQL service:
 
-```sh
-cd backend
-./mvnw test
-```
+    docker run --rm -v "$PWD/backend:/workspace" -w /workspace maven:3.9.16-eclipse-temurin-25 mvn -B -ntp test
 
-Frontend build:
+Build the Angular production image with the Node version pinned in the frontend Dockerfile:
 
-```sh
-cd frontend
-npm ci
-npm run build
-```
+    docker build -t unikly-web-test ./frontend
 
-Frontend tests compile and run with Karma. A Chrome/Chromium installation is required for the browser execution phase.
+Frontend tests use Karma and require Chromium. Run them in a container with the pinned Node version and a compatible browser; the production image build does not run unit tests. See [the Docker toolchain skill](.agents/skills/docker-toolchain-isolated/SKILL.md) for the current isolated workflows.
 
-For Angular dev server work, start PostgreSQL/API with Compose or locally, then run `npm start` inside `frontend`. The dev server proxies `/api` to `127.0.0.1` using `API_HOST_PORT` from the root `.env` file, defaulting to port `8080`.
+GitHub Actions runs backend Maven verification, including module-boundary rules, and the Angular production build on pushes and pull requests. Use the [implementation roadmap](docs/product-roadmap.md) for current product sequencing, [release readiness](docs/release-readiness.md) for open launch gates, and the pull request template for issue links, acceptance criteria, and verification evidence.
+
+For Angular dev server work, use Node 24.21.0 from .nvmrc (or a Node container), start PostgreSQL/API with Compose or locally, then run npm start inside frontend. The dev server proxies /api to 127.0.0.1 using API_HOST_PORT from the root .env file, defaulting to port 8080.
+
+## AI coding assistants
+
+Project-wide instructions are maintained in [AGENTS.md](AGENTS.md). Gemini CLI loads [GEMINI.md](GEMINI.md), which imports those rules; Gemini CLI also discovers the reusable project skills in .agents/skills/.
+
+With Gemini CLI installed and authenticated, start it from the repository root and trust the workspace if prompted. Check skill discovery with gemini skills list or /skills list in an interactive session, and check loaded instructions with /memory show. If skills were added during the current session, run /skills reload or restart. No separate workspace extension or global skill installation is required.
+
+### Gemini delivery agents
+
+Project reviewers are defined in .gemini/agents/ and limited to read-only file/search tools. The primary session coordinates the relevant reviewers and owns all edits and final verification. Use /deliver to plan and implement a shippable slice; use /review to audit current changes without editing. Check /agents list and /commands list in Gemini CLI. No model or global settings need to be changed; reviewers inherit the selected session model. See [the ECC skill mapping and agent workflow](docs/ai-agent-workflow.md) for the curated skills, specialist roles, and delivery gates.
 
 ## API endpoints
 
@@ -67,6 +72,7 @@ For Angular dev server work, start PostgreSQL/API with Compose or locally, then 
 - `POST /api/auth/password`: authenticated password change; requires the current password and CSRF token.
 - `GET /api/profile/me`: current customer's profile.
 - `PUT /api/profile/me`: update current customer's profile and default delivery address.
+- `GET /api/reviews/summary`: public aggregate product ratings for catalog listings.
 - `GET /`: storefront landing page.
 - `GET /api/admin/access-check`: example admin-only route.
 - `GET /actuator/health`: health probe.

@@ -26,7 +26,6 @@ public enum StoreRole {
             StorePermission.CATALOG_MANAGE,
             StorePermission.ORDER_MANAGE,
             StorePermission.ORDER_REFUND,
-            StorePermission.REVIEW_CREATE_SELF,
             StorePermission.REVIEW_MODERATE,
             StorePermission.ROLE_ASSIGN,
             StorePermission.PLATFORM_REPORT_READ));

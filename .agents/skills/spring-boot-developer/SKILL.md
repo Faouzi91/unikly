@@ -1,69 +1,41 @@
 ---
 name: spring-boot-developer
 description: >-
-  Enterprise-grade best practices for modern Spring Boot (v3.4/v4.x) and Java 25 development in Unikly.
-  Use when creating or refactoring backend controllers, services, repositories, domain entities,
-  Spring Security configurations, or exception handlers.
+  Develop and review the Unikly Spring Boot 4.1 modular monolith in Java 25. Use for backend modules, REST APIs, services, persistence, security, and exception handling.
 ---
 
-# Spring Boot Developer Skill (Java 25 & Spring Boot 3.4/4.x)
+# Spring Boot developer
 
-This skill provides architectural patterns, coding guidelines, and enterprise standards for developing the Unikly backend.
+Unikly is a Spring Boot modular monolith. Confirm existing code and dependency conventions before adding a type or abstraction. Use only the layers required by the feature.
 
-## Architectural Boundaries
+## Module boundaries and Java design
 
-Unikly follows a modular monolith architecture. Code is partitioned by business domain (`identity`, `catalog`, `orders`, `profile`) under `com.unikly.store.*`. Each domain maintains strict layer separation:
+- Business modules are identity, catalog, cart, orders, profile, and reviews; platform contains shared HTTP and security configuration.
+- Keep entities and repositories inside their owning module. Cross-module business work goes through the owning module's public application service.
+- Keep controllers thin. Put use cases and transaction boundaries in application services.
+- Use immutable request and response records. Validate untrusted input at the API boundary and retain domain invariants in the domain or application layer.
+- Prefer clear, immutable Java 25 code and explicit types at public boundaries. Use Optional as a return value for absence, not as an entity field or method parameter. Avoid clever stream chains where a loop is clearer.
+- Do not expose JPA entities as API payloads or serialize lazy relationships.
+- Use read-only transactions for query operations where appropriate.
 
-1. **Domain (`domain/`)**:
-   - Entities (`@Entity`, `@Table`) and Enums (`StoreRole`, `DeliveryMethod`, etc.).
-   - Encapsulate domain logic, state validation, and business invariants directly within entities.
-   - Protect primary keys and immutable timestamps. Use `BigDecimal` with 2 decimal places for all financial values.
+## Persistence and query behavior
 
-2. **Persistence (`persistence/`)**:
-   - Spring Data JPA repositories extending `JpaRepository<Entity, ID>`.
-   - Prefer derived query methods (e.g. `findAllBySellerIdOrderByCreatedAtDesc`) or explicit JPQL/HQL queries.
-   - Never expose raw database entities directly to external consumers; always map through service layer DTOs.
+- Read ../postgres-flyway-architect/SKILL.md before changing persistence or schema.
+- Check query shape, fetch behavior, pagination, and indexes together. Avoid N+1 queries and unbounded collection responses.
+- Do not access another module's repository or mutate its entities directly.
+- Keep database constraints authoritative for relational invariants and add a forward Flyway migration when the schema changes.
 
-3. **Application / Service (`application/`)**:
-   - Transaction boundaries: Annotate service classes with `@Transactional` (Spring Framework).
-   - Read-only operations must use `@Transactional(readOnly = true)` to avoid unnecessary Hibernate dirty checking.
-   - Request and response data structures must be defined as immutable Java **records** (e.g., `ProductRequests.Upsert`, `OrderRequests.Create`).
+## API, security, and domain behavior
 
-4. **API / Controllers (`api/`)**:
-   - Clean REST endpoints using `@RestController` and explicit request mapping paths (`/api/...`).
-   - Validate incoming requests with `@Valid` and Jakarta validation annotations (`@NotBlank`, `@Min`, `@Size`, etc.).
-   - Explicit HTTP status codes (`@ResponseStatus(HttpStatus.CREATED)`, `@ResponseStatus(HttpStatus.NO_CONTENT)`).
+- Use explicit request validation and appropriate HTTP status codes.
+- Authentication uses Argon2 password hashes and server-side sessions; it does not use bearer tokens in browser storage.
+- State-changing requests require the session's CSRF token. Login rotates the session ID, so clients must fetch a fresh token after login.
+- Read docs/authorization-matrix.md for current route permissions. Verify controller mappings, security configuration, service ownership checks, and focused tests together.
+- Never rely on Angular guards or client-supplied identity, role, ownership, price, inventory, or order totals for authorization or business correctness.
+- Scope exception advice to the responsible controller or module. Do not turn unrelated integrity errors into misleading responses or expose stack traces, SQL details, secrets, or private data.
+- Use BigDecimal for all monetary values. Calculate prices, delivery fees, and order totals on the server.
+- Model state transitions, idempotency, and resource ownership in the application or domain layer.
 
----
+## Verification
 
-## Spring Security & Authentication Best Practices
-
-1. **Session & CSRF Lifecycle**:
-   - Unikly uses stateful, session-based authentication backed by Spring Security with `CookieCsrfTokenRepository.withHttpOnlyFalse()`.
-   - State-changing requests (`POST`, `PUT`, `DELETE`, `PATCH`) require the `X-XSRF-TOKEN` header matching the session's cookie.
-   - When users log in, Spring Security rotates the session ID. Clients must re-fetch `GET /api/auth/csrf` to retrieve the new session-bound CSRF token.
-
-2. **Role-Based Access Control**:
-   - Standard roles: `StoreRole.BUYER`, `StoreRole.SELLER`, `StoreRole.ADMIN`.
-   - Use method security (`@PreAuthorize("hasAuthority('ROLE_SELLER')")`) or route security filters.
-   - Always verify resource ownership: A seller may only update or delete products they own (`sellerId == authenticatedUser.id`); a buyer may only cancel or confirm orders they placed.
-
----
-
-## Exception Handling Best Practices
-
-1. **Scoped Exception Handlers**:
-   - When writing `@RestControllerAdvice`, **always scope** to specific controllers or packages (e.g. `@RestControllerAdvice(assignableTypes = AuthController.class)`).
-   - **Never** register global catch-all handlers that intercept generic database exceptions (like `DataIntegrityViolationException`) and report false errors (such as "An account with this email already exists") for unrelated operations like order placement or catalog creation.
-
-2. **Standard HTTP Error Responses**:
-   - Use `ResponseStatusException` (e.g., `HttpStatus.NOT_FOUND`, `HttpStatus.FORBIDDEN`, `HttpStatus.BAD_REQUEST`) for standard domain rejections.
-   - Include helpful, non-sensitive error messages.
-
----
-
-## Financial & Calculation Accuracy
-
-- **Never use `double` or `float` for prices, delivery fees, or order totals.**
-- Always use `java.math.BigDecimal` with `RoundingMode.HALF_UP` and explicit 2 decimal places.
-- Keep delivery fee and subtotal calculations strictly authoritative on the backend. Never trust client-supplied totals.
+For backend behavior changes, add or update focused tests for affected behavior and invariants, then run them in the Java 25 Docker toolchain. For API, security, persistence, order, or cross-layer changes, run the applicable local Compose smoke flow when requested by project workflow. See ../docker-toolchain-isolated/SKILL.md and ../e2e-smoke-testing/SKILL.md.

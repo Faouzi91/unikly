@@ -2,6 +2,83 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
+## 2026-10-20 — Current marketplace SRS, phased roadmap, and storefront style audit
+
+### Product scope and progress
+
+- Added `docs/UNIKLY_SRS_v4.md` as the active marketplace requirements baseline. It distinguishes existing code from production evidence, assigns stable requirement IDs, records open market decisions, and marks payment, carrier, settlement, and scale complexity as gated work.
+- Added `docs/product-roadmap.md` with small acceptance-based increments, dependency decisions, status rules, and a shared progress handoff for Codex, Gemini, and other contributors. Final review clarified email verification, operator account lifecycle, scoped support-data access, responsive launch checks, ownership denials, verified-review acceptance, and manual payment-risk ownership before launch; automated risk and catalog identity work remain evidence-gated.
+- Repointed project, architecture, skill, and Gemini guidance to the same SRS and roadmap; preserved v2/v3 SRS and the old onboarding guide as historical references.
+- Kept launch gates in `docs/release-readiness.md` and completion evidence in this changelog so active work, release proof, and history have separate clear roles.
+
+### Storefront theme
+
+- Added `docs/theme-style-audit.md` with source-backed findings and a staged design sequence covering trust claims, interaction accessibility, shared tokens, responsive targets, media, and route titles.
+- No storefront behavior or styles were changed in this documentation increment; rendered browser inspection remains an open gate.
+
+### Verification
+
+- Documentation link targets, requirement/milestone cross-references, status consistency, and final diff were reviewed; no application build or live-stack run was needed for this documentation-only increment.
+
+## 2026-10-20 — Enforced module boundaries and delivery tracking
+
+### Architecture and storefront
+
+- Replaced cross-module repository/entity access in catalog, cart, orders, reviews, and profile flows with application-service contracts and immutable identity/product records.
+- Moved catalog rating aggregation behind the reviews API; catalog product operations no longer query the reviews repository.
+- Split Angular pages into storefront, catalog, cart, and seller features. The app router now composes only route arrays exported through feature `public-api.ts` files, and buyer order routing is owned by the account feature.
+- Added ArchUnit checks for cross-module private-package access and module dependency cycles.
+
+### Authorization and release tracking
+
+- Limited public review creation to buyers with eligible verified purchases. Administrators retain review moderation permission and cannot publish storefront reviews.
+- Added a public aggregate-rating endpoint for catalog cards and product listings; persisted products now show only ratings returned by real review aggregates.
+- Marked seeded demo reviews as unverified because the sample buyer has no matching orders, so fixture data cannot claim a verified purchase without evidence.
+- Added GitHub Actions verification for backend tests/architecture checks and the Angular production build, plus work-item and pull-request templates.
+- Added `docs/release-readiness.md` to track open launch gates separately from the completed-work changelog.
+
+### Verification
+
+- Passed Java 25 backend main and test source compilation with test execution skipped, the Angular feature-boundary check in Node 24, and the Angular production Docker build.
+- The isolated Compose smoke flow remains unverified: the exact pinned Temurin runtime image was downloading too slowly, so the build was stopped before any validation services started.
+
+## 2026-10-20 — Gemini agent orchestration and ECC-aligned project skills
+
+### Agent workflow
+
+- Added four read-only Gemini specialists for Spring, Angular, PostgreSQL/Flyway, and security reviews. The primary session owns implementation, delegates only relevant bounded reviews, and verifies findings.
+- Added /deliver and /review Gemini commands for implementation coordination and read-only review. Specialists inherit the selected Gemini model and have file/search tools only; no global or provider-specific settings were added.
+
+### Skill and rule improvements
+
+- Strengthened delivery guidance with conditional specialist delegation and evidence-based synthesis.
+- Tightened Spring, Angular, PostgreSQL/Flyway, Git, and project-structure guidance around Unikly's current modular monolith, storefront, data rules, accessibility, and branch safety.
+- Kept existing skills because each covers a distinct project workflow; did not delete or replace them with generic ECC material.
+- Added docs/ai-agent-workflow.md to map the relevant ECC skills to Unikly skills and explain the Gemini delegation model.
+
+### Verification
+
+- Documentation and agent configuration only. No application build, unit test, or live-stack smoke test was run.
+- Gemini CLI is not available in this environment, so native agent discovery could not be exercised here.
+
+## 2026-10-20 — Agent rules, ECC-inspired delivery, and Gemini CLI support
+
+### Agent guidance and skills
+
+- Replaced outdated product and architecture assumptions in AGENTS.md with the active storefront scope, current toolchain versions, safe branch practices, and change-sized verification guidance.
+- Added the feature-delivery skill for focused planning, implementation, reviewer-style diff inspection, and evidence-based verification.
+- Updated the project structure, Spring, security, Docker, Git, and smoke-testing skills to match the current code. Removed the machine-specific smoke-test path and assumed development credentials.
+
+### Gemini and project documentation
+
+- Added GEMINI.md as a Gemini CLI context entry point importing AGENTS.md. Gemini CLI discovers the shared skills in .agents/skills/.
+- Documented Gemini CLI setup and the pinned Docker development commands in README.md.
+- Updated architecture and authorization documentation to match current modules and security matchers. Marked the old onboarding guide as historical.
+
+### Verification
+
+- Documentation and agent configuration changes only. No application build, unit test, or live-stack smoke test was run.
+
 ## 2026-10-02 — Git workflow skill, star rating color fix, and verified purchase review gate
 
 ### Developer Tooling & Git Workflow
@@ -12,14 +89,14 @@ Progress notes for the Unikly project. Payment collection and carrier integratio
 
 ### Frontend Star Rating Display Fix
 - Resolved an issue where Lucide star icons appeared grey even on reviewed products:
-  - Switched from `[class.filled]="..."` to dynamic `[class]="... ? '... filled' : '...'"` bindings across [`HomePage`](frontend/src/app/features/home/pages/home-page/home-page.html) and [`ProductDetailPage`](frontend/src/app/features/home/pages/product-detail-page/product-detail-page.html) to prevent Lucide's `[attr.class]` binding from wiping out the active class.
-  - Added `:host ::ng-deep` encapsulated CSS selectors in [`home-page.css`](frontend/src/app/features/home/pages/home-page/home-page.css) and [`product-detail-page.css`](frontend/src/app/features/home/pages/product-detail-page/product-detail-page.css) targeting `<svg:path>` elements directly to guarantee vibrant golden fill (`#f59e0b`) and amber outline (`#d97706`).
+  - Switched from `[class.filled]="..."` to dynamic `[class]="... ? '... filled' : '...'"` bindings across [`HomePage`](frontend/src/app/features/storefront/pages/home-page/home-page.html) and [`ProductDetailPage`](frontend/src/app/features/catalog/pages/product-detail-page/product-detail-page.html) to prevent Lucide's `[attr.class]` binding from wiping out the active class.
+  - Added `:host ::ng-deep` encapsulated CSS selectors in [`home-page.css`](frontend/src/app/features/storefront/pages/home-page/home-page.css) and [`product-detail-page.css`](frontend/src/app/features/catalog/pages/product-detail-page/product-detail-page.css) targeting `<svg:path>` elements directly to guarantee vibrant golden fill (`#f59e0b`) and amber outline (`#d97706`).
 
 ### Authenticity & Verified Purchase Review Gate
 - Strengthened review integrity in [`ProductReviewService`](backend/src/main/java/com/unikly/store/reviews/application/ProductReviewService.java):
   - Enforced that only buyers who have placed and confirmed an order for a product can submit a review (`HTTP 403 Forbidden` if unpurchased).
   - Updated `canReview` calculation in review summary responses to require verified purchase status.
-- Enhanced UX on [`ProductDetailPage`](frontend/src/app/features/home/pages/product-detail-page/product-detail-page.html):
+- Enhanced UX on [`ProductDetailPage`](frontend/src/app/features/catalog/pages/product-detail-page/product-detail-page.html):
   - Verified buyers see "Write a verified review" with a confirmed purchase status hint.
   - Authenticated buyers without a purchase see a clear "Verified Purchase Required" notice explaining the policy, with a one-click CTA to add the product to their basket or view cart.
 - Added comprehensive integration tests in [`ProductReviewTests`](backend/src/test/java/com/unikly/store/reviews/ProductReviewTests.java); verified purchase gating with 25 passing backend tests.
@@ -29,10 +106,10 @@ Progress notes for the Unikly project. Payment collection and carrier integratio
 - Standardized the entire Angular web client on [`@lucide/angular`](https://lucide.dev) standalone components, eliminating unicode emojis and verbose raw SVG boilerplate.
 - Re-architected icons across all root and feature components with clean tree-shaken imports:
   - [`App`](frontend/src/app/app.ts): Replaced search, account, and header cart icons with `LucideSearch`, `LucideUser`, and `LucideShoppingCart`.
-  - [`HomePage`](frontend/src/app/features/home/pages/home-page): Replaced catalog card rating stars and stepper controls with `LucideStar`, `LucideTrash`, `LucideMinus`, and `LucidePlus`.
-  - [`BasketPage`](frontend/src/app/features/home/pages/basket-page): Replaced delivery threshold icons, basket item stepper buttons, trust guarantee checkmarks, and empty state cart graphics with `LucideCheck`, `LucideTruck`, `LucideTrash`, `LucideMinus`, `LucidePlus`, and `LucideShoppingCart`.
-  - [`ProductDetailPage`](frontend/src/app/features/home/pages/product-detail-page): Replaced rating header stars, rating breakdown charts, interactive star rating picker, verified buyer shield badges, review author avatars, empty feedback indicators, and action buttons with `LucideStar`, `LucideSquarePen`, `LucideShieldCheck`, `LucideCheck`, `LucideCircleAlert`, `LucideMessageSquare`, `LucideUser`, and `LucideX`.
-- Updated CSS styling across [`home-page.css`](frontend/src/app/features/home/pages/home-page/home-page.css) and [`product-detail-page.css`](frontend/src/app/features/home/pages/product-detail-page/product-detail-page.css) ensuring SVG path elements inherit fill and stroke values dynamically for rating states.
+  - [`HomePage`](frontend/src/app/features/storefront/pages/home-page): Replaced catalog card rating stars and stepper controls with `LucideStar`, `LucideTrash`, `LucideMinus`, and `LucidePlus`.
+  - [`BasketPage`](frontend/src/app/features/cart/pages/basket-page): Replaced delivery threshold icons, basket item stepper buttons, trust guarantee checkmarks, and empty state cart graphics with `LucideCheck`, `LucideTruck`, `LucideTrash`, `LucideMinus`, `LucidePlus`, and `LucideShoppingCart`.
+  - [`ProductDetailPage`](frontend/src/app/features/catalog/pages/product-detail-page): Replaced rating header stars, rating breakdown charts, interactive star rating picker, verified buyer shield badges, review author avatars, empty feedback indicators, and action buttons with `LucideStar`, `LucideSquarePen`, `LucideShieldCheck`, `LucideCheck`, `LucideCircleAlert`, `LucideMessageSquare`, `LucideUser`, and `LucideX`.
+- Updated CSS styling across [`home-page.css`](frontend/src/app/features/storefront/pages/home-page/home-page.css) and [`product-detail-page.css`](frontend/src/app/features/catalog/pages/product-detail-page/product-detail-page.css) ensuring SVG path elements inherit fill and stroke values dynamically for rating states.
 - Formalized Rule 6 in [`AGENTS.md`](AGENTS.md) mandating `@lucide/angular` standalone components with SVG attribute selectors (`<svg lucideName>`) for all icons across the repository.
 
 ### Verification
@@ -59,14 +136,14 @@ Progress notes for the Unikly project. Payment collection and carrier integratio
 - Created [`ReviewRequests`](backend/src/main/java/com/unikly/store/reviews/application/ReviewRequests.java) and [`ReviewViews`](backend/src/main/java/com/unikly/store/reviews/application/ReviewViews.java) immutable record DTOs.
 - Created [`ProductReviewService`](backend/src/main/java/com/unikly/store/reviews/application/ProductReviewService.java) providing review summaries with star breakdowns (1-5 stars), verified purchase detection, upsert semantics, and moderation.
 - Updated [`CatalogProductService`](backend/src/main/java/com/unikly/store/catalog/application/CatalogProductService.java) to dynamically aggregate real star ratings and review counts from `product_reviews`.
-- Seeded realistic verified reviews in [`DevelopmentUserSeeder`](backend/src/main/java/com/unikly/store/identity/application/DevelopmentUserSeeder.java).
+- Seeded realistic verified reviews in [`DevelopmentUserSeeder`](backend/src/main/java/com/unikly/store/platform/bootstrap/DevelopmentUserSeeder.java).
 - Created REST controllers [`ProductReviewController`](backend/src/main/java/com/unikly/store/reviews/api/ProductReviewController.java) and [`AdminReviewModerationController`](backend/src/main/java/com/unikly/store/reviews/api/AdminReviewModerationController.java).
 
 ### Frontend UI & Vector Icon System
 - Codified strict vector icon rule in [`AGENTS.md`](AGENTS.md): all unicode emojis replaced with accessible inline SVG vector icons across the web client.
-- Replaced emojis and text steppers across [`BasketPage`](frontend/src/app/features/home/pages/basket-page), [`HomePage`](frontend/src/app/features/home/pages/home-page), and [`ProductDetailPage`](frontend/src/app/features/home/pages/product-detail-page) with crisp SVG vector icons.
+- Replaced emojis and text steppers across [`BasketPage`](frontend/src/app/features/cart/pages/basket-page), [`HomePage`](frontend/src/app/features/storefront/pages/home-page), and [`ProductDetailPage`](frontend/src/app/features/catalog/pages/product-detail-page) with crisp SVG vector icons.
 - Created [`ReviewsService`](frontend/src/app/core/reviews/reviews.service.ts) Angular core HTTP service.
-- Completely enhanced [`ProductDetailPage`](frontend/src/app/features/home/pages/product-detail-page):
+- Completely enhanced [`ProductDetailPage`](frontend/src/app/features/catalog/pages/product-detail-page):
   - Authoritative average rating header with smooth anchor link scroll to reviews section.
   - Overall score banner, star breakdown bars (5★ down to 1★) with counts and percentages.
   - "Verified Purchase" badges for confirmed buyers.
@@ -82,15 +159,15 @@ Progress notes for the Unikly project. Payment collection and carrier integratio
 
 ### Frontend UX & Reactive State Management
 - Enhanced [`CartService`](frontend/src/app/core/cart/cart.service.ts) with `updateQuantity(productId, quantity, availableQuantity)` and real-time synchronization with `PUT /api/cart/items/{productId}`.
-- Re-architected [`BasketPage`](frontend/src/app/features/home/pages/basket-page):
+- Re-architected [`BasketPage`](frontend/src/app/features/cart/pages/basket-page):
   - Added accessible `[-] [quantity] [+]` stepper controls with instant stock ceiling enforcement and single-item removal.
   - Added product thumbnail previews with lazy loading and fallback placeholder handling.
   - Added unit price breakdown, dynamic line totals, and stock status badges (`In stock`, `Only X left in stock`, `Max in basket`).
   - Added dynamic Free Delivery progress bar (`Add $X.XX more for FREE Standard Delivery` vs. `You've unlocked FREE Standard Delivery!`).
   - Redesigned order summary card with item count, delivery estimates, trust guarantees, and sticky desktop positioning.
 - Enhanced Catalog & Product Detail UX:
-  - Added inline in-basket steppers directly to product grid cards on [`HomePage`](frontend/src/app/features/home/pages/home-page) allowing buyers to increment or decrement quantities without leaving the catalog.
-  - Added in-basket stepper and direct "View basket" link to [`ProductDetailPage`](frontend/src/app/features/home/pages/product-detail-page).
+  - Added inline in-basket steppers directly to product grid cards on [`HomePage`](frontend/src/app/features/storefront/pages/home-page) allowing buyers to increment or decrement quantities without leaving the catalog.
+  - Added in-basket stepper and direct "View basket" link to [`ProductDetailPage`](frontend/src/app/features/catalog/pages/product-detail-page).
   - Added low-stock alert badges (`Only X left!`) across catalog listings and detail views.
 
 ## 2026-10-02 — Server-side cart persistence and guest-to-buyer sync (`CART_MANAGE_SELF`)

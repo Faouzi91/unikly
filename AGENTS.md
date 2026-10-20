@@ -1,136 +1,91 @@
-# Unikly — AI Agent & Developer Rules (`AGENTS.md`)
+# Unikly project instructions
 
-This file contains foundational project rules and architectural constraints for AI agents and developers working on the **Unikly** marketplace platform.
+These rules apply to contributors and coding agents working in this repository.
 
----
+## Product scope and sources of truth
 
-## 1. Core Engineering Principles
+- Unikly is currently an e-commerce storefront with buyer and seller accounts, a product catalog, cart, checkout and orders, fulfillment, profiles, and product reviews. Payment collection and carrier integrations are not implemented.
+- Use [docs/UNIKLY_SRS_v4.md](docs/UNIKLY_SRS_v4.md) for active product requirements and status, [docs/product-roadmap.md](docs/product-roadmap.md) for sequencing and shared progress, [README.md](README.md) for run instructions, and [docs/architecture.md](docs/architecture.md) plus [docs/authorization-matrix.md](docs/authorization-matrix.md) for implementation boundaries.
+- [UNIKLY_SRS_v3.docx](UNIKLY_SRS_v3.docx), [UNIKLY_SRS_v2.docx](UNIKLY_SRS_v2.docx), and [UNIKLY_BUILD_AND_ONBOARDING_GUIDE.md](UNIKLY_BUILD_AND_ONBOARDING_GUIDE.md) are historical snapshots. Do not use them to define current product work.
+- Ship a small user-visible slice at a time. Keep the backend a modular monolith. Do not add payment gateways, carrier integrations, microservices, or other deferred infrastructure unless current requirements explicitly call for them.
+- If repository code and a rule disagree, inspect the current implementation and update the stale rule or documentation as part of the task.
 
-1. **"Build Small and Prove It Before Building Big"**:
-   - Follow the **Unikly Build & Onboarding Guide** and SRS.
-   - Do not jump ahead to premature architectural complexity (e.g. distributed microservices, external payment gateways, live carrier tracking integrations) before earlier foundations are complete and verified.
-   - All complex increments (payment gateways, live carrier APIs, third-party email servers) are deferred until last.
+## Delivery workflow
 
-2. **Strict Toolchain Isolation (Host vs. Container)**:
-   - **Host Machine**: Uses OpenJDK 17 and Node 22.
-   - **Target Project**: Requires **Eclipse Temurin Java 25** and **Node v24.21.0 Alpine**.
-   - **MANDATORY**: Never run `./mvnw test` or `npm run build` directly on the host machine.
-   - **Always run Maven backend tests via Docker**:
-     ```bash
-     docker run --rm -v "${HOME}/.m2:/root/.m2" -v "$(pwd)/backend:/workspace" -w /workspace unikly-api-test mvn test
-     ```
-   - **Always run Angular builds via Docker**:
-     ```bash
-     docker build -t unikly-web-test ./frontend
-     ```
+1. Inspect the relevant source, docs, tests, and Git status before editing. Preserve unrelated user changes and untracked files.
+2. For multi-file or behavior-changing work, state the intended result and acceptance checks before implementation. Resolve routine choices from current code and requirements.
+3. Make the smallest complete change. Reuse existing patterns and avoid unrelated refactors or dependencies.
+4. Review the final diff as a reviewer: check behavior, authorization, data ownership, migrations, accessibility, responsive UI, secrets, and accidental scope.
+5. Verify the affected layer using Docker workflows in [the toolchain skill](.agents/skills/docker-toolchain-isolated/SKILL.md). Run a local Compose smoke test for changes that affect a real user flow, authorization, persistence, or service wiring. Documentation-only changes do not require application builds or live-stack runs.
+6. Report commands actually run and their results. If a relevant check cannot run, say why; do not claim unverified work passed.
+7. Add a dated, domain-categorized entry to [CHANGELOG.md](CHANGELOG.md) for each feature, bug fix, or maintained project-rule change.
 
-3. **Mandatory Live Verification**:
-   - Never conclude that a task is finished based purely on unit tests or compilation.
-   - Run end-to-end smoke tests against the active Docker Compose stack (`http://localhost:8080` API, `http://localhost:4200` Web, PostgreSQL) to verify full request lifecycles.
+## Git workflow
 
-4. **Git Branching & Commit Discipline**:
-   - Never commit new features, bug fixes, or non-trivial increments directly to `master`.
-   - Always create a dedicated topic branch (`feat/<name>`, `fix/<name>`, `refactor/<name>`) following [`.agents/skills/git-workflow/SKILL.md`](.agents/skills/git-workflow/SKILL.md).
-   - Verify all tests in Docker before merging to `master`.
+- Keep non-trivial work on a focused topic branch; use feat/, fix/, refactor/, docs/, or chore/ prefixes. Do not commit directly to master.
+- Inspect and preserve existing work before switching branches. Do not reset, clean, amend shared commits, force-push, merge, or push unless the user requests that action.
+- Use a Conventional Commit message if a commit is requested. Keep changes scoped and reviewable.
 
----
+## Toolchains and local services
 
-## 2. Project Structure & Code Placement Guide
+- Project versions are pinned in .java-version, .nvmrc, Maven configuration, lockfiles, and Dockerfiles. Current targets are Java 25.0.4, Node 24.21.0, Spring Boot 4.1, Angular 22.2, and PostgreSQL 18.6.
+- Use Docker for Maven tests and Angular production builds; do not rely on whatever Java or Node version happens to be installed on the host. See [the isolated toolchain skill](.agents/skills/docker-toolchain-isolated/SKILL.md) for commands.
+- Use docker compose for local full-stack work. Keep local .env values private. Do not print or copy secrets into logs, prompts, docs, or commits.
+- Never run docker compose down -v as routine cleanup; it deletes the local database volume.
 
-Anyone joining or contributing to Unikly must follow this clean layout:
+## Architecture and placement
 
-```text
-unikly/
-├── .agents/skills/         # Specialized AI agent skills and runbooks
-├── backend/                # Spring Boot 4.x / Java 25 Modular Monolith
-│   ├── src/main/java/com/unikly/store/
-│   │   ├── catalog/        # Product catalog, stock, seller inventory
-│   │   ├── identity/       # Users, auth, password hashing, session/CSRF, RBAC
-│   │   ├── orders/         # Orders, line items, delivery options, fulfillment
-│   │   ├── profile/        # Customer delivery address & contact details
-│   │   └── platform/       # Cross-cutting security & HTTP configuration
-│   └── src/main/resources/db/migration/ # Flyway SQL migrations (V1__ to V<N>__)
-├── frontend/               # Angular 22.2 Standalone Client (Node 24 Alpine)
-│   ├── public/             # Static assets (SVGs, logos, placeholders)
-│   └── src/app/
-│       ├── core/           # Singleton services, state management, HTTP APIs
-│       └── features/       # Screen-level views (account, home, identity)
-├── docs/                   # Product SRS (v2/v3) and architecture specs
-├── AGENTS.md               # Foundational agent rules & engineering constraints
-├── CHANGELOG.md            # Verified increment & bugfix journal
-├── docker-compose.yml      # Local multi-container topology (Postgres, API, Web)
-└── UNIKLY_BUILD_AND_ONBOARDING_GUIDE.md # SRS implementation roadmap
-```
+- Backend source lives under backend/src/main/java/com/unikly/store/. Current modules are identity, catalog, cart, orders, profile, reviews, and cross-cutting platform.
+- Keep each module's domain, application, persistence, and API code inside that module. Add only layers a feature needs; do not create empty modules or placeholder packages.
+- Cross-module business operations go through the owning module's public application service. Do not reach into another module's repositories or mutate its entities directly.
+- Database migrations live in backend/src/main/resources/db/migration/. Never edit or delete an applied migration; add a forward migration.
+- Angular pages live in frontend/src/app/features/; shared state and API clients live in frontend/src/app/core/. Keep feature routes and internals behind their public entry points.
+- `app.routes.ts` composes only route exports from feature `public-api.ts` files. Keep storefront, catalog, cart/checkout, and seller workflows in their owning features; shared catalog API/state belongs in `core/catalog/`.
+- For exact file placement and current structure, use [the project structure skill](.agents/skills/project-structure-navigator/SKILL.md).
 
-### Where Does My Code Go?
+## Backend rules
 
-| I need to add / modify... | Target Location | Placement Rule |
-| :--- | :--- | :--- |
-| **New DB Table / Column** | `backend/src/main/resources/db/migration/` | Add a new immutable forward migration `V<N+1>__<name>.sql`. |
-| **JPA Entity / Enum** | `backend/.../<domain>/domain/` | Keep entities rich with domain validation and invariants. |
-| **Data Repository** | `backend/.../<domain>/persistence/` | Extend `JpaRepository<Entity, ID>`. |
-| **Business Service / Flow** | `backend/.../<domain>/application/` | Annotate with `@Transactional`. Use `readOnly = true` for queries. |
-| **Request / Response DTO** | `backend/.../<domain>/application/` | Define as immutable Java **records** with `@Valid` constraints. |
-| **REST Controller** | `backend/.../<domain>/api/` | Map under `/api/<domain>`. Return records or standard status codes. |
-| **Shared State / API Service** | `frontend/src/app/core/<domain>/` | Use `providedIn: 'root'`. Expose reactive state via Signals. |
-| **Page / Route View** | `frontend/src/app/features/<domain>/pages/`| Create standalone component with `@if` and `@for (...; track ...)`. |
-| **Static SVG / Image** | `frontend/public/` | Place SVG here; always attach `(error)` fallback handlers to `<img>`. |
+- Use immutable Java records for request and response DTOs and validate untrusted input at the API boundary.
+- Keep transaction boundaries in application services. Use read-only transactions for query operations where appropriate.
+- Enforce authorization on the server and check resource ownership in the application service. UI guards and hidden controls are not security boundaries.
+- Keep API access deny-by-default. Add the narrow permission needed for a real operation and update [the authorization matrix](docs/authorization-matrix.md).
+- Use BigDecimal for money. The server computes prices, delivery fees, and order totals; never trust client totals.
+- Keep exception handling scoped to the responsible API/module and return no secrets, SQL details, or stack traces to clients.
 
----
+## Frontend rules
 
-## 3. Backend Architecture (Spring Boot & Java 25)
+- Use standalone Angular components and inject() for dependency injection. Prefer Signals for local and shared reactive state where they fit.
+- Use Angular control flow (@if, @for with a stable track, and @switch); do not introduce NgModules.
+- Keep templates semantic and accessible. Label controls, provide useful keyboard/focus behavior, and expose dynamic status updates accessibly.
+- Use the existing Lucide Angular icon package for interface icons; do not use emoji icons or add verbose inline SVGs.
+- Follow existing image loading and fallback patterns. Do not apply external-image rules to local assets without checking how the asset is served.
 
-1. **Modular Monolith by Domain**:
-   - Organize code into clean domain packages under `com.unikly.store.*` (`identity`, `catalog`, `orders`, `profile`).
-   - Separate layers: `domain/`, `persistence/`, `application/`, `api/`.
-2. **DTOs as Records**:
-   - Use immutable Java records for request payloads and response views. Validate input with `@Valid` and Jakarta constraints.
-3. **Transaction Demarcation**:
-   - Annotate service classes with `@Transactional`.
-   - Use `@Transactional(readOnly = true)` for query methods.
-4. **Scoped Exception Handlers**:
-   - Always scope `@RestControllerAdvice` to specific controllers or packages (`@RestControllerAdvice(assignableTypes = AuthController.class)`).
-   - Never swallow or mask general database integrity exceptions.
-5. **Authoritative Financial Calculations**:
-   - Never use `double` or `float` for prices or fees. Use `BigDecimal` with 2 decimal places and `RoundingMode.HALF_UP`.
-   - Delivery fees and order totals must be computed authoritatively on the backend.
+## Database and security
 
----
+- Use forward-only Flyway migrations with appropriate constraints, indexes, and ownership relationships.
+- Keep credentials and keys out of source control. .env.example may contain safe placeholders only.
+- For authentication, authorization, CSRF, ownership, or sensitive data changes, read [the security skill](.agents/skills/web-security-owasp/SKILL.md) and the authorization matrix.
 
-## 4. Frontend Architecture (Angular 22.x & TypeScript)
+## Gemini CLI and shared skills
 
-1. **Standalone Components**:
-   - All components, pipes, and directives must be standalone. No `NgModules`.
-2. **Signal-Based Reactivity**:
-   - Use `signal()`, `computed()`, and `effect()`. Avoid manual subscriptions and legacy `RxJS` subject plumbing where signals fit.
-3. **Modern Control Flow**:
-   - Use `@if`, `@for (...; track ...)`, and `@switch`. Do not use `*ngIf` or `*ngFor`.
-4. **Constructor-less Injection**:
-   - Inject dependencies using `inject(Service)`.
-5. **Defensive Templates & Accessibility**:
-   - Always attach `(error)="$any($event.target).src = '/product-placeholder.svg'"` and `loading="lazy"` to external images.
-   - Maintain WCAG 2.1 AA compliance: semantic elements, accessible labels (`[attr.aria-label]`), and `role="status"` for dynamic updates.
-6. **Strictly Vector Icons with Lucide Angular (No Emojis)**:
-   - Always use the `@lucide/angular` standalone component icon library (`LucideStar`, `LucideShoppingCart`, `LucideTrash`, `LucideCheck`, etc.) rather than unicode emojis or verbose raw SVGs.
-   - Import required icons individually into the component's `imports` array to ensure strict tree-shaking.
-   - Use the icon's SVG attribute selector (e.g. `<svg lucideShoppingCart [size]="20" aria-hidden="true"></svg>`).
-   - Ensure icons specify accessible attributes (`aria-hidden="true"` or explicit `[attr.aria-label]`), standard sizing (`[size]="..."`), and inherit theme colors (`stroke="currentColor"` or `color="currentColor"`).
+- Gemini CLI should load the root GEMINI.md, which imports these project instructions.
+- Reusable project skills live in .agents/skills/. Keep each SKILL.md frontmatter with a concise name and task-specific description; avoid copying large generic rule sets.
+- Use the [feature delivery skill](.agents/skills/feature-delivery/SKILL.md) for feature, bug-fix, and refactor work. It adapts ECC-style planning, review, and verification to Unikly's current product and toolchains.
+- Track open work with GitHub issues and progress/check evidence with the pull request template. Keep [docs/product-roadmap.md](docs/product-roadmap.md) as the shared product sequence/status, [docs/release-readiness.md](docs/release-readiness.md) as the launch-gate checklist, and CHANGELOG.md as completed-work history.
+- Record repository documentation paths as relative paths. Do not add machine-specific paths or user-specific secrets.
 
----
+## Gemini specialist agents and orchestration
 
-## 5. Database & Migrations (PostgreSQL 18 & Flyway)
+- The primary Gemini session is the delivery orchestrator and remains responsible for planning, implementation, integrating reviewer feedback, verification, and the final report. Use .agents/skills/feature-delivery/SKILL.md for multi-file or behavior-changing work.
+- Codex, Gemini, and other contributors use the same task context: read the active SRS and roadmap, then the linked GitHub issue/PR, architecture, and authorization matrix as relevant. The primary orchestrator gives every delegated reviewer the same requirement IDs, roadmap increment, acceptance criteria, changed paths, and focused question; refresh that packet from the checked-out files for each increment.
+- The primary orchestrator is the sole editor of shared roadmap status during a parallel task and reconciles reviewer findings before changing it. Specialists return evidence and do not create conflicting progress snapshots.
+- Gemini CLI discovers project specialists from .gemini/agents/. The available reviewers are spring-reviewer, angular-reviewer, database-reviewer, and security-reviewer. Their descriptions identify when they apply.
+- Specialist agents have read-only file and search tools. They analyze code and return evidence; they do not edit files or start other agents. The primary session delegates only bounded, relevant reviews and checks any finding against the source before acting on it.
+- Use /deliver for a complete implementation workflow and /review for a read-only review of current changes. Use @spring-reviewer, @angular-reviewer, @database-reviewer, or @security-reviewer to request a focused audit directly.
+- The agents inherit the Gemini session's model. Keep project-level settings minimal; do not pin a provider model or widen the specialists' tool access without a project need.
+- In Gemini CLI, trust the repository workspace, then verify agents with /agents list and commands with /commands list. After adding or editing definitions in a running session, use /agents reload and /commands reload.
 
-1. **Immutable Migrations**:
-   - Place migrations in `backend/src/main/resources/db/migration/` as `V<N>__<description>.sql`.
-   - Never edit or delete an existing migration file. Always create a new forward migration.
-2. **Schema Invariants**:
-   - Ensure foreign keys and relational constraints (such as `seller_id NOT NULL` on order items) are consistently populated in seed data and migrations.
+## Milestone commits and pushes
 
----
-
-## 6. Documentation & Communication
-
-- Maintain [`CHANGELOG.md`](CHANGELOG.md) with structured, domain-categorized summaries for every increment and bugfix.
-- In repository documentation and committed markdown files, always use clean relative paths—never leak absolute local filesystem paths or usernames.
-- Preserve existing comments and docstrings.
-- In interactive chat responses, provide clickable GitHub-style markdown links with the `file://` scheme for modified files for direct local editor navigation.
+- After a milestone satisfies its acceptance criteria and required verification, commit the focused milestone on its topic branch and push that branch to `origin`, as the user requested. Keep each milestone in a reviewable Conventional Commit.
+- Do not push to the default branch, force-push, or mark an increment complete while required evidence is missing. Record blocked checks in the issue, roadmap, release-readiness page, and changelog as appropriate.

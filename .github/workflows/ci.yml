@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend tests and architecture rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Run Maven verification in Java 25 container
+        run: >-
+          docker run --rm
+          --mount type=bind,source=${{ github.workspace }}/backend,target=/workspace
+          -w /workspace
+          maven:3.9.16-eclipse-temurin-25
+          mvn -B -ntp verify
+
+  frontend:
+    name: Angular feature boundaries and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Check Angular feature boundaries
+        run: >-
+          docker run --rm
+          --mount type=bind,source=${{ github.workspace }}/frontend,target=/workspace
+          -w /workspace
+          node:24.21.0-alpine
+          npm run check:architecture
+      - name: Build with the pinned Node container
+        run: docker build -t unikly-web-ci ./frontend

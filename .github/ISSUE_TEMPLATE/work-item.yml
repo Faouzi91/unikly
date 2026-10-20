@@ -1,0 +1,64 @@
+name: Work item or gap
+description: Track a product increment, defect, or release gap with evidence for completion.
+title: "[work] "
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: User or release outcome
+      description: State what should improve and who benefits.
+    validations:
+      required: true
+  - type: input
+    id: roadmap_increment
+    attributes:
+      label: Roadmap increment
+      description: Use the stable ID from docs/product-roadmap.md (for example M9 or M28). Use "Release gap" if it is not a sequenced product increment.
+      placeholder: M8
+    validations:
+      required: true
+  - type: textarea
+    id: requirement
+    attributes:
+      label: Requirement and context
+      description: List the stable SRS requirement IDs and explain the current behavior or release gap.
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+      description: State what this increment will leave out. Use "None" if there are no exclusions.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List observable conditions that make this work complete.
+      placeholder: |-
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification evidence
+      description: Name the Docker build, test, or customer-flow check that will prove completion.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and open decisions
+      description: Record blocking work or product decisions. Use "None" when there are none.
+    validations:
+      required: true
+  - type: input
+    id: decision_owner
+    attributes:
+      label: Decision owner
+      description: Name the role/person responsible for each product or market decision, or enter "None".
+      placeholder: Product owner
+    validations:
+      required: true

@@ -5,11 +5,11 @@ import com.unikly.store.cart.application.CartViews.CartView;
 import com.unikly.store.cart.domain.CustomerCart;
 import com.unikly.store.cart.domain.CustomerCartItem;
 import com.unikly.store.cart.persistence.CustomerCartRepository;
-import com.unikly.store.catalog.domain.CatalogProduct;
-import com.unikly.store.catalog.persistence.CatalogProductRepository;
-import com.unikly.store.identity.domain.StoreRole;
-import com.unikly.store.identity.domain.StoreUser;
-import com.unikly.store.identity.persistence.StoreUserRepository;
+import com.unikly.store.catalog.application.CatalogProductService;
+import com.unikly.store.catalog.application.CatalogProductService.ProductSnapshot;
+import com.unikly.store.identity.application.IdentityAccountService;
+import com.unikly.store.identity.application.IdentityAccountService.AccountIdentity;
+import com.unikly.store.identity.application.IdentityAccountService.AccountRole;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -17,8 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,43 +27,42 @@ import org.springframework.web.server.ResponseStatusException;
 public class CustomerCartService {
 
     private final CustomerCartRepository carts;
-    private final CatalogProductRepository products;
-    private final StoreUserRepository users;
+    private final CatalogProductService products;
+    private final IdentityAccountService identity;
 
     public CustomerCartService(
             CustomerCartRepository carts,
-            CatalogProductRepository products,
-            StoreUserRepository users) {
+            CatalogProductService products,
+            IdentityAccountService identity) {
         this.carts = carts;
         this.products = products;
-        this.users = users;
+        this.identity = identity;
     }
 
     @Transactional(readOnly = true)
     public CartView getCart(String email) {
-        StoreUser buyer = buyer(email);
-        return carts.findByBuyerId(buyer.getId())
+        AccountIdentity buyer = buyer(email);
+        return carts.findByBuyerId(buyer.id())
                 .map(this::toView)
-                .orElseGet(() -> emptyView(buyer.getId()));
+                .orElseGet(() -> emptyView(buyer.id()));
     }
 
     public CartView addItem(String email, CartRequests.AddItem request) {
-        StoreUser buyer = buyer(email);
-        CatalogProduct product = products.findById(request.productId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+        AccountIdentity buyer = buyer(email);
+        ProductSnapshot product = products.requireProduct(request.productId());
 
-        CustomerCart cart = carts.findByBuyerId(buyer.getId())
-                .orElseGet(() -> new CustomerCart(UUID.randomUUID().toString(), buyer.getId()));
+        CustomerCart cart = carts.findByBuyerId(buyer.id())
+                .orElseGet(() -> new CustomerCart(UUID.randomUUID().toString(), buyer.id()));
 
         int currentQty = cart.findItem(request.productId())
                 .map(CustomerCartItem::getQuantity)
                 .orElse(0);
 
         int newQty = currentQty + request.quantity();
-        if (newQty > product.getStockQuantity()) {
+        if (newQty > product.stockQuantity()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Cannot add " + request.quantity() + " items. Available stock: "
-                            + product.getStockQuantity() + " (current in cart: " + currentQty + ")");
+                            + product.stockQuantity() + " (current in cart: " + currentQty + ")");
         }
 
         cart.addItem(request.productId(), request.quantity());
@@ -73,20 +70,19 @@ public class CustomerCartService {
     }
 
     public CartView updateItem(String email, String productId, CartRequests.UpdateItem request) {
-        StoreUser buyer = buyer(email);
-        CatalogProduct product = products.findById(productId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+        AccountIdentity buyer = buyer(email);
+        ProductSnapshot product = products.requireProduct(productId);
 
-        CustomerCart cart = carts.findByBuyerId(buyer.getId())
+        CustomerCart cart = carts.findByBuyerId(buyer.id())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart not found"));
 
         if (cart.findItem(productId).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found in cart");
         }
 
-        if (request.quantity() > product.getStockQuantity()) {
+        if (request.quantity() > product.stockQuantity()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Requested quantity exceeds available stock (" + product.getStockQuantity() + ")");
+                    "Requested quantity exceeds available stock (" + product.stockQuantity() + ")");
         }
 
         cart.updateItem(productId, request.quantity());
@@ -94,17 +90,17 @@ public class CustomerCartService {
     }
 
     public CartView removeItem(String email, String productId) {
-        StoreUser buyer = buyer(email);
-        CustomerCart cart = carts.findByBuyerId(buyer.getId())
-                .orElseGet(() -> new CustomerCart(UUID.randomUUID().toString(), buyer.getId()));
+        AccountIdentity buyer = buyer(email);
+        CustomerCart cart = carts.findByBuyerId(buyer.id())
+                .orElseGet(() -> new CustomerCart(UUID.randomUUID().toString(), buyer.id()));
 
         cart.removeItem(productId);
         return toView(carts.save(cart));
     }
 
     public void clearCart(String email) {
-        StoreUser buyer = buyer(email);
-        carts.findByBuyerId(buyer.getId()).ifPresent(cart -> {
+        AccountIdentity buyer = buyer(email);
+        carts.findByBuyerId(buyer.id()).ifPresent(cart -> {
             cart.clear();
             carts.save(cart);
         });
@@ -118,17 +114,17 @@ public class CustomerCartService {
     }
 
     public CartView mergeCart(String email, CartRequests.MergeRequest request) {
-        StoreUser buyer = buyer(email);
-        CustomerCart cart = carts.findByBuyerId(buyer.getId())
-                .orElseGet(() -> new CustomerCart(UUID.randomUUID().toString(), buyer.getId()));
+        AccountIdentity buyer = buyer(email);
+        CustomerCart cart = carts.findByBuyerId(buyer.id())
+                .orElseGet(() -> new CustomerCart(UUID.randomUUID().toString(), buyer.id()));
 
         for (CartRequests.MergeItem item : request.items()) {
-            Optional<CatalogProduct> productOpt = products.findById(item.productId());
+            Optional<ProductSnapshot> productOpt = products.findProduct(item.productId());
             if (productOpt.isEmpty()) {
                 continue;
             }
-            CatalogProduct product = productOpt.get();
-            int stock = product.getStockQuantity();
+            ProductSnapshot product = productOpt.get();
+            int stock = product.stockQuantity();
             if (stock <= 0) {
                 continue;
             }
@@ -150,10 +146,9 @@ public class CustomerCartService {
         return toView(carts.save(cart));
     }
 
-    private StoreUser buyer(String email) {
-        StoreUser user = users.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
-        if (user.getRole() != StoreRole.BUYER) {
+    private AccountIdentity buyer(String email) {
+        AccountIdentity user = identity.requireByEmail(email);
+        if (user.role() != AccountRole.BUYER) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
         return user;
@@ -171,24 +166,23 @@ public class CustomerCartService {
                 .map(CustomerCartItem::getProductId)
                 .toList();
 
-        Map<String, CatalogProduct> productMap = products.findAllById(productIds).stream()
-                .collect(Collectors.toMap(CatalogProduct::getId, Function.identity()));
+        Map<String, ProductSnapshot> productMap = products.findProducts(productIds);
 
         List<CartItemView> itemViews = new ArrayList<>();
         BigDecimal subtotal = BigDecimal.ZERO;
         int itemCount = 0;
 
         for (CustomerCartItem item : cart.getItems()) {
-            CatalogProduct product = productMap.get(item.getProductId());
+            ProductSnapshot product = productMap.get(item.getProductId());
             if (product != null) {
-                BigDecimal lineTotal = product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+                BigDecimal lineTotal = product.price().multiply(BigDecimal.valueOf(item.getQuantity()));
                 itemViews.add(new CartItemView(
-                        product.getId(),
-                        product.getName(),
-                        product.getPrice(),
-                        product.getImage(),
+                        product.id(),
+                        product.name(),
+                        product.price(),
+                        product.image(),
                         item.getQuantity(),
-                        product.getStockQuantity(),
+                        product.stockQuantity(),
                         lineTotal
                 ));
                 subtotal = subtotal.add(lineTotal);

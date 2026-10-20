@@ -26,6 +26,12 @@ export interface ProductReviewSummary {
   currentUserReview: ReviewItem | null;
 }
 
+export interface ProductRatingSummary {
+  productId: string;
+  averageRating: number;
+  totalReviews: number;
+}
+
 export interface SubmitReviewRequest {
   rating: number;
   title: string;
@@ -38,6 +44,10 @@ export class ReviewsService {
 
   getProductReviews(productId: string): Observable<ProductReviewSummary> {
     return this.http.get<ProductReviewSummary>(`/api/products/${encodeURIComponent(productId)}/reviews`);
+  }
+
+  getPublicRatingSummaries(): Observable<ProductRatingSummary[]> {
+    return this.http.get<ProductRatingSummary[]>('/api/reviews/summary');
   }
 
   submitReview(productId: string, data: SubmitReviewRequest): Observable<ReviewItem> {

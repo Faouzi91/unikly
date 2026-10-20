@@ -113,6 +113,9 @@ class ProductReviewTests {
                 .andExpect(jsonPath("$.reviews", hasSize(0)))
                 .andExpect(jsonPath("$.currentUserCanReview", is(false)))
                 .andExpect(jsonPath("$.currentUserVerifiedBuyer", is(false)));
+
+        mockMvc.perform(get("/api/reviews/summary"))
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -211,6 +214,28 @@ class ProductReviewTests {
                                     "rating": 5,
                                     "title": "Nice product",
                                     "comment": "Testing forbidden access."
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void administratorCanModerateReviewsButCannotPublishAStorefrontReview() throws Exception {
+        MockHttpSession adminSession = login(admin.getEmail());
+
+        mockMvc.perform(get("/api/products/" + product.getId() + "/reviews").session(adminSession))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentUserCanReview", is(false)));
+
+        mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
+                        .session(adminSession)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "rating": 5,
+                                    "title": "Operator review",
+                                    "comment": "This should not appear as customer feedback."
                                 }
                                 """))
                 .andExpect(status().isForbidden());

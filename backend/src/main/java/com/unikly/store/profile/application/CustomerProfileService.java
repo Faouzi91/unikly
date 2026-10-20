@@ -1,7 +1,7 @@
 package com.unikly.store.profile.application;
 
 import com.unikly.store.identity.application.IdentityAccountService;
-import com.unikly.store.identity.domain.StoreUser;
+import com.unikly.store.identity.application.IdentityAccountService.AccountIdentity;
 import com.unikly.store.profile.domain.CustomerProfile;
 import com.unikly.store.profile.domain.CustomerProfile.ContactDetails;
 import com.unikly.store.profile.persistence.CustomerProfileRepository;
@@ -21,16 +21,16 @@ public class CustomerProfileService {
 
     @Transactional(readOnly = true)
     public ProfileView get(String email) {
-        StoreUser user = identity.requireByEmail(email);
-        CustomerProfile profile = profiles.findById(user.getId()).orElseGet(() -> new CustomerProfile(user.getId()));
+        AccountIdentity user = identity.requireByEmail(email);
+        CustomerProfile profile = profiles.findById(user.id()).orElseGet(() -> new CustomerProfile(user.id()));
         return toView(user, profile);
     }
 
     @Transactional
     public ProfileView update(String email, ProfileRequests.Update request) {
-        StoreUser user = identity.requireByEmail(email);
+        AccountIdentity user = identity.requireByEmail(email);
         identity.updateDisplayName(email, request.displayName());
-        CustomerProfile profile = profiles.findById(user.getId()).orElseGet(() -> new CustomerProfile(user.getId()));
+        CustomerProfile profile = profiles.findById(user.id()).orElseGet(() -> new CustomerProfile(user.id()));
         profile.update(new ContactDetails(
                 clean(request.phoneNumber()), clean(request.addressLine1()), clean(request.addressLine2()),
                 clean(request.city()), clean(request.region()), clean(request.postalCode()),
@@ -44,8 +44,8 @@ public class CustomerProfileService {
         return value.trim();
     }
 
-    private ProfileView toView(StoreUser user, CustomerProfile profile) {
-        return new ProfileView(user.getId(), user.getEmail(), user.getDisplayName(),
+    private ProfileView toView(AccountIdentity user, CustomerProfile profile) {
+        return new ProfileView(user.id(), user.email(), user.displayName(),
                 profile.getPhoneNumber(), profile.getAddressLine1(), profile.getAddressLine2(),
                 profile.getCity(), profile.getRegion(), profile.getPostalCode(), profile.getCountryCode());
     }

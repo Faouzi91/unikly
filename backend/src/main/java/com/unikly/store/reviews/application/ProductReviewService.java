@@ -1,12 +1,13 @@
 package com.unikly.store.reviews.application;
 
-import com.unikly.store.catalog.persistence.CatalogProductRepository;
-import com.unikly.store.identity.domain.StoreRole;
-import com.unikly.store.identity.domain.StoreUser;
-import com.unikly.store.identity.persistence.StoreUserRepository;
-import com.unikly.store.orders.persistence.CustomerOrderRepository;
+import com.unikly.store.catalog.application.CatalogProductService;
+import com.unikly.store.identity.application.IdentityAccountService;
+import com.unikly.store.identity.application.IdentityAccountService.AccountIdentity;
+import com.unikly.store.identity.application.IdentityAccountService.AccountRole;
+import com.unikly.store.orders.application.CustomerOrderService;
 import com.unikly.store.reviews.application.ReviewViews.ProductReviewSummaryView;
 import com.unikly.store.reviews.application.ReviewViews.ReviewItemView;
+import com.unikly.store.reviews.application.ReviewViews.ProductRatingSummaryView;
 import com.unikly.store.reviews.domain.ProductReview;
 import com.unikly.store.reviews.persistence.ProductReviewRepository;
 import java.math.BigDecimal;
@@ -15,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ArrayList;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,24 +27,24 @@ import org.springframework.web.server.ResponseStatusException;
 public class ProductReviewService {
 
     private final ProductReviewRepository reviewRepository;
-    private final CatalogProductRepository productRepository;
-    private final StoreUserRepository userRepository;
-    private final CustomerOrderRepository orderRepository;
+    private final CatalogProductService catalog;
+    private final IdentityAccountService identity;
+    private final CustomerOrderService orders;
 
     public ProductReviewService(
             ProductReviewRepository reviewRepository,
-            CatalogProductRepository productRepository,
-            StoreUserRepository userRepository,
-            CustomerOrderRepository orderRepository) {
+            CatalogProductService catalog,
+            IdentityAccountService identity,
+            CustomerOrderService orders) {
         this.reviewRepository = reviewRepository;
-        this.productRepository = productRepository;
-        this.userRepository = userRepository;
-        this.orderRepository = orderRepository;
+        this.catalog = catalog;
+        this.identity = identity;
+        this.orders = orders;
     }
 
     @Transactional(readOnly = true)
     public ProductReviewSummaryView getProductReviewSummary(String productId, String currentUserEmail) {
-        if (!productRepository.existsById(productId)) {
+        if (!catalog.exists(productId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + productId);
         }
 
@@ -71,15 +73,14 @@ public class ProductReviewService {
         ReviewItemView currentUserReview = null;
 
         if (currentUserEmail != null && !currentUserEmail.isBlank()) {
-            Optional<StoreUser> userOpt = userRepository.findByEmail(currentUserEmail);
+            Optional<AccountIdentity> userOpt = identity.findByEmail(currentUserEmail);
             if (userOpt.isPresent()) {
-                StoreUser user = userOpt.get();
-                verifiedBuyer = orderRepository.hasPurchasedProduct(user.getId(), productId);
-                canReview = (user.getRole() == StoreRole.ADMIN) ||
-                        (user.getRole() == StoreRole.BUYER && verifiedBuyer);
+                AccountIdentity user = userOpt.get();
+                verifiedBuyer = user.role() == AccountRole.BUYER && orders.hasPurchasedProduct(user.id(), productId);
+                canReview = user.role() == AccountRole.BUYER && verifiedBuyer;
 
                 currentUserReview = reviewViews.stream()
-                        .filter(r -> r.buyerId().equals(user.getId()))
+                        .filter(r -> r.buyerId().equals(user.id()))
                         .findFirst()
                         .orElse(null);
             }
@@ -97,29 +98,42 @@ public class ProductReviewService {
         );
     }
 
-    public ReviewItemView submitReview(String userEmail, String productId, ReviewRequests.SubmitReview request) {
-        StoreUser user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated"));
+    @Transactional(readOnly = true)
+    public List<ProductRatingSummaryView> getPublicRatingSummaries() {
+        List<ProductRatingSummaryView> summaries = new ArrayList<>();
+        for (Object[] row : reviewRepository.findAggregateRatings()) {
+            String productId = (String) row[0];
+            double averageRating = BigDecimal.valueOf(((Number) row[1]).doubleValue())
+                    .setScale(1, RoundingMode.HALF_UP)
+                    .doubleValue();
+            int totalReviews = ((Number) row[2]).intValue();
+            summaries.add(new ProductRatingSummaryView(productId, averageRating, totalReviews));
+        }
+        return List.copyOf(summaries);
+    }
 
-        if (user.getRole() != StoreRole.BUYER && user.getRole() != StoreRole.ADMIN) {
+    public ReviewItemView submitReview(String userEmail, String productId, ReviewRequests.SubmitReview request) {
+        AccountIdentity user = identity.requireByEmail(userEmail);
+
+        if (user.role() != AccountRole.BUYER) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only buyers can review products");
         }
 
-        if (!productRepository.existsById(productId)) {
+        if (!catalog.exists(productId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found: " + productId);
         }
 
-        boolean isVerified = orderRepository.hasPurchasedProduct(user.getId(), productId);
-        if (!isVerified && user.getRole() != StoreRole.ADMIN) {
+        boolean isVerified = orders.hasPurchasedProduct(user.id(), productId);
+        if (!isVerified) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Only verified purchasers who have ordered this product can write a review.");
         }
 
-        String authorName = (user.getDisplayName() != null && !user.getDisplayName().isBlank())
-                ? user.getDisplayName().trim()
+        String authorName = (user.displayName() != null && !user.displayName().isBlank())
+                ? user.displayName().trim()
                 : "Customer";
 
-        Optional<ProductReview> existingOpt = reviewRepository.findByProductIdAndBuyerId(productId, user.getId());
+        Optional<ProductReview> existingOpt = reviewRepository.findByProductIdAndBuyerId(productId, user.id());
         ProductReview saved;
         if (existingOpt.isPresent()) {
             ProductReview existing = existingOpt.get();
@@ -128,7 +142,7 @@ public class ProductReviewService {
         } else {
             ProductReview review = new ProductReview(
                     productId,
-                    user.getId(),
+                    user.id(),
                     authorName,
                     request.rating(),
                     request.title().trim(),
@@ -142,9 +156,11 @@ public class ProductReviewService {
     }
 
     public void deleteMyReview(String userEmail, String productId) {
-        StoreUser user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
-        reviewRepository.deleteByProductIdAndBuyerId(productId, user.getId());
+        AccountIdentity user = identity.requireByEmail(userEmail);
+        if (user.role() != AccountRole.BUYER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only buyers can delete their reviews");
+        }
+        reviewRepository.deleteByProductIdAndBuyerId(productId, user.id());
     }
 
     public void deleteReviewByAdmin(Long reviewId) {
