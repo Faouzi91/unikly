@@ -22,7 +22,7 @@ import {
   LucideX,
 } from '@lucide/angular';
 import { StoreProduct } from '@core/catalog/sample-products';
-import { ProductCatalogService } from '@core/catalog/product-catalog.service';
+import { ProductCatalogService, SellerStoreProfile } from '@core/catalog/product-catalog.service';
 
 export interface StarBreakdownRow {
   stars: number;
@@ -67,6 +67,7 @@ export class ProductDetailPage {
 
   readonly product = computed(() => this.catalog.products().find((item) => item.id === this.paramId()));
   readonly addedToBasket = signal(false);
+  readonly sellerProfile = signal<SellerStoreProfile | null>(null);
 
   // Reviews state
   readonly reviewSummary = signal<ProductReviewSummary | null>(null);
@@ -129,10 +130,27 @@ export class ProductDetailPage {
       this.auth.user(); // reload when user logs in/out
       if (currentProduct?.isDemo) {
         this.reviewSummary.set(null);
-      } else if (id) {
-        void this.loadReviews(id);
+        this.sellerProfile.set(null);
+      } else {
+        if (id) {
+          void this.loadReviews(id);
+        }
+        if (currentProduct?.sellerId) {
+          void this.loadSellerProfile(currentProduct.sellerId);
+        } else {
+          this.sellerProfile.set(null);
+        }
       }
     });
+  }
+
+  async loadSellerProfile(sellerId: number): Promise<void> {
+    try {
+      const profile = await this.catalog.getSellerProfile(sellerId);
+      this.sellerProfile.set(profile);
+    } catch {
+      this.sellerProfile.set(null);
+    }
   }
 
   async loadReviews(productId: string): Promise<void> {

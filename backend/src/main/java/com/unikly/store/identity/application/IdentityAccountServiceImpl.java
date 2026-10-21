@@ -1,9 +1,13 @@
 package com.unikly.store.identity.application;
 
+import com.unikly.store.identity.domain.StoreRole;
 import com.unikly.store.identity.domain.StoreUser;
 import com.unikly.store.identity.persistence.StoreUserRepository;
+import java.util.Collection;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -50,6 +54,30 @@ public class IdentityAccountServiceImpl implements IdentityAccountService {
         return users.findByEmail(email.toLowerCase(Locale.ROOT))
                 .map(user -> new AccountIdentity(user.getId(), user.getEmail(), user.getDisplayName(),
                         AccountRole.valueOf(user.getRole().name())));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<PublicSellerIdentity> findSellerIdentityById(Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        return users.findById(id)
+                .filter(user -> user.getRole() == StoreRole.SELLER)
+                .map(user -> new PublicSellerIdentity(user.getId(), user.getDisplayName()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, PublicSellerIdentity> findSellerIdentitiesByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Map.of();
+        }
+        return users.findAllById(ids).stream()
+                .filter(user -> user.getRole() == StoreRole.SELLER)
+                .collect(Collectors.toUnmodifiableMap(
+                        StoreUser::getId,
+                        user -> new PublicSellerIdentity(user.getId(), user.getDisplayName())));
     }
 
     @Override

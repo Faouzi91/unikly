@@ -11,6 +11,7 @@ export interface StoreProduct {
   isDemo: boolean;
   badge?: string;
   sellerId?: number;
+  sellerStoreName?: string | null;
 }
 
 export const SAMPLE_PRODUCTS: StoreProduct[] = [

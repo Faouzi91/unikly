@@ -2,6 +2,30 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
+## 2026-10-21 — Milestone M6: seller store profiles and buyer-visible seller identity
+
+### Database and backend (`FR-CAT-05`)
+
+- Added Flyway migration `V18__create_seller_store_profiles.sql` creating `seller_store_profiles` (`seller_id`, `store_name`, `headline`, `description`, `location`, `support_email`, `updated_at`).
+- Added `IdentityAccountService.findSellerIdentityById` and `findSellerIdentitiesByIds` returning `PublicSellerIdentity(id, displayName)` only for `SELLER` accounts without exposing private login email addresses.
+- Added `SellerStoreProfile`, `SellerStoreProfileRepository`, `SellerStoreProfileService`, and `SellerStoreProfileController` (`GET /api/sellers/{sellerId}/profile`, `GET /api/sellers/me/profile`, `PUT /api/sellers/me/profile`) and enriched `CatalogProductService.ProductView` with `sellerStoreName` for non-demo seller listings (`M6`, `FR-CAT-05`).
+- Added `SellerStoreProfileTests` verifying seller store profile updates, public buyer visibility on `/api/sellers/{sellerId}/profile` and `/api/products`, non-seller access denial (`403 Forbidden` / `404 Not Found`), and complete exclusion of private seller account email and personal `CustomerProfile` phone/address data.
+
+### Storefront and visual foundation (`T3`)
+
+- Added a **Storefront profile** editor panel on `my-products-page` (`/seller/products`) allowing sellers to manage their public store name, tagline, description, dispatch location, and public support contact email.
+- Added a **Sold by** seller storefront card on `product-detail-page` and updated `home-page` and `basket-page` to display the seller's public `sellerStoreName` on non-demo offers.
+- Migrated `my-products-page.css` and `seller-product-page.css` onto the shared `:root` design tokens (`--ink`, `--brand`, `--surface`, `--border`, `--radius-md`, `--shadow-soft`) (`T3`).
+
+### Documentation
+
+- Updated `docs/UNIKLY_SRS_v4.md` (`FR-CAT-05`), `docs/authorization-matrix.md`, and `docs/product-roadmap.md` (`M6`).
+
+### Verification
+
+- `docker build -t unikly-web-test ./frontend` passed with zero warnings and zero errors.
+- Isolated Java 25 Maven test suite in Docker (`mvn -B -ntp test`) passed all 32 tests (`SellerStoreProfileTests`: 2/2 passed).
+
 ## 2026-10-21 — Milestone M5: minimize buyer contact data in seller order views
 
 ### Backend and privacy (`NFR-PRIV-02`)

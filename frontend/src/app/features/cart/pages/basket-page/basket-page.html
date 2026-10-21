@@ -43,7 +43,7 @@
 
             <div class="item-details">
               <span class="item-category">
-                {{ item.category }} · {{ item.isDemo ? 'Demo listing' : (item.sellerId ? 'Seller account #' + item.sellerId : 'Seller offer') }}
+                {{ item.category }} · {{ item.isDemo ? 'Demo listing' : (item.sellerStoreName ? 'Sold by ' + item.sellerStoreName : (item.sellerId ? 'Seller account #' + item.sellerId : 'Seller offer')) }}
               </span>
               <h2><a class="item-title-link" [routerLink]="['/products', item.productId]">{{ item.name }}</a></h2>
               <p class="item-unit-price">{{ item.price | currency }} each</p>

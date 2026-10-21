@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/identity/auth.service';
@@ -25,12 +25,70 @@ export class MyProductsPage {
   readonly editingId = signal<string | null>(null);
   readonly pendingDeleteId = signal<string | null>(null);
   readonly notice = signal('');
+  readonly profileNotice = signal('');
+  readonly profileError = signal('');
+  readonly savingProfile = signal(false);
+
+  storeName = '';
+  storeHeadline = '';
+  storeDescription = '';
+  storeLocation = '';
+  storeSupportEmail = '';
+
   name = '';
   description = '';
   category = 'Home';
   price: number | null = null;
   stockQuantity = 10;
   image = '';
+
+  constructor() {
+    effect(() => {
+      const user = this.auth.user();
+      if (user?.role === 'SELLER') {
+        void this.loadStoreProfile();
+      }
+    });
+  }
+
+  async loadStoreProfile(): Promise<void> {
+    try {
+      const profile = await this.catalog.getMySellerProfile();
+      this.storeName = profile.storeName;
+      this.storeHeadline = profile.headline ?? '';
+      this.storeDescription = profile.description ?? '';
+      this.storeLocation = profile.location ?? '';
+      this.storeSupportEmail = profile.supportEmail ?? '';
+    } catch {
+      this.storeName = this.auth.user()?.displayName ?? '';
+    }
+  }
+
+  async saveStoreProfile(invalid: boolean | null): Promise<void> {
+    if (invalid || !this.storeName.trim()) return;
+    this.savingProfile.set(true);
+    this.profileNotice.set('');
+    this.profileError.set('');
+    try {
+      const updated = await this.catalog.updateMySellerProfile({
+        storeName: this.storeName.trim(),
+        headline: this.storeHeadline.trim() || null,
+        description: this.storeDescription.trim() || null,
+        location: this.storeLocation.trim() || null,
+        supportEmail: this.storeSupportEmail.trim() || null,
+      });
+      this.storeName = updated.storeName;
+      this.storeHeadline = updated.headline ?? '';
+      this.storeDescription = updated.description ?? '';
+      this.storeLocation = updated.location ?? '';
+      this.storeSupportEmail = updated.supportEmail ?? '';
+      this.profileNotice.set('Your public store profile was updated.');
+    } catch {
+      this.profileError.set('We could not save your store profile. Please check the fields and try again.');
+    } finally {
+      this.savingProfile.set(false);
+    }
+  }
 
   startEdit(product: StoreProduct): void {
     this.editingId.set(product.id);

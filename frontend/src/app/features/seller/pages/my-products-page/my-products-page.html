@@ -1,5 +1,58 @@
 <main class="seller-page">
   <a class="back-link" routerLink="/">← Back to shop</a>
+
+  <section class="seller-panel store-profile-panel" aria-labelledby="store-profile-title">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">Public seller identity</p>
+        <h2 id="store-profile-title" class="panel-title">Storefront profile</h2>
+        <p class="intro">Buyers see these details on your product listings. Your account login email and personal address stay private.</p>
+      </div>
+    </div>
+
+    @if (profileNotice()) { <p class="notice" role="status">{{ profileNotice() }}</p> }
+    @if (profileError()) { <p class="notice error-notice" role="alert">{{ profileError() }}</p> }
+
+    <form (ngSubmit)="saveStoreProfile(profileForm.invalid)" #profileForm="ngForm" class="store-profile-form">
+      <div class="form-row">
+        <div>
+          <label for="store-name">Public store name</label>
+          <input id="store-name" name="storeName" required minlength="2" maxlength="80"
+            placeholder="e.g. Atelier Nord Studio" [(ngModel)]="storeName">
+        </div>
+        <div>
+          <label for="store-location">Dispatch location <span>(optional)</span></label>
+          <input id="store-location" name="storeLocation" maxlength="80"
+            placeholder="e.g. Portland, OR" [(ngModel)]="storeLocation">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label for="store-headline">Short tagline <span>(optional)</span></label>
+          <input id="store-headline" name="storeHeadline" maxlength="140"
+            placeholder="e.g. Small-batch woodworking & everyday homewares" [(ngModel)]="storeHeadline">
+        </div>
+        <div>
+          <label for="store-support-email">Public support contact email <span>(optional)</span></label>
+          <input id="store-support-email" name="storeSupportEmail" type="email" maxlength="160"
+            placeholder="support@yourstore.example" [(ngModel)]="storeSupportEmail">
+        </div>
+      </div>
+
+      <label for="store-description">About your store <span>(optional)</span></label>
+      <textarea id="store-description" name="storeDescription" rows="3" maxlength="600"
+        placeholder="Share what your studio makes, materials used, and customer care details."
+        [(ngModel)]="storeDescription"></textarea>
+
+      <div class="card-actions">
+        <button class="primary-button" type="submit" [disabled]="profileForm.invalid || savingProfile()">
+          {{ savingProfile() ? 'Saving profile…' : 'Save store profile' }}
+        </button>
+      </div>
+    </form>
+  </section>
+
   <section class="seller-panel" aria-labelledby="products-title">
     <div class="page-heading">
       <div>

@@ -34,6 +34,8 @@ Public catalog and review reads do not require a role. Role names are not a repl
 | Buyer order cancellation | ORDER_CANCEL_SELF; only eligible orders owned by the buyer may be canceled |
 | Seller order list and status updates | ORDER_FULFILL_OWN; each affected order item must belong to the seller. Seller order views omit buyer email and expose recipient phone only when the delivery method requires it (`EXPRESS`) |
 | GET /api/products/mine | Seller role |
+| GET, PUT /api/sellers/me/profile | Seller role; scoped to the authenticated seller's public store profile |
+| GET /api/sellers/{sellerId}/profile | Public; exposes only public store profile fields (`storeName`, `headline`, `description`, `location`, `supportEmail`) for `SELLER` accounts |
 | POST, PUT, and DELETE /api/products/** | Seller role; seller ownership is checked for product mutations |
 | GET /api/products and public product/review reads | Public |
 | GET /api/reviews/summary | Public aggregate rating summaries for catalog cards |

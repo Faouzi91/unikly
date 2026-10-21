@@ -92,7 +92,7 @@ Status legend: **Implemented** = current source has the capability; **Partial** 
 - **FR-CAT-03 — Open:** Authorized operators can review, moderate, and disable unsafe or inaccurate offers with a recorded reason.
 - **FR-CAT-06 — Open:** Authorized operators can manage a controlled product-category taxonomy; products must reference an allowed category.
 - **FR-CAT-04 — Partial:** Product images must be safe, valid, reliably served, and have useful alternatives. Current URL-based media is not a managed media service.
-- **FR-CAT-05 — Open:** Sellers have a store profile with buyer-visible business information and a controlled support contact.
+- **FR-CAT-05 — Implemented (verified in automated tests; live browser gate in M28):** Sellers have a public store profile (`storeName`, `headline`, `description`, `location`, and optional `supportEmail`) with buyer-visible business information and a controlled support contact while private seller account data (`store_users.email`, personal `CustomerProfile` phone/address) remains protected.
 - **FR-CAT-07 — Deferred:** Canonical product identity, seller offers, category-specific attributes/variants, and external product identifiers are introduced when the selected categories and catalog-quality evidence require them.
 - **FR-SEARCH-01 — Partial:** Buyers can browse and apply current client-side filters/sorting. Server-side search must match product name and description and combine correctly with category filters.
 - **FR-SEARCH-02 — Deferred:** Pagination and richer facets must be introduced when catalog size, usability, or measured response limits warrant them.

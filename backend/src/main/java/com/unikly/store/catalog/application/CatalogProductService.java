@@ -22,26 +22,34 @@ public class CatalogProductService {
     private static final String PLACEHOLDER = "/product-placeholder.svg";
     private final CatalogProductRepository products;
     private final IdentityAccountService identity;
+    private final SellerStoreProfileService sellerProfiles;
 
     public CatalogProductService(
             CatalogProductRepository products,
-            IdentityAccountService identity) {
+            IdentityAccountService identity,
+            SellerStoreProfileService sellerProfiles) {
         this.products = products;
         this.identity = identity;
+        this.sellerProfiles = sellerProfiles;
     }
 
     @Transactional(readOnly = true)
     public List<ProductView> list() {
-        return products.findAllByOrderByCreatedAtDesc().stream()
-                .map(this::view)
+        List<CatalogProduct> all = products.findAllByOrderByCreatedAtDesc();
+        Map<Long, String> storeNames = sellerProfiles.resolveStoreNames(
+                all.stream().map(CatalogProduct::getSellerId).toList());
+        return all.stream()
+                .map(product -> view(product, storeNames))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<ProductView> listMine(String email) {
         AccountIdentity seller = seller(email);
-        return products.findAllBySellerIdOrderByCreatedAtDesc(seller.id()).stream()
-                .map(this::view)
+        List<CatalogProduct> mine = products.findAllBySellerIdOrderByCreatedAtDesc(seller.id());
+        Map<Long, String> storeNames = sellerProfiles.resolveStoreNames(List.of(seller.id()));
+        return mine.stream()
+                .map(product -> view(product, storeNames))
                 .toList();
     }
 
@@ -50,7 +58,8 @@ public class CatalogProductService {
         CatalogProduct product = new CatalogProduct(UUID.randomUUID().toString(), seller.id(),
                 clean(request.name()), clean(request.description()), clean(request.category()),
                 request.price(), image(request.image()), stock(request.stockQuantity()));
-        return view(products.save(product));
+        CatalogProduct saved = products.save(product);
+        return view(saved, sellerProfiles.resolveStoreNames(List.of(seller.id())));
     }
 
     public ProductView update(String email, String id, ProductRequests.Upsert request) {
@@ -58,7 +67,7 @@ public class CatalogProductService {
         CatalogProduct product = ownedProduct(id, seller.id());
         product.update(clean(request.name()), clean(request.description()), clean(request.category()),
                 request.price(), image(request.image()), stock(request.stockQuantity()));
-        return view(product);
+        return view(product, sellerProfiles.resolveStoreNames(List.of(seller.id())));
     }
 
     public void delete(String email, String id) {
@@ -117,10 +126,13 @@ public class CatalogProductService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
-    private ProductView view(CatalogProduct product) {
+    private ProductView view(CatalogProduct product, Map<Long, String> storeNames) {
+        String sellerStoreName = product.isDemo() || product.getSellerId() == null
+                ? null
+                : storeNames.get(product.getSellerId());
         return new ProductView(product.getId(), product.getName(), product.getDescription(),
                 product.getCategory(), product.getPrice(), product.getImage(),
-                product.getSellerId(), product.getStockQuantity(), product.isDemo());
+                product.getSellerId(), sellerStoreName, product.getStockQuantity(), product.isDemo());
     }
 
     private ProductSnapshot snapshot(CatalogProduct product) {
@@ -145,8 +157,8 @@ public class CatalogProductService {
     }
 
     public record ProductView(String id, String name, String description, String category,
-                              java.math.BigDecimal price, String image, Long sellerId, int stockQuantity,
-                              boolean isDemo) {}
+                              java.math.BigDecimal price, String image, Long sellerId, String sellerStoreName,
+                              int stockQuantity, boolean isDemo) {}
 
     public record ProductSnapshot(String id, String name, String category, java.math.BigDecimal price, String image,
                                   Long sellerId, int stockQuantity) {}

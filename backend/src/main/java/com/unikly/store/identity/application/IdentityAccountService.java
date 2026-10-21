@@ -1,6 +1,8 @@
 package com.unikly.store.identity.application;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface IdentityAccountService {
@@ -9,6 +11,10 @@ public interface IdentityAccountService {
     AuthenticatedUserView requireAuthenticatedUser(String email);
 
     Optional<AccountIdentity> findByEmail(String email);
+
+    Optional<PublicSellerIdentity> findSellerIdentityById(Long id);
+
+    Map<Long, PublicSellerIdentity> findSellerIdentitiesByIds(Collection<Long> ids);
 
     void updateDisplayName(String email, String displayName);
 
@@ -21,6 +27,8 @@ public interface IdentityAccountService {
     }
 
     record AccountIdentity(Long id, String email, String displayName, AccountRole role) {}
+
+    record PublicSellerIdentity(Long id, String displayName) {}
 
     record AuthenticatedUserView(
             Long id,

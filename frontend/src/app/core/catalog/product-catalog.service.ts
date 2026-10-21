@@ -14,6 +14,23 @@ export interface NewProductDetails {
   image?: string;
 }
 
+export interface SellerStoreProfile {
+  sellerId: number;
+  storeName: string;
+  headline: string | null;
+  description: string | null;
+  location: string | null;
+  supportEmail: string | null;
+}
+
+export interface UpdateSellerStoreProfileDetails {
+  storeName: string;
+  headline?: string | null;
+  description?: string | null;
+  location?: string | null;
+  supportEmail?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProductCatalogService {
   private readonly http = inject(HttpClient);
@@ -118,6 +135,30 @@ export class ProductCatalogService {
     await firstValueFrom(this.http.delete<void>(`/api/products/${encodeURIComponent(productId)}`));
     this.productsState.update((products) => products.filter((item) => item.id !== productId));
     return true;
+  }
+
+  async getSellerProfile(sellerId: number): Promise<SellerStoreProfile> {
+    return firstValueFrom(
+      this.http.get<SellerStoreProfile>(`/api/sellers/${encodeURIComponent(sellerId)}/profile`),
+    );
+  }
+
+  async getMySellerProfile(): Promise<SellerStoreProfile> {
+    return firstValueFrom(this.http.get<SellerStoreProfile>('/api/sellers/me/profile'));
+  }
+
+  async updateMySellerProfile(details: UpdateSellerStoreProfileDetails): Promise<SellerStoreProfile> {
+    const updated = await firstValueFrom(
+      this.http.put<SellerStoreProfile>('/api/sellers/me/profile', details),
+    );
+    this.productsState.update((products) =>
+      products.map((item) =>
+        !item.isDemo && item.sellerId === updated.sellerId
+          ? { ...item, sellerStoreName: updated.storeName }
+          : item,
+      ),
+    );
+    return updated;
   }
 }
 

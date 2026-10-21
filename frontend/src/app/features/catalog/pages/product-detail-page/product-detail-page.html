@@ -33,7 +33,24 @@
         @if (item.isDemo) {
           <p class="demo-note">This is sample product, price, and stock data, not a real seller offer. Demo checkout does not collect payment.</p>
         } @else if (item.sellerId) {
-          <p class="seller-note">Listed by seller account #{{ item.sellerId }}</p>
+          <aside class="seller-store-card" aria-label="Seller store information">
+            <div class="seller-store-header">
+              <span class="seller-store-kicker">Sold by</span>
+              <strong class="seller-store-name">{{ sellerProfile()?.storeName || item.sellerStoreName || ('Seller #' + item.sellerId) }}</strong>
+              @if (sellerProfile()?.location; as loc) {
+                <span class="seller-store-location">· Ships from {{ loc }}</span>
+              }
+            </div>
+            @if (sellerProfile()?.headline; as headline) {
+              <p class="seller-store-headline">{{ headline }}</p>
+            }
+            @if (sellerProfile()?.description; as bio) {
+              <p class="seller-store-bio">{{ bio }}</p>
+            }
+            @if (sellerProfile()?.supportEmail; as supportEmail) {
+              <p class="seller-store-support">Store support: <a [href]="'mailto:' + supportEmail">{{ supportEmail }}</a></p>
+            }
+          </aside>
         }
         <p class="stock-status" [class.out-of-stock]="item.stockQuantity === 0">
           @if (item.stockQuantity === 0) {

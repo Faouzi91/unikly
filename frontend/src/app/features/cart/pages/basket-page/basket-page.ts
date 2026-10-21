@@ -57,6 +57,7 @@ export class BasketPage {
         category: product?.category ?? 'Home',
         isDemo: product?.isDemo ?? true,
         sellerId: product?.sellerId,
+        sellerStoreName: product?.sellerStoreName ?? null,
         stockQuantity,
         lineTotal: price * line.quantity,
         isAtLimit: line.quantity >= stockQuantity,

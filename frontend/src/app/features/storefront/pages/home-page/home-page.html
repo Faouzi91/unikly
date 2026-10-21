@@ -192,7 +192,7 @@
                 @if (item.isDemo) {
                   <span class="curated-prov">Demo</span>
                 } @else if (item.sellerId) {
-                  <span class="curated-prov seller">Seller #{{ item.sellerId }}</span>
+                  <span class="curated-prov seller">{{ item.sellerStoreName || ('Seller #' + item.sellerId) }}</span>
                 }
               </div>
               <h3><a class="product-title-link" [routerLink]="['/products', item.id]">{{ item.name }}</a></h3>
@@ -310,7 +310,7 @@
               @if (product.isDemo) {
                 <span class="product-provenance">Demo listing</span>
               } @else if (product.sellerId) {
-                <span class="product-provenance seller-badge">Seller #{{ product.sellerId }}</span>
+                <span class="product-provenance seller-badge">{{ product.sellerStoreName || ('Seller #' + product.sellerId) }}</span>
               }
               @if (product.stockQuantity === 0) {
                 <span class="stock-pill out">Out of stock</span>
@@ -323,7 +323,7 @@
             <div class="product-meta-top">
               <p class="product-category">{{ product.category }}</p>
               @if (!product.isDemo && product.sellerId) {
-                <p class="seller-provenance">Seller account #{{ product.sellerId }}</p>
+                <p class="seller-provenance">Sold by {{ product.sellerStoreName || ('Seller #' + product.sellerId) }}</p>
               }
             </div>
             <h3><a class="product-title-link" [routerLink]="['/products', product.id]">{{ product.name }}</a></h3>
