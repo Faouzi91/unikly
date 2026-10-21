@@ -32,7 +32,9 @@
           <section class="delivery-details" aria-label="Delivery details">
             <h2>Ship to · <span class="delivery-method-label">{{ order.deliveryMethod === 'EXPRESS' ? 'Express Delivery' : 'Standard Delivery' }}</span></h2>
             <p><strong>{{ order.fullName }}</strong></p>
-            <p>{{ order.email }} · {{ order.phone }}</p>
+            @if (order.phone) {
+              <p class="courier-contact">Courier contact phone: {{ order.phone }}</p>
+            }
             <p>{{ order.addressLine1 }}@if (order.addressLine2) {, {{ order.addressLine2 }}}</p>
             <p>{{ order.city }}, {{ order.region }} {{ order.postalCode }}</p>
             <p>{{ order.country }}</p>

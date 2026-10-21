@@ -40,4 +40,8 @@ public enum DeliveryMethod {
     public BigDecimal freeThreshold() {
         return freeThreshold;
     }
+
+    public boolean requiresRecipientPhone() {
+        return this == EXPRESS;
+    }
 }

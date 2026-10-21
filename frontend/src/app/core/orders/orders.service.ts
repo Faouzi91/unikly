@@ -31,8 +31,7 @@ export interface SellerOrder {
   createdAt: string;
   status: FulfillmentStatus;
   fullName: string;
-  email: string;
-  phone: string;
+  phone: string | null;
   addressLine1: string;
   addressLine2: string | null;
   city: string;

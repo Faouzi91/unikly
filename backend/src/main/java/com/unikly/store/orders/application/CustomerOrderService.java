@@ -210,8 +210,10 @@ public class CustomerOrderService {
                 .map(CustomerOrderItem::getFulfillmentStatus)
                 .min(java.util.Comparator.comparingInt(OrderFulfillmentStatus::ordinal))
                 .orElse(OrderFulfillmentStatus.PLACED);
+        DeliveryMethod deliveryMethod = parseDeliveryMethod(order.getDeliveryMethod());
+        String sellerVisiblePhone = deliveryMethod.requiresRecipientPhone() ? order.getPhone() : null;
         return new SellerOrderView(order.getReference(), order.getCreatedAt(), status.name(), order.getFullName(),
-                order.getEmail(), order.getPhone(), order.getAddressLine1(), order.getAddressLine2(),
+                sellerVisiblePhone, order.getAddressLine1(), order.getAddressLine2(),
                 order.getCity(), order.getRegion(), order.getPostalCode(), order.getCountry(),
                 order.getDeliveryMethod(), subtotal, items);
     }
@@ -245,7 +247,7 @@ public class CustomerOrderService {
                             BigDecimal deliveryFee, BigDecimal total, List<OrderItemView> items) {}
     public record OrderItemView(String productId, String productName, int quantity, BigDecimal unitPrice,
                                 Long sellerId, String status, String carrierName, String trackingUrl) {}
-    public record SellerOrderView(String reference, Instant createdAt, String status, String fullName, String email,
+    public record SellerOrderView(String reference, Instant createdAt, String status, String fullName,
                                   String phone, String addressLine1, String addressLine2, String city, String region,
                                   String postalCode, String country, String deliveryMethod, BigDecimal subtotal,
                                   List<SellerOrderItemView> items) {}

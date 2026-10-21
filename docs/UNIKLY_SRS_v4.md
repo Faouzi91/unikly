@@ -133,7 +133,7 @@ Status legend: **Implemented** = current source has the capability; **Partial** 
 - **NFR-UX-01:** Buyer and seller flows work at supported narrow and desktop viewports and provide visible loading, empty, validation, and failure states.
 - **NFR-A11Y-01:** Target [WCAG 2.2 AA](https://www.w3.org/TR/WCAG22/) for public launch, with semantic structure, keyboard operation, accessible names/status messages, sufficient contrast, visible focus, and reduced-motion support.
 - **NFR-PRIV-01:** Define data collection, retention, export/deletion, consent, and support access according to the selected market before production launch.
-- **NFR-PRIV-02:** By default, a seller's own order view exposes the recipient's name and delivery address needed to fulfill that seller's lines; it does not expose the buyer's email. Expose a phone number only when the approved fulfillment method requires it. Support may access additional contact details only for an authorized case, with access scoped to that case and audited.
+- **NFR-PRIV-02 — Partial (seller order view implemented; support case access in M17):** By default, a seller's own order view exposes the recipient's name and delivery address needed to fulfill that seller's lines; it does not expose the buyer's email. It exposes a phone number only when the delivery method requires it (`EXPRESS`). Support may access additional contact details only for an authorized case, with access scoped to that case and audited.
 - **NFR-MAINT-01:** Preserve a modular Spring monolith and Angular feature boundaries; make architecture changes only when an owned capability or measured constraint calls for it.
 
 ## 7. Core acceptance flows

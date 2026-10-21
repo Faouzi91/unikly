@@ -2,6 +2,28 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
+## 2026-10-21 — Milestone M5: minimize buyer contact data in seller order views
+
+### Backend and privacy (`NFR-PRIV-02`)
+
+- Removed buyer `email` from `CustomerOrderService.SellerOrderView` so seller order views (`GET /api/orders/seller` and `PUT /api/orders/seller/{reference}/status`) never expose the buyer's email address by default (`M5`, `NFR-PRIV-02`).
+- Added `DeliveryMethod.requiresRecipientPhone()` (`true` for `EXPRESS`, `false` for `STANDARD`) and updated `CustomerOrderService.toSellerView` to include the recipient phone number only when the delivery method requires it (`null` for `STANDARD`).
+- Added `sellerOrderViewOmitsBuyerEmailAndIncludesPhoneOnlyForExpressDelivery` in `CustomerOrderDeliveryTests` verifying that seller order payloads omit `email`, return `phone = null` for `STANDARD` orders, and include `phone` for `EXPRESS` orders.
+
+### Storefront and visual foundation (`T3`)
+
+- Updated `SellerOrder` in `orders.service.ts` and `seller-orders-page.html` to remove buyer email display and render the courier contact phone only when present (`@if (order.phone)`).
+- Migrated `seller-orders-page.css` onto the shared `:root` design tokens (`--ink`, `--brand`, `--surface`, `--border`, `--radius-md`, `--shadow-soft`) and `--content-width: 1500px` (`T3`).
+
+### Documentation
+
+- Updated `docs/UNIKLY_SRS_v4.md` (`NFR-PRIV-02`), `docs/authorization-matrix.md`, and `docs/product-roadmap.md` (`M5`).
+
+### Verification
+
+- `docker build -t unikly-web-test ./frontend` passed with zero warnings and zero errors.
+- Isolated Java 25 Maven test suite in Docker (`mvn -B -ntp test`) passed all 30 tests (`CustomerOrderDeliveryTests`: 5/5 passed).
+
 ## 2026-10-21 — Milestone M3: restrict product reviews to delivered purchases and align product-detail tokens
 
 ### Backend and security (`FR-REV-01`)

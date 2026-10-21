@@ -32,7 +32,7 @@ Public catalog and review reads do not require a role. Role names are not a repl
 | POST /api/orders | ORDER_CREATE_SELF; prices and totals are computed server-side |
 | GET /api/orders/mine and buyer delivery confirmation | ORDER_READ_SELF; the service scopes the order to its buyer |
 | Buyer order cancellation | ORDER_CANCEL_SELF; only eligible orders owned by the buyer may be canceled |
-| Seller order list and status updates | ORDER_FULFILL_OWN; each affected order item must belong to the seller |
+| Seller order list and status updates | ORDER_FULFILL_OWN; each affected order item must belong to the seller. Seller order views omit buyer email and expose recipient phone only when the delivery method requires it (`EXPRESS`) |
 | GET /api/products/mine | Seller role |
 | POST, PUT, and DELETE /api/products/** | Seller role; seller ownership is checked for product mutations |
 | GET /api/products and public product/review reads | Public |
