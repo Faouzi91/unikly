@@ -2,6 +2,22 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
+## 2026-10-20 — Sprint 2 flagship landing page visuals: Bento hero stage, 4-column department showcase, and retail discovery bar
+
+### Storefront and visual foundation
+
+- Expanded `:root` semantic surface, accent, warning, border-radius, and elevation tokens in `frontend/src/styles.css` (`T2`).
+- Upgraded the global storefront header and secondary navigation bar (`app.html`, `app.css`) with a refined brand lockup, gold-accent search bar, live item count basket pill, and direct department quick-links (`All Departments`, `Home & Living`, `Electronics`, `Kitchen & Dining`, `Outdoor & Carry`).
+- Built a 3-card flagship Bento hero stage on `home-page` combining the editorial showcase and live catalog metrics with a dynamic Featured Pick card and an Everyday Value ("Finds under $35") spotlight card.
+- Added a Walmart/Amazon-inspired 4-column Department Bento grid (`Home & Living`, `Electronics & Audio`, `Kitchen & Dining`, `Outdoor & Carry`) with dual-image collages, live in-stock ratios, starting prices computed from the catalog, and interactive category selection.
+- Upgraded the `#shop` catalog discovery toolbar with `In stock only` and `Under $35` quick-filter chips (`aria-pressed`), one-click filter reset, customer-rating sort option, and elevated product cards featuring split dollar/cents retail price lockups, low-stock/out-of-stock pills, and demo/seller provenance badges (`M2`, `M4`, `T1`, `T3`).
+- Extended `home-page.spec.ts` to cover department showcase cards, `inStockOnly` and `under35Only` quick filters, and filter reset behavior.
+
+### Verification
+
+- `docker run --rm -v "${PWD}/frontend:/workspace" -w /workspace node:24.21.0-alpine npm run check:architecture` passed (`Angular feature boundaries are valid.`).
+- `docker build -t unikly-web-test ./frontend` passed with zero warnings and zero errors.
+
 ## 2026-10-20 — Sprint 1 audit fixes: identity hardening, Flyway migration safety, catalog/basket provenance, and accessibility
 
 ### Database and configuration

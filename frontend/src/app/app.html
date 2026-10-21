@@ -3,12 +3,15 @@
 <header class="site-header">
   <a class="brand" routerLink="/" aria-label="Unikly home">
     <img src="/unikly_logo_no_bg.svg" alt="" width="29" height="36">
-    <span>Unikly</span>
+    <span class="brand-lockup">
+      <span class="brand-name">Unikly</span>
+      <small class="brand-sub">Marketplace</small>
+    </span>
   </a>
 
   <form class="header-search" role="search" (ngSubmit)="search()">
     <label class="visually-hidden" for="site-search">Search products</label>
-    <input id="site-search" name="search" type="search" placeholder="Search products" [(ngModel)]="searchTerm">
+    <input id="site-search" name="search" type="search" placeholder="Search home, kitchen, electronics, and outdoor finds…" [(ngModel)]="searchTerm">
     <button type="submit" aria-label="Search products">
       <svg lucideSearch [size]="20" [strokeWidth]="2" aria-hidden="true"></svg>
     </button>
@@ -24,19 +27,30 @@
     } @else {
       <a class="account-action" routerLink="/login">
         <svg lucideUser [size]="22" [strokeWidth]="1.8" aria-hidden="true"></svg>
-        <span class="action-copy"><small>Welcome</small><strong>Sign in</strong></span>
+        <span class="action-copy"><small>Sign in</small><strong>Account</strong></span>
       </a>
     }
     <a class="basket-link" routerLink="/basket" [attr.aria-label]="'Basket, ' + cart.itemCount() + ' items'">
-      <svg lucideShoppingCart [size]="22" [strokeWidth]="1.8" aria-hidden="true"></svg>
-      <span class="basket-count" aria-hidden="true">{{ cart.itemCount() }}</span>
+      <span class="basket-icon-wrap">
+        <svg lucideShoppingCart [size]="22" [strokeWidth]="1.8" aria-hidden="true"></svg>
+        <span class="basket-count" aria-hidden="true">{{ cart.itemCount() }}</span>
+      </span>
+      <span class="action-copy basket-copy">
+        <small>{{ cart.itemCount() === 1 ? '1 item' : cart.itemCount() + ' items' }}</small>
+        <strong>Basket</strong>
+      </span>
     </a>
   </nav>
 </header>
 
 <nav class="secondary-nav" aria-label="Shop navigation">
   <div class="secondary-nav-inner">
-    <a routerLink="/" fragment="shop">Shop</a>
+    <a class="nav-pill-primary" routerLink="/" [queryParams]="{ category: null }" fragment="shop">All Departments</a>
+    <a routerLink="/" [queryParams]="{ category: 'Home' }" fragment="shop">Home &amp; Living</a>
+    <a routerLink="/" [queryParams]="{ category: 'Electronics' }" fragment="shop">Electronics</a>
+    <a routerLink="/" [queryParams]="{ category: 'Kitchen' }" fragment="shop">Kitchen &amp; Dining</a>
+    <a routerLink="/" [queryParams]="{ category: 'Outdoor' }" fragment="shop">Outdoor &amp; Carry</a>
+    <span class="secondary-divider" aria-hidden="true"></span>
     <a routerLink="/basket">Basket</a>
     @if (auth.user()?.role === 'BUYER') { <a routerLink="/orders">Your orders</a> }
     @if (auth.user()?.role === 'SELLER') {

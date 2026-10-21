@@ -1,24 +1,169 @@
 <main class="storefront">
-  <section class="welcome-band" aria-labelledby="welcome-title">
-    <div class="welcome-copy">
-      <p class="eyebrow">Explore the Unikly marketplace</p>
-      <h1 id="welcome-title">Useful finds for every day.</h1>
-      <p>Browse home, kitchen, electronics, and outdoor products. Check the description and current stock before adding an item to your basket.</p>
-      <div class="hero-actions">
-        <a href="#shop" class="primary-link">Browse products <span aria-hidden="true">→</span></a>
-        <a routerLink="/register" class="text-link">Create an account</a>
+  <div class="hero-bento-stage">
+    <section class="welcome-band" aria-labelledby="welcome-title">
+      <div class="welcome-copy">
+        <p class="eyebrow">
+          <svg lucideSparkles [size]="14" [strokeWidth]="2.2" aria-hidden="true"></svg>
+          <span>Explore the Unikly marketplace</span>
+        </p>
+        <h1 id="welcome-title">Useful finds for every day.</h1>
+        <p class="welcome-lead">
+          Browse home, kitchen, electronics, and outdoor products. Check the description, listing provenance, and current stock before adding an item to your basket.
+        </p>
+        <div class="hero-actions">
+          <a href="#shop" class="primary-link">
+            <span>Browse products</span>
+            <svg lucideArrowRight [size]="17" [strokeWidth]="2.2" aria-hidden="true"></svg>
+          </a>
+          <a routerLink="/register" class="text-link">Create an account</a>
+        </div>
+        <dl class="hero-metrics" aria-label="Catalog overview">
+          <div>
+            <dt>Catalog items</dt>
+            <dd>{{ products().length }} listings</dd>
+          </div>
+          <div>
+            <dt>Ready to order</dt>
+            <dd>{{ inStockCount() }} in stock</dd>
+          </div>
+          <div>
+            <dt>Departments</dt>
+            <dd>4 curated</dd>
+          </div>
+        </dl>
       </div>
-    </div>
-    <img class="welcome-image"
-      src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1400&q=88"
-      alt="Light-filled living room with simple, natural furnishings"
-      width="1400" height="900" fetchpriority="high"
-      (error)="$any($event.target).src = '/product-placeholder.svg'">
-  </section>
+      <div class="welcome-media">
+        <img class="welcome-image"
+          src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1400&q=88"
+          alt="Light-filled living room with simple, natural furnishings"
+          width="1400" height="900" fetchpriority="high"
+          (error)="$any($event.target).src = '/product-placeholder.svg'">
+        <div class="welcome-media-caption">
+          <span class="caption-pill">Curated departments</span>
+          <p>Home, Electronics, Kitchen &amp; Outdoor essentials</p>
+        </div>
+      </div>
+    </section>
 
-  <p class="demo-banner" role="note">
-    <strong>Preview store:</strong> Listings marked “Demo” use sample product, price, and stock data. Orders do not collect payment.
-  </p>
+    <aside class="hero-side-stack" aria-label="Featured marketplace highlights">
+      @if (featuredSpotlight(); as spotlight) {
+        <article class="bento-card spotlight-card">
+          <div class="bento-card-header">
+            <span class="bento-kicker">Featured pick</span>
+            @if (spotlight.isDemo) {
+              <span class="bento-provenance">Demo listing</span>
+            } @else if (spotlight.sellerId) {
+              <span class="bento-provenance seller">Seller #{{ spotlight.sellerId }}</span>
+            }
+          </div>
+          <div class="spotlight-body">
+            <a class="spotlight-thumb" [routerLink]="['/products', spotlight.id]" [attr.aria-label]="'View ' + spotlight.name">
+              <img [src]="spotlight.image" [alt]="spotlight.name" width="240" height="220"
+                (error)="$any($event.target).src = '/product-placeholder.svg'">
+            </a>
+            <div class="spotlight-info">
+              <p class="spotlight-category">{{ spotlight.category }}</p>
+              <h2><a [routerLink]="['/products', spotlight.id]">{{ spotlight.name }}</a></h2>
+              <p class="spotlight-price" [attr.aria-label]="'$' + spotlight.price.toFixed(2)">
+                <span class="price-currency" aria-hidden="true">$</span>
+                <span class="price-whole" aria-hidden="true">{{ wholeDollars(spotlight.price) }}</span>
+                <span class="price-cents" aria-hidden="true">{{ cents(spotlight.price) }}</span>
+              </p>
+              <p class="spotlight-stock">
+                @if (spotlight.stockQuantity > 0) {
+                  {{ spotlight.stockQuantity }} in stock
+                } @else {
+                  Out of stock
+                }
+              </p>
+            </div>
+          </div>
+          <div class="spotlight-footer">
+            <a class="bento-link" [routerLink]="['/products', spotlight.id]">
+              <span>Inspect item details</span>
+              <svg lucideArrowRight [size]="15" [strokeWidth]="2.2" aria-hidden="true"></svg>
+            </a>
+          </div>
+        </article>
+      }
+
+      <article class="bento-card value-bento-card">
+        <div class="bento-card-header">
+          <span class="bento-kicker">Everyday value</span>
+          <span class="value-pill">{{ under35Products().length }} available</span>
+        </div>
+        <h2>Finds under $35</h2>
+        <p>Practical kitchen, desk, and outdoor essentials ready to add to your basket.</p>
+        <div class="value-thumb-strip" aria-hidden="true">
+          @for (item of under35Products().slice(0, 3); track item.id) {
+            <img [src]="item.image" alt="" width="64" height="64" loading="lazy"
+              (error)="$any($event.target).src = '/product-placeholder.svg'">
+          }
+        </div>
+        <a href="#shop" class="bento-action-btn"
+          [attr.aria-pressed]="under35Only()"
+          (click)="under35Only.set(true); activeCategory.set('All')">
+          <span>Filter under $35</span>
+          <svg lucideArrowRight [size]="15" [strokeWidth]="2.2" aria-hidden="true"></svg>
+        </a>
+      </article>
+    </aside>
+  </div>
+
+  <div class="demo-banner" role="note">
+    <svg lucidePackage [size]="18" [strokeWidth]="2" aria-hidden="true"></svg>
+    <p>
+      <strong>Preview store:</strong> Listings marked “Demo” use sample product, price, and stock data. Orders do not collect payment.
+    </p>
+  </div>
+
+  <section class="department-section" aria-labelledby="departments-title">
+    <div class="section-header-bar">
+      <div>
+        <p class="eyebrow">Shop by department</p>
+        <h2 id="departments-title">Explore every corner of the catalog</h2>
+      </div>
+      <a href="#shop" class="section-jump-link" (click)="clearFilters()">
+        <span>View all {{ products().length }} products</span>
+        <svg lucideArrowRight [size]="15" [strokeWidth]="2.2" aria-hidden="true"></svg>
+      </a>
+    </div>
+
+    <div class="department-grid">
+      @for (dept of departmentCards(); track dept.category) {
+        <article class="department-card" [class.active]="activeCategory() === dept.category">
+          <div class="department-card-top">
+            <span class="department-kicker">{{ dept.kicker }}</span>
+            <span class="department-stock-pill">{{ dept.inStockCount }}/{{ dept.count }} in stock</span>
+          </div>
+          <h3>{{ dept.title }}</h3>
+          <p class="department-subtitle">{{ dept.subtitle }}</p>
+          <div class="department-collage" aria-hidden="true">
+            <div class="collage-primary">
+              <img [src]="dept.primaryImage" alt="" width="360" height="260" loading="lazy"
+                (error)="$any($event.target).src = '/product-placeholder.svg'">
+            </div>
+            <div class="collage-secondary">
+              <img [src]="dept.secondaryImage" alt="" width="200" height="260" loading="lazy"
+                (error)="$any($event.target).src = '/product-placeholder.svg'">
+            </div>
+          </div>
+          <div class="department-card-footer">
+            <div class="department-price-meta">
+              <small>Starting at</small>
+              <strong>${{ dept.startingPrice.toFixed(2) }}</strong>
+            </div>
+            <a href="#shop" class="department-cta"
+              [attr.aria-pressed]="activeCategory() === dept.category"
+              (click)="selectCategory(dept.category)">
+              <span>Shop {{ dept.category }}</span>
+              <svg lucideArrowRight [size]="14" [strokeWidth]="2.2" aria-hidden="true"></svg>
+            </a>
+          </div>
+        </article>
+      }
+    </div>
+  </section>
 
   <section class="how-it-works" aria-labelledby="how-it-works-title">
     <div class="how-heading">
@@ -26,61 +171,111 @@
       <h2 id="how-it-works-title">Browse, choose, and review your order.</h2>
     </div>
     <ol>
-      <li><span>01</span><div><h3>Explore products</h3><p>Read each description and check availability.</p></div></li>
-      <li><span>02</span><div><h3>Build your basket</h3><p>Change quantities before you continue.</p></div></li>
+      <li><span>01</span><div><h3>Explore products</h3><p>Read each description, provenance badge, and current availability.</p></div></li>
+      <li><span>02</span><div><h3>Build your basket</h3><p>Adjust item quantities and review your subtotal before you continue.</p></div></li>
       <li><span>03</span><div><h3>Try a demo order</h3><p>Checkout records an unpaid order; it does not take payment.</p></div></li>
     </ol>
   </section>
 
   <section id="shop" class="product-section" aria-labelledby="products-title">
-    <div class="section-title-row">
-      <div>
-        <p class="eyebrow">The current catalog</p>
-        <h2 id="products-title">Browse products</h2>
+    <div class="catalog-toolbar">
+      <div class="section-title-row">
+        <div>
+          <p class="eyebrow">The current catalog</p>
+          <h2 id="products-title">Browse products</h2>
+        </div>
+        <p class="results-summary" role="status" aria-live="polite">
+          Showing <strong>{{ resultCount() }}</strong> {{ resultCount() === 1 ? 'product' : 'products' }}
+          @if (activeCategory() !== 'All') { in <strong>{{ activeCategory() }}</strong> }
+          @if (query().trim()) { matching “<strong>{{ query().trim() }}</strong>” }
+        </p>
+      </div>
+
+      <div class="filter-controls-bar">
+        <div class="category-tabs" role="group" aria-label="Filter products by category">
+          @for (category of categories; track category) {
+            <button type="button" [class.active]="activeCategory() === category"
+              [attr.aria-pressed]="activeCategory() === category"
+              (click)="activeCategory.set(category)">
+              {{ category }} <span class="category-count">({{ categoryCount(category) }})</span>
+            </button>
+          }
+        </div>
+
+        <div class="quick-filters-group" role="group" aria-label="Quick product filters and sorting">
+          <button type="button" class="quick-filter-chip"
+            [class.active]="inStockOnly()"
+            [attr.aria-pressed]="inStockOnly()"
+            (click)="toggleInStockOnly()">
+            @if (inStockOnly()) {
+              <svg lucideCheck [size]="14" [strokeWidth]="2.5" aria-hidden="true"></svg>
+            }
+            <span>In stock only</span>
+          </button>
+
+          <button type="button" class="quick-filter-chip"
+            [class.active]="under35Only()"
+            [attr.aria-pressed]="under35Only()"
+            (click)="toggleUnder35()">
+            @if (under35Only()) {
+              <svg lucideCheck [size]="14" [strokeWidth]="2.5" aria-hidden="true"></svg>
+            }
+            <span>Under $35</span>
+          </button>
+
+          @if (hasActiveFilters()) {
+            <button type="button" class="clear-filters-btn" (click)="clearFilters()">
+              Reset filters
+            </button>
+          }
+
+          <label class="sort-control" for="product-sort">
+            <svg lucideSlidersHorizontal [size]="15" [strokeWidth]="2" aria-hidden="true"></svg>
+            <span>Sort by</span>
+            <select id="product-sort" [value]="sortOrder()" (change)="sortOrder.set($any($event.target).value)">
+              <option value="featured">Featured</option>
+              <option value="price-asc">Price: low to high</option>
+              <option value="price-desc">Price: high to low</option>
+              <option value="rating-desc">Customer rating</option>
+            </select>
+          </label>
+        </div>
       </div>
     </div>
-
-    <div class="category-tabs" role="group" aria-label="Filter products by category">
-      @for (category of categories; track category) {
-        <button type="button" [class.active]="activeCategory() === category"
-          [attr.aria-pressed]="activeCategory() === category"
-          (click)="activeCategory.set(category)">
-          {{ category }} <span class="category-count">({{ categoryCount(category) }})</span>
-        </button>
-      }
-    </div>
-
-    <p class="results-summary" role="status" aria-live="polite">
-      Showing {{ resultCount() }} {{ resultCount() === 1 ? 'product' : 'products' }}
-      @if (activeCategory() !== 'All') { in {{ activeCategory() }} }
-    </p>
 
     @if (notice()) {
       <p class="cart-notice" role="status" aria-live="polite">{{ notice() }}</p>
     }
 
-    <label class="sort-control" for="product-sort">
-      <span>Sort by</span>
-      <select id="product-sort" [value]="sortOrder()" (change)="sortOrder.set($any($event.target).value)">
-        <option value="featured">Featured</option>
-        <option value="price-asc">Price: low to high</option>
-        <option value="price-desc">Price: high to low</option>
-      </select>
-    </label>
-
     <div class="product-grid" aria-label="Products">
       @for (product of sortedProducts(); track product.id) {
-        <article class="product-item">
+        <article class="product-item" [class.is-out]="product.stockQuantity === 0">
           <a class="product-image" [routerLink]="['/products', product.id]" [attr.aria-label]="'View ' + product.name">
             <img [src]="product.image" [alt]="product.name" width="600" height="540" loading="lazy"
               (error)="$any($event.target).src = '/product-placeholder.svg'">
-            @if (product.isDemo) { <span class="product-provenance">Demo listing</span> }
+            <div class="card-badges">
+              @if (product.isDemo) {
+                <span class="product-provenance">Demo listing</span>
+              } @else if (product.sellerId) {
+                <span class="product-provenance seller-badge">Seller #{{ product.sellerId }}</span>
+              }
+              @if (product.stockQuantity === 0) {
+                <span class="stock-pill out">Out of stock</span>
+              } @else if (product.stockQuantity <= 5) {
+                <span class="stock-pill low">Only {{ product.stockQuantity }} left</span>
+              }
+            </div>
           </a>
           <div class="product-details">
-            <p class="product-category">{{ product.category }}</p>
-            @if (!product.isDemo && product.sellerId) { <p class="seller-provenance">Seller account #{{ product.sellerId }}</p> }
+            <div class="product-meta-top">
+              <p class="product-category">{{ product.category }}</p>
+              @if (!product.isDemo && product.sellerId) {
+                <p class="seller-provenance">Seller account #{{ product.sellerId }}</p>
+              }
+            </div>
             <h3><a class="product-title-link" [routerLink]="['/products', product.id]">{{ product.name }}</a></h3>
             <p class="product-description">{{ product.description }}</p>
+
             @if (!product.isDemo && product.reviews > 0) {
               <p class="rating" [attr.aria-label]="product.rating + ' out of 5 stars, ' + product.reviews + ' reviews'">
                 <span class="card-stars" aria-hidden="true">
@@ -90,15 +285,25 @@
                 </span>
                 <small>{{ product.rating.toFixed(1) }} ({{ product.reviews }})</small>
               </p>
+            } @else {
+              <p class="rating-placeholder">No customer reviews yet</p>
             }
-            <p class="price">${{ product.price.toFixed(2) }}</p>
-            <p class="stock-status" [class.out-of-stock]="product.stockQuantity === 0">
-              @if (product.stockQuantity === 0) {
-                Out of stock
-              } @else {
-                {{ product.stockQuantity }} in stock
-              }
-            </p>
+
+            <div class="price-stock-row">
+              <p class="price" [attr.aria-label]="'$' + product.price.toFixed(2)">
+                <span class="price-currency" aria-hidden="true">$</span>
+                <span class="price-whole" aria-hidden="true">{{ wholeDollars(product.price) }}</span>
+                <span class="price-cents" aria-hidden="true">{{ cents(product.price) }}</span>
+              </p>
+              <p class="stock-status" [class.out-of-stock]="product.stockQuantity === 0">
+                @if (product.stockQuantity === 0) {
+                  Out of stock
+                } @else {
+                  {{ product.stockQuantity }} in stock
+                }
+              </p>
+            </div>
+
             @if (getQuantityInCart(product.id) > 0) {
               <div class="card-stepper-wrap">
                 <div class="card-stepper">
@@ -119,7 +324,12 @@
               </div>
             } @else {
               <button type="button" class="add-button" [disabled]="!canAdd(product)" (click)="addToCart(product)">
-                {{ product.stockQuantity === 0 ? 'Out of stock' : 'Add to basket' }}
+                @if (product.stockQuantity === 0) {
+                  <span>Out of stock</span>
+                } @else {
+                  <svg lucidePlus [size]="16" [strokeWidth]="2.4" aria-hidden="true"></svg>
+                  <span>Add to basket</span>
+                }
               </button>
             }
           </div>
@@ -127,7 +337,10 @@
       } @empty {
         <div class="empty-state" role="status">
           <h3>No products match that selection.</h3>
-          <p>Try another search term or choose a different category.</p>
+          <p>Try another search term, choose a different department, or reset your active filters.</p>
+          @if (hasActiveFilters()) {
+            <button type="button" class="empty-reset-btn" (click)="clearFilters()">Show all products</button>
+          }
         </div>
       }
     </div>

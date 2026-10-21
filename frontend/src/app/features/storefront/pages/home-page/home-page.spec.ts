@@ -37,4 +37,33 @@ describe('HomePage product search', () => {
     page.activeCategory.set('Home');
     expect(page.resultCount()).toBe(3);
   });
+
+  it('computes department bento showcase cards with live starting prices and stock counts', () => {
+    const fixture = TestBed.createComponent(HomePage);
+    const page = fixture.componentInstance;
+    const departments = page.departmentCards();
+
+    expect(departments.length).toBe(4);
+    const homeDept = departments.find((dept) => dept.category === 'Home');
+    expect(homeDept?.count).toBe(3);
+    expect(homeDept?.startingPrice).toBe(22.99);
+  });
+
+  it('filters by in-stock and under-$35 quick filters and resets cleanly', () => {
+    const fixture = TestBed.createComponent(HomePage);
+    const page = fixture.componentInstance;
+
+    page.toggleInStockOnly();
+    expect(page.filteredProducts().every((product) => product.stockQuantity > 0)).toBeTrue();
+
+    page.toggleUnder35();
+    expect(
+      page.filteredProducts().every((product) => product.stockQuantity > 0 && product.price <= 35),
+    ).toBeTrue();
+    expect(page.hasActiveFilters()).toBeTrue();
+
+    page.clearFilters();
+    expect(page.hasActiveFilters()).toBeFalse();
+    expect(page.resultCount()).toBe(8);
+  });
 });
