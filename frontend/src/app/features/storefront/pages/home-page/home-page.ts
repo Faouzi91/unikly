@@ -118,6 +118,13 @@ export class HomePage {
     );
   });
 
+  readonly curatedHighlights = computed<StoreProduct[]>(() =>
+    [...this.products()]
+      .filter((product) => product.stockQuantity > 0)
+      .sort((a, b) => b.rating - a.rating || b.reviews - a.reviews || a.price - b.price)
+      .slice(0, 4),
+  );
+
   readonly departmentCards = computed<DepartmentShowcase[]>(() => {
     const allProducts = this.products();
     return DEPARTMENT_META.map((meta) => {

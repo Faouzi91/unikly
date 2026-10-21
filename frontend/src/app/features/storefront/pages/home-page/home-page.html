@@ -117,7 +117,7 @@
     </p>
   </div>
 
-  <section class="department-section" aria-labelledby="departments-title">
+  <section id="departments" class="department-section" aria-labelledby="departments-title">
     <div class="section-header-bar">
       <div>
         <p class="eyebrow">Shop by department</p>
@@ -164,6 +164,59 @@
       }
     </div>
   </section>
+
+  @if (curatedHighlights().length > 0) {
+    <section class="curated-showcase" aria-labelledby="curated-showcase-title">
+      <div class="curated-showcase-header">
+        <div>
+          <p class="eyebrow">Ready-to-ship highlights</p>
+          <h2 id="curated-showcase-title">Featured in-stock picks across departments</h2>
+        </div>
+        <a href="#shop" class="section-jump-link" (click)="inStockOnly.set(true); sortOrder.set('rating-desc')">
+          <span>See all in-stock items</span>
+          <svg lucideArrowRight [size]="15" [strokeWidth]="2.2" aria-hidden="true"></svg>
+        </a>
+      </div>
+
+      <div class="curated-showcase-grid">
+        @for (item of curatedHighlights(); track item.id; let idx = $index) {
+          <article class="curated-tile">
+            <a class="curated-tile-media" [routerLink]="['/products', item.id]" [attr.aria-label]="'View ' + item.name">
+              <img [src]="item.image" [alt]="item.name" width="280" height="240" loading="lazy"
+                (error)="$any($event.target).src = '/product-placeholder.svg'">
+              <span class="curated-rank-pill">Pick #{{ idx + 1 }}</span>
+            </a>
+            <div class="curated-tile-body">
+              <div class="curated-tile-meta">
+                <span class="product-category">{{ item.category }}</span>
+                @if (item.isDemo) {
+                  <span class="curated-prov">Demo</span>
+                } @else if (item.sellerId) {
+                  <span class="curated-prov seller">Seller #{{ item.sellerId }}</span>
+                }
+              </div>
+              <h3><a class="product-title-link" [routerLink]="['/products', item.id]">{{ item.name }}</a></h3>
+              <div class="curated-tile-footer">
+                <p class="price" [attr.aria-label]="'$' + item.price.toFixed(2)">
+                  <span class="price-currency" aria-hidden="true">$</span>
+                  <span class="price-whole" aria-hidden="true">{{ wholeDollars(item.price) }}</span>
+                  <span class="price-cents" aria-hidden="true">{{ cents(item.price) }}</span>
+                </p>
+                <button type="button" class="curated-quick-add" [disabled]="!canAdd(item)" (click)="addToCart(item)">
+                  @if (getQuantityInCart(item.id) > 0) {
+                    <span>{{ getQuantityInCart(item.id) }} in basket</span>
+                  } @else {
+                    <svg lucidePlus [size]="14" [strokeWidth]="2.5" aria-hidden="true"></svg>
+                    <span>Quick add</span>
+                  }
+                </button>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+  }
 
   <section class="how-it-works" aria-labelledby="how-it-works-title">
     <div class="how-heading">

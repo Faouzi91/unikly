@@ -66,4 +66,13 @@ describe('HomePage product search', () => {
     expect(page.hasActiveFilters()).toBeFalse();
     expect(page.resultCount()).toBe(8);
   });
+
+  it('selects up to 4 in-stock curated highlights ordered by rating and review count', () => {
+    const fixture = TestBed.createComponent(HomePage);
+    const page = fixture.componentInstance;
+    const highlights = page.curatedHighlights();
+
+    expect(highlights.length).toBe(4);
+    expect(highlights.every((item) => item.stockQuantity > 0)).toBeTrue();
+  });
 });

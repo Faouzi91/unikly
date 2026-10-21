@@ -10,8 +10,9 @@ Progress notes for the Unikly project. Payment collection and carrier integratio
 - Upgraded the global storefront header, secondary department bar, and 3-tier retail footer (`app.html`, `app.css`) to span `100%` fluid viewport width (`--shell-width: 1920px` inner command track for header/nav; `--content-width: 1500px` 4-column directory + full-bleed Back-to-top and sub-footer bars) matching Amazon/Walmart spatial proportions while preserving Unikly's forest-and-gold visual identity.
 - Built a 3-card flagship Bento hero stage on `home-page` combining the editorial showcase and live catalog metrics with a dynamic Featured Pick card and an Everyday Value ("Finds under $35") spotlight card.
 - Added a Walmart/Amazon-inspired 4-column Department Bento grid (`Home & Living`, `Electronics & Audio`, `Kitchen & Dining`, `Outdoor & Carry`) with dual-image collages, live in-stock ratios, starting prices computed from the catalog, and interactive category selection.
+- Added a dark-forest **Ready-to-Ship Highlights** 4-up merchandising shelf (`curatedHighlights()`) showcasing top-rated in-stock picks (`Pick #1`–`#4`) with split dollar/cents pricing and one-click Quick Add buttons, and aligned `product-detail-page`, `basket-page`, and `checkout-page` containers to `--content-width: 1500px`.
 - Upgraded the `#shop` catalog discovery toolbar with `In stock only` and `Under $35` quick-filter chips (`aria-pressed`), one-click filter reset, customer-rating sort option, and elevated product cards featuring split dollar/cents retail price lockups, low-stock/out-of-stock pills, and demo/seller provenance badges (`M2`, `M4`, `T1`, `T3`).
-- Extended `home-page.spec.ts` to cover department showcase cards, `inStockOnly` and `under35Only` quick filters, and filter reset behavior.
+- Extended `home-page.spec.ts` to cover department showcase cards, `curatedHighlights()`, `inStockOnly` and `under35Only` quick filters, and filter reset behavior.
 
 ### Verification
 
