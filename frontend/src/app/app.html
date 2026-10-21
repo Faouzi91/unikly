@@ -1,65 +1,72 @@
 <a class="skip-link" href="#main-content">Skip to main content</a>
 
-<header class="site-header">
-  <a class="brand" routerLink="/" aria-label="Unikly home">
-    <img src="/unikly_logo_no_bg.svg" alt="" width="29" height="36">
-    <span class="brand-lockup">
-      <span class="brand-name">Unikly</span>
-      <small class="brand-sub">Marketplace</small>
-    </span>
-  </a>
-
-  <form class="header-search" role="search" (ngSubmit)="search()">
-    <label class="visually-hidden" for="site-search">Search products</label>
-    <input id="site-search" name="search" type="search" placeholder="Search home, kitchen, electronics, and outdoor finds…" [(ngModel)]="searchTerm">
-    <button type="submit" aria-label="Search products">
-      <svg lucideSearch [size]="20" [strokeWidth]="2" aria-hidden="true"></svg>
-    </button>
-  </form>
-
-  <nav class="header-actions" aria-label="Account and basket">
-    @if (auth.isAuthenticated()) {
-      <a class="account-action" routerLink="/account">
-        <svg lucideUser [size]="22" [strokeWidth]="1.8" aria-hidden="true"></svg>
-        <span class="action-copy"><small>Hello, {{ auth.user()?.displayName }}</small><strong>Account</strong></span>
-      </a>
-      <button class="sign-out-action" type="button" (click)="signOut()">Sign out</button>
-    } @else {
-      <a class="account-action" routerLink="/login">
-        <svg lucideUser [size]="22" [strokeWidth]="1.8" aria-hidden="true"></svg>
-        <span class="action-copy"><small>Sign in</small><strong>Account</strong></span>
-      </a>
-    }
-    <a class="basket-link" routerLink="/basket" [attr.aria-label]="'Basket, ' + cart.itemCount() + ' items'">
-      <span class="basket-icon-wrap">
-        <svg lucideShoppingCart [size]="22" [strokeWidth]="1.8" aria-hidden="true"></svg>
-        <span class="basket-count" aria-hidden="true">{{ cart.itemCount() }}</span>
-      </span>
-      <span class="action-copy basket-copy">
-        <small>{{ cart.itemCount() === 1 ? '1 item' : cart.itemCount() + ' items' }}</small>
-        <strong>Basket</strong>
+<header id="top-of-page" class="site-header">
+  <div class="header-inner">
+    <a class="brand" routerLink="/" aria-label="Unikly home">
+      <img src="/unikly_logo_no_bg.svg" alt="" width="30" height="37">
+      <span class="brand-lockup">
+        <span class="brand-name">Unikly</span>
+        <small class="brand-sub">Marketplace</small>
       </span>
     </a>
-  </nav>
+
+    <form class="header-search" role="search" (ngSubmit)="search()">
+      <label class="visually-hidden" for="site-search">Search products</label>
+      <input id="site-search" name="search" type="search" placeholder="Search home, kitchen, electronics, and outdoor finds…" [(ngModel)]="searchTerm">
+      <button type="submit" aria-label="Search products">
+        <svg lucideSearch [size]="20" [strokeWidth]="2" aria-hidden="true"></svg>
+      </button>
+    </form>
+
+    <nav class="header-actions" aria-label="Account and basket">
+      @if (auth.isAuthenticated()) {
+        <a class="account-action" routerLink="/account">
+          <svg lucideUser [size]="22" [strokeWidth]="1.8" aria-hidden="true"></svg>
+          <span class="action-copy"><small>Hello, {{ auth.user()?.displayName }}</small><strong>Account</strong></span>
+        </a>
+        <button class="sign-out-action" type="button" (click)="signOut()">Sign out</button>
+      } @else {
+        <a class="account-action" routerLink="/login">
+          <svg lucideUser [size]="22" [strokeWidth]="1.8" aria-hidden="true"></svg>
+          <span class="action-copy"><small>Sign in</small><strong>Account</strong></span>
+        </a>
+      }
+      <a class="basket-link" routerLink="/basket" [attr.aria-label]="'Basket, ' + cart.itemCount() + ' items'">
+        <span class="basket-icon-wrap">
+          <svg lucideShoppingCart [size]="22" [strokeWidth]="1.8" aria-hidden="true"></svg>
+          <span class="basket-count" aria-hidden="true">{{ cart.itemCount() }}</span>
+        </span>
+        <span class="action-copy basket-copy">
+          <small>{{ cart.itemCount() === 1 ? '1 item' : cart.itemCount() + ' items' }}</small>
+          <strong>Basket</strong>
+        </span>
+      </a>
+    </nav>
+  </div>
 </header>
 
 <nav class="secondary-nav" aria-label="Shop navigation">
   <div class="secondary-nav-inner">
-    <a class="nav-pill-primary" routerLink="/" [queryParams]="{ category: null }" fragment="shop">All Departments</a>
-    <a routerLink="/" [queryParams]="{ category: 'Home' }" fragment="shop">Home &amp; Living</a>
-    <a routerLink="/" [queryParams]="{ category: 'Electronics' }" fragment="shop">Electronics</a>
-    <a routerLink="/" [queryParams]="{ category: 'Kitchen' }" fragment="shop">Kitchen &amp; Dining</a>
-    <a routerLink="/" [queryParams]="{ category: 'Outdoor' }" fragment="shop">Outdoor &amp; Carry</a>
-    <span class="secondary-divider" aria-hidden="true"></span>
-    <a routerLink="/basket">Basket</a>
-    @if (auth.user()?.role === 'BUYER') { <a routerLink="/orders">Your orders</a> }
-    @if (auth.user()?.role === 'SELLER') {
-      <a routerLink="/seller/orders">Seller orders</a>
-      <a routerLink="/seller/products">My products</a>
-      <a routerLink="/seller/products/new">Sell a product</a>
-    }
-    @if (auth.isAuthenticated()) { <a routerLink="/account">Your account</a> }
-    @else { <a routerLink="/register">Create account</a> }
+    <div class="secondary-nav-group">
+      <a class="nav-pill-primary" routerLink="/" [queryParams]="{ category: null }" fragment="shop">All Departments</a>
+      <a routerLink="/" [queryParams]="{ category: 'Home' }" fragment="shop">Home &amp; Living</a>
+      <a routerLink="/" [queryParams]="{ category: 'Electronics' }" fragment="shop">Electronics</a>
+      <a routerLink="/" [queryParams]="{ category: 'Kitchen' }" fragment="shop">Kitchen &amp; Dining</a>
+      <a routerLink="/" [queryParams]="{ category: 'Outdoor' }" fragment="shop">Outdoor &amp; Carry</a>
+    </div>
+    <div class="secondary-nav-utility">
+      <a routerLink="/" [queryParams]="{ category: null }" fragment="departments">Department showcase</a>
+      <span class="secondary-divider" aria-hidden="true"></span>
+      <a routerLink="/basket">Basket</a>
+      @if (auth.user()?.role === 'BUYER') { <a routerLink="/orders">Your orders</a> }
+      @if (auth.user()?.role === 'SELLER') {
+        <a routerLink="/seller/orders">Seller orders</a>
+        <a routerLink="/seller/products">My products</a>
+        <a routerLink="/seller/products/new">Sell a product</a>
+      }
+      @if (auth.isAuthenticated()) { <a routerLink="/account">Your account</a> }
+      @else { <a routerLink="/register">Create account</a> }
+    </div>
   </div>
 </nav>
 
@@ -68,20 +75,63 @@
 </div>
 
 <footer class="site-footer">
-  <div class="footer-inner">
-    <div class="footer-intro">
-      <a class="footer-brand" routerLink="/">Unikly</a>
-      <p>Browse useful things and see the details before you order.</p>
+  <a class="footer-top-bar" href="#top-of-page">
+    <span>Back to top</span>
+  </a>
+
+  <div class="footer-directory">
+    <div class="footer-col footer-intro">
+      <a class="footer-brand" routerLink="/">
+        <span class="footer-brand-name">Unikly</span>
+        <small class="footer-brand-sub">Curated Marketplace</small>
+      </a>
+      <p>Browse useful everyday goods with live stock counts, clear item provenance, and server-verified basket totals before you order.</p>
+      <span class="footer-provenance-pill">Seeded &amp; Seller Listings · Transparent Stock</span>
     </div>
-    <nav aria-label="Footer navigation">
+
+    <nav class="footer-col" aria-label="Shop departments">
+      <h3>Shop Departments</h3>
+      <a routerLink="/" [queryParams]="{ category: null }" fragment="shop">All catalog items</a>
+      <a routerLink="/" [queryParams]="{ category: 'Home' }" fragment="shop">Home &amp; Living</a>
+      <a routerLink="/" [queryParams]="{ category: 'Electronics' }" fragment="shop">Electronics</a>
+      <a routerLink="/" [queryParams]="{ category: 'Kitchen' }" fragment="shop">Kitchen &amp; Dining</a>
+      <a routerLink="/" [queryParams]="{ category: 'Outdoor' }" fragment="shop">Outdoor &amp; Carry</a>
+    </nav>
+
+    <nav class="footer-col" aria-label="Footer navigation">
+      <h3>Account &amp; Basket</h3>
       <a routerLink="/" fragment="shop">Shop products</a>
       <a routerLink="/basket">Your basket</a>
-      @if (auth.isAuthenticated()) { <a routerLink="/account">Your account</a> }
-      @else {
+      @if (auth.isAuthenticated()) {
+        <a routerLink="/account">Your account</a>
+        @if (auth.user()?.role === 'BUYER') { <a routerLink="/orders">Your orders</a> }
+        @if (auth.user()?.role === 'SELLER') {
+          <a routerLink="/seller/products">Seller studio</a>
+          <a routerLink="/seller/orders">Seller fulfillment</a>
+        }
+      } @else {
         <a routerLink="/login">Sign in</a>
         <a routerLink="/register">Create account</a>
       }
     </nav>
-    <small>© {{ currentYear }} Unikly · Demo marketplace · Orders do not collect payment.</small>
+
+    <div class="footer-col footer-standards">
+      <h3>Marketplace Standards</h3>
+      <ul>
+        <li><strong>Live inventory:</strong> Stock counts and low-stock badges reflect current database availability.</li>
+        <li><strong>Clear provenance:</strong> Every card labels whether it is a seeded demo listing or a seller-published item.</li>
+        <li><strong>Demo checkout:</strong> Orders reserve stock and track fulfillment without collecting real payment.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom-bar">
+    <div class="footer-bottom-inner">
+      <small>© {{ currentYear }} Unikly · Demo marketplace · Orders do not collect payment.</small>
+      <div class="footer-bottom-badges">
+        <span>100% Server-Calculated Totals</span>
+        <span>Verified Buyer Reviews</span>
+      </div>
+    </div>
   </div>
 </footer>

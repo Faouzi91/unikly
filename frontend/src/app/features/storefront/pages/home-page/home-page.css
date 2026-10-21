@@ -1,4 +1,4 @@
-.storefront { max-width: var(--content-width); margin: 0 auto; padding: 24px 24px 72px; }
+.storefront { width: 100%; max-width: var(--content-width); margin: 0 auto; padding: 24px clamp(16px, 2.2vw, 28px) 72px; }
 
 .hero-bento-stage { display: grid; grid-template-columns: minmax(0, 1.85fr) minmax(300px, .95fr); gap: 18px; align-items: stretch; }
 .welcome-band {

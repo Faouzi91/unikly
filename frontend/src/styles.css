@@ -38,7 +38,8 @@
   --shadow-card: 0 14px 36px rgb(20 57 47 / 8%);
   --shadow-hover: 0 20px 44px rgb(20 57 47 / 13%);
   --control-height: 46px;
-  --content-width: 1320px;
+  --shell-width: 1920px;
+  --content-width: 1500px;
 }
 
 html,

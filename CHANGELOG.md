@@ -6,8 +6,8 @@ Progress notes for the Unikly project. Payment collection and carrier integratio
 
 ### Storefront and visual foundation
 
-- Expanded `:root` semantic surface, accent, warning, border-radius, and elevation tokens in `frontend/src/styles.css` (`T2`).
-- Upgraded the global storefront header and secondary navigation bar (`app.html`, `app.css`) with a refined brand lockup, gold-accent search bar, live item count basket pill, and direct department quick-links (`All Departments`, `Home & Living`, `Electronics`, `Kitchen & Dining`, `Outdoor & Carry`).
+- Expanded `:root` semantic surface, accent, warning, border-radius, elevation, and spatial width tokens (`--shell-width: 1920px`, `--content-width: 1500px`) in `frontend/src/styles.css` (`T2`).
+- Upgraded the global storefront header, secondary department bar, and 3-tier retail footer (`app.html`, `app.css`) to span `100%` fluid viewport width (`--shell-width: 1920px` inner command track for header/nav; `--content-width: 1500px` 4-column directory + full-bleed Back-to-top and sub-footer bars) matching Amazon/Walmart spatial proportions while preserving Unikly's forest-and-gold visual identity.
 - Built a 3-card flagship Bento hero stage on `home-page` combining the editorial showcase and live catalog metrics with a dynamic Featured Pick card and an Everyday Value ("Finds under $35") spotlight card.
 - Added a Walmart/Amazon-inspired 4-column Department Bento grid (`Home & Living`, `Electronics & Audio`, `Kitchen & Dining`, `Outdoor & Carry`) with dual-image collages, live in-stock ratios, starting prices computed from the catalog, and interactive category selection.
 - Upgraded the `#shop` catalog discovery toolbar with `In stock only` and `Under $35` quick-filter chips (`aria-pressed`), one-click filter reset, customer-rating sort option, and elevated product cards featuring split dollar/cents retail price lockups, low-stock/out-of-stock pills, and demo/seller provenance badges (`M2`, `M4`, `T1`, `T3`).
