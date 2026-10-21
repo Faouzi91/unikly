@@ -12,7 +12,7 @@ The backend is the security boundary. Frontend route guards and displayed permis
 | Read, cancel, and confirm own orders | Yes | No | No |
 | Read and fulfill orders containing own products | No | Yes | No |
 | Manage own catalog products | No | Yes, with ownership checks | No current route |
-| Create a public review | Yes, after an eligible verified purchase | No | No |
+| Create a public review | Yes, after a `DELIVERED` order line for that product | No | No |
 | Moderate any product review | No | No | Yes |
 | Use platform administration APIs | No | No | Permission-gated; only the access-check route is currently implemented |
 
@@ -37,7 +37,7 @@ Public catalog and review reads do not require a role. Role names are not a repl
 | POST, PUT, and DELETE /api/products/** | Seller role; seller ownership is checked for product mutations |
 | GET /api/products and public product/review reads | Public |
 | GET /api/reviews/summary | Public aggregate rating summaries for catalog cards |
-| POST /api/products/{productId}/reviews, DELETE .../reviews/mine | REVIEW_CREATE_SELF; creation also requires an eligible verified purchase |
+| POST /api/products/{productId}/reviews, DELETE .../reviews/mine | REVIEW_CREATE_SELF; creation also requires a non-canceled order with a `DELIVERED` order line for `productId` owned by the authenticated buyer |
 | DELETE /api/reviews/{id} | REVIEW_MODERATE |
 | GET /api/admin/access-check | PLATFORM_REPORT_READ |
 | Other /api/admin/** routes | PLATFORM_ADMIN |

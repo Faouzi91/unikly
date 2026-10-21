@@ -143,40 +143,121 @@ class ProductReviewTests {
                 .andExpect(jsonPath("$.currentUserVerifiedBuyer", is(false)));
     }
 
-    @Test
-    void buyerWithPurchaseCanSubmitAndEditVerifiedReview() throws Exception {
-        MockHttpSession buyerSession = login(buyer.getEmail());
-
-        // 1. Buyer places an order for the product
-        orderService.create(buyer.getEmail(), new OrderRequests.Create(
+    private CustomerOrderService.OrderView placeOrder() {
+        return orderService.create(buyer.getEmail(), new OrderRequests.Create(
                 "Jane Buyer", "jane@example.com", "555-1234",
                 "123 Artisans Way", "", "Portland", "OR", "97201", "US",
                 "STANDARD", List.of(new OrderRequests.Item(product.getId(), 1))));
+    }
 
-        // 2. Verified buyer checks summary: can review
+    private void deliverOrder(String reference) {
+        orderService.updateSellerFulfillment(
+                seller.getEmail(),
+                reference,
+                new OrderRequests.UpdateFulfillmentStatus(
+                        com.unikly.store.orders.domain.OrderFulfillmentStatus.PROCESSING, null, null));
+        orderService.updateSellerFulfillment(
+                seller.getEmail(),
+                reference,
+                new OrderRequests.UpdateFulfillmentStatus(
+                        com.unikly.store.orders.domain.OrderFulfillmentStatus.SHIPPED,
+                        "DHL",
+                        "https://example.com/track/" + reference));
+        orderService.confirmDelivery(buyer.getEmail(), reference);
+    }
+
+    @Test
+    void placedProcessingShippedAndCanceledOrdersCannotSubmitReviewUntilDelivered() throws Exception {
+        MockHttpSession buyerSession = login(buyer.getEmail());
+        String reviewPayload = """
+                {
+                    "rating": 5,
+                    "title": "Stunning quality!",
+                    "comment": "Exceeded all my expectations. The finish is gorgeous."
+                }
+                """;
+
+        // 1. Canceled order cannot qualify
+        CustomerOrderService.OrderView canceledOrder = placeOrder();
+        orderService.cancel(buyer.getEmail(), canceledOrder.reference());
+        mockMvc.perform(get("/api/products/" + product.getId() + "/reviews").session(buyerSession))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentUserCanReview", is(false)))
+                .andExpect(jsonPath("$.currentUserVerifiedBuyer", is(false)));
+        mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
+                        .session(buyerSession)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reviewPayload))
+                .andExpect(status().isForbidden());
+
+        // 2. Placed order cannot qualify
+        CustomerOrderService.OrderView activeOrder = placeOrder();
+        mockMvc.perform(get("/api/products/" + product.getId() + "/reviews").session(buyerSession))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentUserCanReview", is(false)))
+                .andExpect(jsonPath("$.currentUserVerifiedBuyer", is(false)));
+        mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
+                        .session(buyerSession)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reviewPayload))
+                .andExpect(status().isForbidden());
+
+        // 3. Processing order cannot qualify
+        orderService.updateSellerFulfillment(
+                seller.getEmail(),
+                activeOrder.reference(),
+                new OrderRequests.UpdateFulfillmentStatus(
+                        com.unikly.store.orders.domain.OrderFulfillmentStatus.PROCESSING, null, null));
+        mockMvc.perform(get("/api/products/" + product.getId() + "/reviews").session(buyerSession))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentUserCanReview", is(false)))
+                .andExpect(jsonPath("$.currentUserVerifiedBuyer", is(false)));
+        mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
+                        .session(buyerSession)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reviewPayload))
+                .andExpect(status().isForbidden());
+
+        // 4. Shipped (undelivered) order cannot qualify
+        orderService.updateSellerFulfillment(
+                seller.getEmail(),
+                activeOrder.reference(),
+                new OrderRequests.UpdateFulfillmentStatus(
+                        com.unikly.store.orders.domain.OrderFulfillmentStatus.SHIPPED,
+                        "DHL",
+                        "https://example.com/track/" + activeOrder.reference()));
+        mockMvc.perform(get("/api/products/" + product.getId() + "/reviews").session(buyerSession))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentUserCanReview", is(false)))
+                .andExpect(jsonPath("$.currentUserVerifiedBuyer", is(false)));
+        mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
+                        .session(buyerSession)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reviewPayload))
+                .andExpect(status().isForbidden());
+
+        // 5. Delivered order qualifies and sets verified marker
+        orderService.confirmDelivery(buyer.getEmail(), activeOrder.reference());
         mockMvc.perform(get("/api/products/" + product.getId() + "/reviews").session(buyerSession))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentUserCanReview", is(true)))
                 .andExpect(jsonPath("$.currentUserVerifiedBuyer", is(true)));
 
-        // 3. Submit verified review
         mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
                         .session(buyerSession)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "rating": 5,
-                                    "title": "Stunning quality!",
-                                    "comment": "Exceeded all my expectations. The finish is gorgeous."
-                                }
-                                """))
+                        .content(reviewPayload))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.rating", is(5)))
                 .andExpect(jsonPath("$.title", is("Stunning quality!")))
                 .andExpect(jsonPath("$.isVerifiedPurchase", is(true)));
 
-        // 4. Update the review
+        // 6. Update the review
         mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
                         .session(buyerSession)
                         .with(csrf())
@@ -192,7 +273,6 @@ class ProductReviewTests {
                 .andExpect(jsonPath("$.rating", is(4)))
                 .andExpect(jsonPath("$.isVerifiedPurchase", is(true)));
 
-        // 5. Verify summary reflects updated rating (1 review total, rating 4.0)
         ProductReviewSummaryView summary = reviewService.getProductReviewSummary(product.getId(), buyer.getEmail());
         assertEquals(1, summary.totalReviews());
         assertEquals(4.0, summary.averageRating());
@@ -245,11 +325,8 @@ class ProductReviewTests {
     void reviewValidationRejectsInvalidRatings() throws Exception {
         MockHttpSession buyerSession = login(buyer.getEmail());
 
-        // Buyer orders first to satisfy purchase gate
-        orderService.create(buyer.getEmail(), new OrderRequests.Create(
-                "Jane Buyer", "jane@example.com", "555-1234",
-                "123 Artisans Way", "", "Portland", "OR", "97201", "US",
-                "STANDARD", List.of(new OrderRequests.Item(product.getId(), 1))));
+        CustomerOrderService.OrderView order = placeOrder();
+        deliverOrder(order.reference());
 
         // Rating 0 is invalid
         mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
@@ -285,14 +362,11 @@ class ProductReviewTests {
         MockHttpSession buyerSession = login(buyer.getEmail());
         MockHttpSession adminSession = login(admin.getEmail());
 
-        // Buyer orders first
-        orderService.create(buyer.getEmail(), new OrderRequests.Create(
-                "Jane Buyer", "jane@example.com", "555-1234",
-                "123 Artisans Way", "", "Portland", "OR", "97201", "US",
-                "STANDARD", List.of(new OrderRequests.Item(product.getId(), 1))));
+        CustomerOrderService.OrderView order = placeOrder();
+        deliverOrder(order.reference());
 
         // Submit review
-        MvcResult created = mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
+        mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
                         .session(buyerSession)
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -303,8 +377,7 @@ class ProductReviewTests {
                                     "comment": "It's decent but could be improved."
                                 }
                                 """))
-                .andExpect(status().isCreated())
-                .andReturn();
+                .andExpect(status().isCreated());
 
         // Delete own review
         mockMvc.perform(delete("/api/products/" + product.getId() + "/reviews/mine")

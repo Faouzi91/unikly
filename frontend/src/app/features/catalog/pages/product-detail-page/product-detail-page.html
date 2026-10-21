@@ -159,16 +159,16 @@
               </button>
               <div class="verified-buyer-hint">
                 <svg lucideShieldCheck [size]="16" [strokeWidth]="2" aria-hidden="true"></svg>
-                <span>Verified Purchase: You ordered this item and qualify to write a review.</span>
+                <span>Verified Purchase: Your order for this item was delivered and qualifies for a review.</span>
               </div>
             </div>
           } @else if (auth.user()?.role === 'BUYER') {
             <div class="cta-not-purchased-box">
               <div class="not-purchased-badge">
                 <svg lucideShieldCheck [size]="16" [strokeWidth]="2" aria-hidden="true"></svg>
-                <span>Verified Purchase Required</span>
+                <span>Delivered Purchase Required</span>
               </div>
-              <p class="not-purchased-desc">A qualifying purchase is required to write a review. Order this item to share your feedback.</p>
+              <p class="not-purchased-desc">Reviews are open to buyers after an order containing this item has been delivered.</p>
               @if (quantityInBasket() > 0) {
                 <a class="btn-review-outline" routerLink="/basket">Proceed to checkout in basket →</a>
               } @else {
@@ -176,13 +176,13 @@
               }
             </div>
           } @else if (auth.isAuthenticated()) {
-            <p class="cta-login-note">Product reviews are available to buyers with an eligible order.</p>
+            <p class="cta-login-note">Product reviews are available to buyers with a delivered order for this item.</p>
           } @else {
             <div class="cta-login-box">
               <a class="btn-review-primary" routerLink="/login" [queryParams]="{ returnUrl: '/products/' + item.id }">
                 Sign in to write a review
               </a>
-              <span class="cta-login-note">Only verified purchasers who have ordered this item can leave a review. Don't have an account? <a routerLink="/register">Register</a> as a buyer.</span>
+              <span class="cta-login-note">Only verified purchasers with a delivered order for this item can leave a review. Don't have an account? <a routerLink="/register">Register</a> as a buyer.</span>
             </div>
           }
         </div>

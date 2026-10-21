@@ -22,6 +22,12 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, St
     @EntityGraph(attributePaths = "items")
     Optional<CustomerOrder> findByReference(String reference);
 
-    @Query("select count(o) > 0 from CustomerOrder o join o.items item where o.buyerId = :buyerId and item.productId = :productId and o.status <> 'CANCELED'")
+    @Query("""
+            select count(o) > 0 from CustomerOrder o join o.items item
+            where o.buyerId = :buyerId
+              and item.productId = :productId
+              and o.status <> 'CANCELED'
+              and item.fulfillmentStatus = com.unikly.store.orders.domain.OrderFulfillmentStatus.DELIVERED
+            """)
     boolean hasPurchasedProduct(@Param("buyerId") Long buyerId, @Param("productId") String productId);
 }

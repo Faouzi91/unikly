@@ -126,7 +126,7 @@ public class ProductReviewService {
         boolean isVerified = orders.hasPurchasedProduct(user.id(), productId);
         if (!isVerified) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Only verified purchasers who have ordered this product can write a review.");
+                    "Only verified purchasers with a delivered order for this product can write a review.");
         }
 
         String authorName = (user.displayName() != null && !user.displayName().isBlank())

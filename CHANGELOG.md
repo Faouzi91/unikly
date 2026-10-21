@@ -2,6 +2,28 @@
 
 Progress notes for the Unikly project. Payment collection and carrier integrations remain out of scope for the current demo checkout.
 
+## 2026-10-21 — Milestone M3: restrict product reviews to delivered purchases and align product-detail tokens
+
+### Backend and security (`FR-REV-01`)
+
+- Restricted `CustomerOrderRepository.hasPurchasedProduct` so only non-canceled orders with a `DELIVERED` order line (`item.fulfillmentStatus = OrderFulfillmentStatus.DELIVERED`) qualify as a verified purchase for product reviews (`M3`, `FR-REV-01`).
+- Updated `ProductReviewService.submitReview` forbidden messaging to clarify that a delivered order is required before writing a review.
+- Added `placedProcessingShippedAndCanceledOrdersCannotSubmitReviewUntilDelivered` in `ProductReviewTests` verifying that `PLACED`, `CANCELED`, `PROCESSING`, and `SHIPPED` orders cannot submit reviews (`403 Forbidden`, `currentUserCanReview = false`) while `DELIVERED` orders qualify (`201 Created`, `isVerifiedPurchase = true`).
+
+### Storefront and visual foundation (`T1`, `T2`)
+
+- Updated `product-detail-page.html` review eligibility copy so buyers and visitors see the delivered-purchase requirement (`T1`).
+- Migrated `product-detail-page.css` from drifted slate/amber color literals onto the shared `:root` semantic design tokens (`--color-brand-*`, `--color-accent-*`, `--color-surface-*`, `--radius-card`, `--shadow-sm`) and 44px+ touch targets (`T2`, `T3`).
+
+### Documentation
+
+- Updated `docs/UNIKLY_SRS_v4.md` (`FR-REV-01`), `docs/authorization-matrix.md`, `docs/theme-style-audit.md`, and `docs/product-roadmap.md` (`M3`).
+
+### Verification
+
+- `docker build -t unikly-web-test ./frontend` passed with zero warnings and zero errors.
+- Isolated Java 25 Maven test suite in Docker (`mvn -B -ntp test`) passed all 29 tests (`ProductReviewTests`: 7/7 passed).
+
 ## 2026-10-20 — Sprint 2 flagship landing page visuals: Bento hero stage, 4-column department showcase, and retail discovery bar
 
 ### Storefront and visual foundation

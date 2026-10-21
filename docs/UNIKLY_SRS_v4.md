@@ -113,7 +113,7 @@ Status legend: **Implemented** = current source has the capability; **Partial** 
 
 ### Reviews, communication, and operator capabilities
 
-- **FR-REV-01 — Partial:** Buyers can review a product only after the agreed eligible purchase completion state; reviews must state whether purchase verification was checked.
+- **FR-REV-01 — Implemented (verified in automated tests; live browser gate in M28):** Buyers can review a product only after an order line for that product reaches `DELIVERED` (`PLACED`, `PROCESSING`, `SHIPPED`, and `CANCELED` order lines do not qualify); reviews state whether purchase verification was checked (`isVerifiedPurchase`).
 - **FR-REV-02 — Partial:** Administrators can moderate reviews; the seller must not be able to alter a buyer's review or private account information.
 - **FR-SUP-01 — Open:** Buyers and sellers need a discoverable route to report an order or listing issue, receive a case status, and see next steps.
 - **FR-NOTIF-01 — Open:** Important committed order and account state changes should produce safe, retryable transactional notifications without sending secrets or sensitive payment data.
